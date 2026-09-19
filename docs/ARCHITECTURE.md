@@ -13,3 +13,7 @@ MAX Bot -> webhook -> FastAPI -> prepared catalog
 - MAX launch data is verified server-side before a session is trusted.
 - Current skeleton has no real MAX token and no external integration calls.
 - Future LLM is an optional explanation layer only; deterministic rules remain authoritative.
+
+## Ownership
+
+GitHub and technical integration are owned by Sasha. Stas owns product scope and visual direction. Pasha owns the Mini App frontend. Do not require Stas to execute routine merges; request his sign-off for product and visual decisions.

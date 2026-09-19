@@ -24,3 +24,10 @@
 ## Definition of Done
 
 Задача имеет тест, обработку ошибок, документацию и PR с evidence. Сначала план, затем изменение. При конфликте источников агент останавливается и сообщает о нём.
+
+## Ownership update (2026-09-20)
+
+- GitHub administration is owned by Sasha: issues, branches, PR approvals, merges, CI and release tags.
+- Stas owns product scope, visual direction and final product/content review; he does not perform routine GitHub merges.
+- Pasha owns frontend/UI implementation and submits frontend PRs.
+- A product/visual concern is escalated to Stas; a technical/merge concern is handled by Sasha.
