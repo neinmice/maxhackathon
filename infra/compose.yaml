@@ -1,0 +1,24 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.api
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../.env.example
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: navigator
+      POSTGRES_USER: navigator
+      POSTGRES_PASSWORD: navigator
+    ports:
+      - "5432:5432"
+
+  web:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.web
+    ports:
+      - "8080:80"

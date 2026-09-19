@@ -1,0 +1,14 @@
+version: "0.1"
+solution_id: zvery-business-navigator
+base_url: http://localhost:8000
+checks:
+  - method: GET
+    path: /health
+    role: public
+    expected_status: 200
+    expected_content_type: application/json
+  - method: POST
+    path: /api/v1/recommendations
+    role: session
+    expected_status: 200
+    required_response_fields: [items, catalog_version]

@@ -1,0 +1,21 @@
+[
+  {
+    "id": "demo-kazan-support-001",
+    "title": "Демонстрационная мера поддержки",
+    "operator": "Модельный оператор каталога",
+    "region": "kazan",
+    "roles": ["ip", "self_employed"],
+    "tax_modes": ["usn6", "none"],
+    "sector": "food",
+    "goal": "support",
+    "eligibility": "MODEL DATA: заменить после ручной проверки официального источника",
+    "documents": ["профиль бизнеса", "заявление по форме оператора"],
+    "deadline": null,
+    "source_name": "MODEL DATA",
+    "source_url": "https://example.invalid/model-data",
+    "last_checked": "2026-09-19",
+    "freshness_status": "model",
+    "data_status": "MODEL DATA",
+    "disclaimer": "Демонстрационная запись. Решение принимает официальный оператор."
+  }
+]

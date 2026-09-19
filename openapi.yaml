@@ -1,0 +1,39 @@
+openapi: 3.1.0
+info:
+  title: ZVERY Business Navigator API
+  version: 0.1.0
+servers:
+  - url: http://localhost:8000
+paths:
+  /health:
+    get:
+      responses:
+        '200':
+          description: OK
+  /api/v1/catalog/filters:
+    get:
+      responses:
+        '200':
+          description: Available filters
+  /api/v1/recommendations:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecommendationRequest'
+      responses:
+        '200':
+          description: Matching prepared records
+components:
+  schemas:
+    RecommendationRequest:
+      type: object
+      required: [region, role, tax_mode]
+      properties:
+        region: {type: string, enum: [kazan, moscow, spb]}
+        role: {type: string, enum: [ip, self_employed, llc]}
+        tax_mode: {type: string}
+        sector: {type: string}
+        goal: {type: string}
