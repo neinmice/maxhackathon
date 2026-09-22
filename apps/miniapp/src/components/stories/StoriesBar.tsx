@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, TrendingUp, HelpCircle, Award, Compass } from 'lucide-react';
+import { Sparkles, TrendingUp, HelpCircle, Award } from 'lucide-react';
 import { triggerHaptic } from '../../lib/maxBridge';
 
 export interface StorySlide {
@@ -18,7 +18,7 @@ export interface StorySlide {
 export interface StoryItem {
   id: string;
   title: string;
-  iconName: 'sparkles' | 'trending' | 'help' | 'award' | 'compass';
+  iconName: 'sparkles' | 'trending' | 'help' | 'award';
   isUnread?: boolean;
   slides: StorySlide[];
 }
@@ -49,13 +49,60 @@ export const STORIES_DATA: StoryItem[] = [
     ],
   },
   {
-    id: 'story-fear-study',
-    title: 'Цифры',
-    iconName: 'trending',
+    id: 'story-news',
+    title: 'Новости',
+    iconName: 'help',
     isUnread: true,
     slides: [
       {
         id: 's2',
+        title: 'Новости господдержки',
+        subtitle: 'Льготные кредиты и программы 2026',
+        description: 'Фонд поддержки МСП расширил квоты на льготное финансирование для начинающих предпринимателей в регионах.',
+        points: [
+          'Ставка от 3.5% годовых в первый год',
+          'До 2 млн рублей без залога имущества',
+          'Оформление через аккредитованные банки РФ',
+        ],
+        ctaLabel: 'Смотреть программы',
+        ctaAction: 'open_catalog',
+        bgGradient: 'linear-gradient(145deg, #24173e 0%, #491f9b 100%)',
+        tag: 'Финансы',
+      },
+    ],
+  },
+  {
+    id: 'story-interviews',
+    title: 'Интервью',
+    iconName: 'award',
+    isUnread: false,
+    slides: [
+      {
+        id: 's3',
+        title: 'Как получить 1 000 000 ₽',
+        subtitle: 'Опыт студентов со стартапами',
+        description: 'Фонд содействия инновациям выделяет 1 млн рублей на студенческие стартапы. Срок защиты проектов — осень 2026.',
+        points: [
+          'Нужна технологическая или инновационная основа',
+          'Деньги перечисляются на расчетный счет юрлица',
+          'Отчетность по этапам без бюрократического ада',
+        ],
+        ctaLabel: 'Изучить грант',
+        ctaAction: 'open_measure',
+        targetMeasureId: 'spb-innovate-grant-007',
+        bgGradient: 'linear-gradient(145deg, #1c132f 0%, #341571 100%)',
+        tag: 'Кейсы',
+      },
+    ],
+  },
+  {
+    id: 'story-stats',
+    title: 'Цифры',
+    iconName: 'trending',
+    isUnread: false,
+    slides: [
+      {
+        id: 's4',
         title: '90% боятся начать',
         subtitle: 'Главный барьер — страх неизвестности',
         description: 'Исследования показывают: большинство начинающих предпринимателей спотыкаются не на идее, а на выборе формы (ИП/НПД) и страхе налоговой отчетности.',
@@ -71,53 +118,6 @@ export const STORIES_DATA: StoryItem[] = [
       },
     ],
   },
-  {
-    id: 'story-tax-hacks',
-    title: 'Новости',
-    iconName: 'help',
-    isUnread: false,
-    slides: [
-      {
-        id: 's3',
-        title: 'Лайфхаки по налогам',
-        subtitle: 'Самозанятость против ИП на УСН',
-        description: 'Как не переплатить в первый год работы? Сравниваем налоговые режимы для молодых специалистов.',
-        points: [
-          'НПД: нет фиксированных страховых взносов (экономия ~50 000 ₽/год)',
-          'УСН: можно нанимать сотрудников и привлекать инвестиции',
-          'Субсидии компенсируют покупку оборудования до 50%',
-        ],
-        ctaLabel: 'Подобрать свой режим',
-        ctaAction: 'open_quiz',
-        bgGradient: 'linear-gradient(145deg, #341571 0%, #120d1d 100%)',
-        tag: 'Налоги',
-      },
-    ],
-  },
-  {
-    id: 'story-navigator-tips',
-    title: 'Интервью',
-    iconName: 'award',
-    isUnread: false,
-    slides: [
-      {
-        id: 's4',
-        title: 'Как получить 1 000 000 ₽',
-        subtitle: 'Опыт студентов со стартапами',
-        description: 'Фонд содействия инновациям выделяет 1 млн рублей на студенческие стартапы. Срок защиты проектов — осень 2026.',
-        points: [
-          'Нужна технологическая или инновационная основа',
-          'Деньги перечисляются на расчетный счет юрлица',
-          'Отчетность по этапам без бюрократического ада',
-        ],
-        ctaLabel: 'Изучить грант',
-        ctaAction: 'open_measure',
-        targetMeasureId: 'spb-innovate-grant-007',
-        bgGradient: 'linear-gradient(145deg, #24173e 0%, #491f9b 100%)',
-        tag: 'Кейсы',
-      },
-    ],
-  },
 ];
 
 interface StoriesBarProps {
@@ -125,23 +125,16 @@ interface StoriesBarProps {
 }
 
 export const StoriesBar: React.FC<StoriesBarProps> = ({ onSelectStory }) => {
-  const getIcon = (name: StoryItem['iconName']) => {
-    switch (name) {
-      case 'sparkles': return <Sparkles size={18} color="#ffd21e" />;
-      case 'trending': return <TrendingUp size={18} color="#ffd21e" />;
-      case 'help': return <HelpCircle size={18} color="#ffd21e" />;
-      case 'award': return <Award size={18} color="#ffd21e" />;
-      default: return <Compass size={18} color="#ffd21e" />;
-    }
-  };
-
   return (
-    <div style={{
-      padding: '12px 16px 8px 16px',
-      overflowX: 'auto',
-      display: 'flex',
-      gap: 12,
-    }} className="no-scrollbar">
+    <div
+      style={{
+        padding: '14px 16px 8px 16px',
+        overflowX: 'auto',
+        display: 'flex',
+        gap: 10,
+      }}
+      className="no-scrollbar"
+    >
       {STORIES_DATA.map((story) => (
         <button
           key={story.id}
@@ -151,53 +144,74 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({ onSelectStory }) => {
             onSelectStory(story);
           }}
           style={{
+            flex: '0 0 auto',
+            width: 82,
+            height: 94,
+            borderRadius: 18,
+            background: 'linear-gradient(145deg, rgba(38, 26, 64, 0.95) 0%, rgba(18, 12, 32, 0.98) 100%)',
+            border: story.isUnread
+              ? '2px solid #8B5CF6'
+              : '1.5px solid rgba(255, 255, 255, 0.12)',
+            boxShadow: story.isUnread
+              ? '0 0 16px rgba(139, 92, 246, 0.4), inset 0 1px 0 rgba(255,255,255,0.2)'
+              : '0 4px 14px rgba(0, 0, 0, 0.4)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: 6,
-            flexShrink: 0,
-            background: 'none',
+            justifyContent: 'center',
+            gap: 8,
+            padding: 8,
+            cursor: 'pointer',
+            position: 'relative',
+            overflow: 'hidden',
           }}
         >
-          {/* Avatar Ring */}
-          <div style={{
-            width: 66,
-            height: 66,
-            borderRadius: '50%',
-            padding: 2.5,
-            background: story.isUnread
-              ? 'linear-gradient(135deg, #ffd21e 0%, #7045c6 50%, #ffe14d 100%)'
-              : 'rgba(255, 255, 255, 0.15)',
-            boxShadow: story.isUnread ? '0 0 14px rgba(255, 210, 30, 0.35)' : 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            <div style={{
-              width: '100%',
-              height: '100%',
-              borderRadius: '50%',
-              background: '#1a0d36',
-              border: '2px solid #120d1d',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-              {getIcon(story.iconName)}
-            </div>
-          </div>
-          <span style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: story.isUnread ? '#fff' : '#a295c5',
-            maxWidth: 70,
-            textAlign: 'center',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}>
+          {/* Subtle top glare */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 24,
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 100%)',
+              pointerEvents: 'none',
+            }}
+          />
+
+          <span
+            style={{
+              fontSize: 13,
+              fontWeight: 800,
+              color: story.isUnread ? '#ffffff' : '#d8cdfe',
+              textAlign: 'center',
+              letterSpacing: '-0.01em',
+            }}
+          >
             {story.title}
           </span>
+
+          {/* Glowing dot or mini tag */}
+          {story.isUnread ? (
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                background: '#FFD21E',
+                boxShadow: '0 0 8px #FFD21E',
+              }}
+            />
+          ) : (
+            <span
+              style={{
+                width: 4,
+                height: 4,
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.3)',
+              }}
+            />
+          )}
         </button>
       ))}
     </div>

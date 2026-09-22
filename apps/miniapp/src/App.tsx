@@ -13,7 +13,6 @@ import {
   toggleSavedMeasure,
   loadChecklistProgress,
   toggleChecklistItem,
-  defaultProfile,
 } from './lib/storage';
 import { apiClient } from './api/client';
 import type { MeasureRecord, UserProfile, Region, Role } from './types/api';
@@ -23,17 +22,17 @@ import { BottomNav, type TabId } from './components/layout/BottomNav';
 import { StoriesBar } from './components/stories/StoriesBar';
 import { StoryModal } from './components/stories/StoryModal';
 import { FactTicker } from './components/home/FactTicker';
+import { CategoryBlock } from './components/home/CategoryBlock';
 import { MeasureCard } from './components/measures/MeasureCard';
 import { MeasureDetailModal } from './components/measures/MeasureDetailModal';
 import { MeasureFilters, type CategoryFilter } from './components/measures/MeasureFilters';
 import { OnboardingModal } from './components/onboarding/OnboardingModal';
-import { ChecklistView } from './components/checklist/ChecklistView';
 import { MascotAssistantView } from './components/assistant/MascotAssistantView';
+import { EducationView } from './components/education/EducationView';
 import { SearchModal } from './components/search/SearchModal';
 import { SkeletonCard } from './components/ui/SkeletonCard';
 import { EmptyState } from './components/ui/EmptyState';
 import { ErrorState } from './components/ui/ErrorState';
-import { ChevronRight, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export function App() {
   // 1. User & Profile State
@@ -70,7 +69,7 @@ export function App() {
       setShowOnboarding(true);
     }
 
-    // Parse deep-link payload (e.g. ?startapp=measure_demo-kazan-support-001 or ?startapp=quiz)
+    // Parse deep-link payload
     const payload = getDeepLinkPayload();
     if (payload) {
       if (payload.startsWith('measure_')) {
@@ -80,8 +79,8 @@ export function App() {
         }).catch(() => {});
       } else if (payload === 'quiz') {
         setCurrentTab('mascot');
-      } else if (payload === 'checklist') {
-        setCurrentTab('checklist');
+      } else if (payload === 'education') {
+        setCurrentTab('education');
       } else if (payload === 'onboarding') {
         setShowOnboarding(true);
       }
@@ -93,10 +92,7 @@ export function App() {
     setIsLoading(true);
     setErrorInfo(null);
     try {
-      // First verify backend liveness
       await apiClient.getHealth();
-
-      // Fetch recommended measures for the user profile
       const all = await apiClient.getAllMeasures();
       setMeasures(all);
     } catch (err: any) {
@@ -146,22 +142,16 @@ export function App() {
   // Filtered measures for Catalog Tab & Search
   const filteredMeasures = useMemo(() => {
     return measures.filter((item) => {
-      // Region match
       if (item.region !== profile.region) return false;
-
-      // Category filter
       if (categoryFilter !== 'all') {
         if (categoryFilter === 'grants' && item.category !== 'grants') return false;
         if (categoryFilter === 'start' && item.category !== 'start') return false;
         if (categoryFilter === 'finance' && item.category !== 'finance') return false;
         if (categoryFilter === 'programs' && item.category !== 'programs') return false;
       }
-
-      // Role filter
       if (roleFilter !== 'all') {
         if (!item.roles.includes(roleFilter)) return false;
       }
-
       return true;
     });
   }, [measures, profile.region, categoryFilter, roleFilter]);
@@ -171,22 +161,22 @@ export function App() {
     return measures.filter((m) => savedIds.includes(m.id));
   }, [measures, savedIds]);
 
-  // Measures by category for Home blocks
-  const startMeasures = useMemo(() => {
-    return measures.filter((m) => m.region === profile.region && (m.category === 'start' || m.category === 'grants'));
+  // Specific measures for the 2-column blocks
+  const youthGrantMeasure = useMemo(() => {
+    return measures.find((m) => m.region === profile.region && m.category === 'grants') || measures[0];
   }, [measures, profile.region]);
 
-  const financeMeasures = useMemo(() => {
-    return measures.filter((m) => m.region === profile.region && m.category === 'finance');
+  const incubatorMeasure = useMemo(() => {
+    return measures.find((m) => m.region === profile.region && m.category === 'programs') || measures[2];
   }, [measures, profile.region]);
 
-  const programMeasures = useMemo(() => {
-    return measures.filter((m) => m.region === profile.region && m.category === 'programs');
+  const loanMeasure = useMemo(() => {
+    return measures.find((m) => m.region === profile.region && m.category === 'finance') || measures[1];
   }, [measures, profile.region]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
-      {/* 1. Header (Sticky) */}
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh', background: '#0D0B14' }}>
+      {/* 1. Header (Sticky) with ЛК Avatar + Anastasia + Kazan */}
       <Header
         userName={userName}
         selectedRegion={profile.region}
@@ -195,32 +185,25 @@ export function App() {
         onOpenOnboarding={() => setShowOnboarding(true)}
       />
 
-      {/* 2. Main Content Area according to active tab */}
+      {/* 2. Main Content Area */}
       <main style={{ flex: 1, paddingBottom: 85 }}>
-        {/* --- TAB: HOME --- */}
+        {/* --- TAB: ГЛАВНАЯ (HOME) --- */}
         {currentTab === 'home' && (
           <div>
-            {/* Stories carousel */}
+            {/* Stories carousel: [ Новинки ] [ Новости ] [ Интервью ] [ Цифры ] */}
             <StoriesBar onSelectStory={(s) => setActiveStory(s)} />
 
-            {/* Dynamic Fact Ticker banner */}
-            <FactTicker
-              onAction={(act) => {
-                if (act === 'onboarding') setShowOnboarding(true);
-                else if (act === 'catalog') setCurrentTab('catalog');
-                else if (act === 'quiz') setCurrentTab('mascot');
-              }}
-            />
+            {/* Fact Ticker: 90% Боятся начать из за страха незнания */ }
+            <FactTicker onAction={() => setCurrentTab('catalog')} />
 
-            {/* Loading Skeletons */}
+            {/* Loading / Error States */}
             {isLoading && (
-              <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <SkeletonCard />
                 <SkeletonCard />
               </div>
             )}
 
-            {/* Error State */}
             {errorInfo && !isLoading && (
               <ErrorState
                 message={errorInfo.message}
@@ -230,162 +213,107 @@ export function App() {
             )}
 
             {!isLoading && !errorInfo && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 24, padding: '0 0 20px 0' }}>
-                {/* Block 1: Начни свое дело > */}
-                <div>
-                  <div
-                    onClick={() => {
-                      setCategoryFilter('start');
-                      setCurrentTab('catalog');
-                    }}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '0 16px 10px 16px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <h2 style={{ fontSize: 17, fontWeight: 800, color: '#fff' }}>
-                      Начни <span style={{ color: '#ffd21e' }}>свое дело</span> &gt;
-                    </h2>
-                    <span style={{ fontSize: 12, color: '#ffd21e', fontWeight: 700 }}>Все</span>
-                  </div>
+              <div>
+                {/* 1. BLOCK: Начни свое дело > with [START] sticker */}
+                <CategoryBlock
+                  title={
+                    <>
+                      Начни <span style={{ color: '#FFD21E' }}>свое дело</span>
+                    </>
+                  }
+                  sticker="start"
+                  onHeaderClick={() => {
+                    setCategoryFilter('start');
+                    setCurrentTab('catalog');
+                  }}
+                  onOpenMeasure={(m) => setSelectedMeasure(m)}
+                  cards={[
+                    {
+                      id: 'c_start_1',
+                      title: 'С чего начать',
+                      subtitle: 'Пошаговый гид',
+                      badge: 'СТАРТ',
+                      measure: youthGrantMeasure,
+                    },
+                    {
+                      id: 'c_start_2',
+                      title: 'Инструкция',
+                      subtitle: 'Регистрация и налоги',
+                      badge: 'ГАЙД',
+                      customAction: () => setCurrentTab('education'),
+                    },
+                  ]}
+                />
 
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: 12,
-                      padding: '0 16px',
-                      overflowX: 'auto',
-                    }}
-                    className="no-scrollbar"
-                  >
-                    {startMeasures.length > 0 ? (
-                      startMeasures.map((m) => (
-                        <div key={m.id} style={{ minWidth: 260, maxWidth: 280, flexShrink: 0 }}>
-                          <MeasureCard
-                            measure={m}
-                            isSaved={savedIds.includes(m.id)}
-                            onToggleSave={handleToggleSave}
-                            onOpenDetail={(item) => setSelectedMeasure(item)}
-                          />
-                        </div>
-                      ))
-                    ) : (
-                      <div style={{ padding: '16px', color: '#a295c5', fontSize: 13 }}>
-                        Меры для данного региона готовятся оператором
-                      </div>
-                    )}
-                  </div>
-                </div>
+                {/* 2. BLOCK: Бесплатные программы > with Sphere prop */}
+                <CategoryBlock
+                  title={
+                    <>
+                      <span style={{ color: '#FFD21E' }}>Бесплатные</span> программы
+                    </>
+                  }
+                  sticker="sphere"
+                  onHeaderClick={() => {
+                    setCategoryFilter('programs');
+                    setCurrentTab('catalog');
+                  }}
+                  onOpenMeasure={(m) => setSelectedMeasure(m)}
+                  cards={[
+                    {
+                      id: 'c_prog_1',
+                      title: profile.region === 'kazan' ? 'Мероприятия в Казани' : profile.region === 'moscow' ? 'Мероприятия в Москве' : 'Мероприятия в СПб',
+                      subtitle: 'ИТ-парк и коворкинги',
+                      badge: 'ОЧНО',
+                      measure: incubatorMeasure,
+                    },
+                    {
+                      id: 'c_prog_2',
+                      title: 'Онлайн мероприятия',
+                      subtitle: 'Курсы «Мой бизнес»',
+                      badge: 'ОНЛАЙН',
+                      customAction: () => setCurrentTab('education'),
+                    },
+                  ]}
+                />
 
-                {/* Block 2: Бесплатные программы и инкубаторы > */}
-                <div>
-                  <div
-                    onClick={() => {
-                      setCategoryFilter('programs');
-                      setCurrentTab('catalog');
-                    }}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '0 16px 10px 16px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <h2 style={{ fontSize: 17, fontWeight: 800, color: '#fff' }}>
-                      <span style={{ color: '#ffd21e' }}>Бесплатные</span> программы &gt;
-                    </h2>
-                    <span style={{ fontSize: 12, color: '#ffd21e', fontWeight: 700 }}>Все</span>
-                  </div>
-
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: 12,
-                      padding: '0 16px',
-                      overflowX: 'auto',
-                    }}
-                    className="no-scrollbar"
-                  >
-                    {programMeasures.length > 0 ? (
-                      programMeasures.map((m) => (
-                        <div key={m.id} style={{ minWidth: 260, maxWidth: 280, flexShrink: 0 }}>
-                          <MeasureCard
-                            measure={m}
-                            isSaved={savedIds.includes(m.id)}
-                            onToggleSave={handleToggleSave}
-                            onOpenDetail={(item) => setSelectedMeasure(item)}
-                          />
-                        </div>
-                      ))
-                    ) : (
-                      <div style={{ padding: '16px', color: '#a295c5', fontSize: 13 }}>
-                        Меры для данного региона готовятся оператором
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Block 3: Финансовая поддержка > */}
-                <div>
-                  <div
-                    onClick={() => {
-                      setCategoryFilter('finance');
-                      setCurrentTab('catalog');
-                    }}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '0 16px 10px 16px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <h2 style={{ fontSize: 17, fontWeight: 800, color: '#fff' }}>
-                      Финансовая <span style={{ color: '#ffd21e' }}>поддержка</span> &gt;
-                    </h2>
-                    <span style={{ fontSize: 12, color: '#ffd21e', fontWeight: 700 }}>Все</span>
-                  </div>
-
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: 12,
-                      padding: '0 16px',
-                      overflowX: 'auto',
-                    }}
-                    className="no-scrollbar"
-                  >
-                    {financeMeasures.length > 0 ? (
-                      financeMeasures.map((m) => (
-                        <div key={m.id} style={{ minWidth: 260, maxWidth: 280, flexShrink: 0 }}>
-                          <MeasureCard
-                            measure={m}
-                            isSaved={savedIds.includes(m.id)}
-                            onToggleSave={handleToggleSave}
-                            onOpenDetail={(item) => setSelectedMeasure(item)}
-                          />
-                        </div>
-                      ))
-                    ) : (
-                      <div style={{ padding: '16px', color: '#a295c5', fontSize: 13 }}>
-                        Меры для данного региона готовятся оператором
-                      </div>
-                    )}
-                  </div>
-                </div>
+                {/* 3. BLOCK: Финансовая поддержка > with Sunburst */}
+                <CategoryBlock
+                  title={
+                    <>
+                      Финансовая <span style={{ color: '#8B5CF6' }}>поддержка</span>
+                    </>
+                  }
+                  sticker="sunburst"
+                  onHeaderClick={() => {
+                    setCategoryFilter('finance');
+                    setCurrentTab('catalog');
+                  }}
+                  onOpenMeasure={(m) => setSelectedMeasure(m)}
+                  cards={[
+                    {
+                      id: 'c_fin_1',
+                      title: '300.000 на развитие',
+                      subtitle: 'Гранты до 500 тыс. ₽',
+                      badge: 'ГРАНТ',
+                      measure: youthGrantMeasure,
+                    },
+                    {
+                      id: 'c_fin_2',
+                      title: 'Кредит без процентов',
+                      subtitle: 'Займы под 3.5%',
+                      badge: 'ЛЬГОТНЫЙ',
+                      measure: loanMeasure,
+                    },
+                  ]}
+                />
               </div>
             )}
           </div>
         )}
 
-        {/* --- TAB: CATALOG --- */}
+        {/* --- TAB: СЕРВИСЫ (КАТАЛОГ) --- */}
         {currentTab === 'catalog' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {/* Filter Pills */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <MeasureFilters
               selectedCategory={categoryFilter}
               onSelectCategory={setCategoryFilter}
@@ -393,8 +321,7 @@ export function App() {
               onSelectRole={setRoleFilter}
             />
 
-            {/* List of Measures */}
-            <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
               {isLoading ? (
                 <>
                   <SkeletonCard />
@@ -422,7 +349,7 @@ export function App() {
           </div>
         )}
 
-        {/* --- TAB: MASCOT ASSISTANT --- */}
+        {/* --- TAB: МАСКОТ-АССИСТЕНТ (Screen 2 & 3 in Canva) --- */}
         {currentTab === 'mascot' && (
           <MascotAssistantView
             userName={userName}
@@ -431,68 +358,67 @@ export function App() {
               if (item) setSelectedMeasure(item);
             }}
             onOpenCatalog={() => setCurrentTab('catalog')}
+            onOpenEducation={() => setCurrentTab('education')}
           />
         )}
 
-        {/* --- TAB: GRANTS (SAVED MEASURES) --- */}
+        {/* --- TAB: ГРАНТЫ --- */}
         {currentTab === 'grants' && (
-          <div style={{ padding: '16px 16px 20px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ padding: '14px 16px 20px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>
-                  Сохраненные гранты
+                <h2 style={{ fontSize: 20, fontWeight: 800, color: '#FFFFFF' }}>
+                  Гранты и финансирование
                 </h2>
-                <p style={{ fontSize: 12, color: '#a295c5' }}>
-                  Программы, добавленные вами в закладки
+                <p style={{ fontSize: 12, color: '#A295C5' }}>
+                  Все программы региона {profile.region.toUpperCase()}
                 </p>
               </div>
               <span className="badge badge-yellow">
-                {savedMeasures.length} мер
+                {measures.filter((m) => m.category === 'grants' || m.category === 'finance').length} программ
               </span>
             </div>
 
-            {savedMeasures.length > 0 ? (
-              savedMeasures.map((m) => (
-                <MeasureCard
-                  key={m.id}
-                  measure={m}
-                  isSaved={true}
-                  onToggleSave={handleToggleSave}
-                  onOpenDetail={(item) => setSelectedMeasure(item)}
-                />
-              ))
-            ) : (
-              <EmptyState
-                title="Нет сохраненных мер"
-                description="Нажимайте на значок закладки на любой карточке, чтобы сохранить меру в этот раздел и сформировать чеклист документов."
-                onResetFilters={() => setCurrentTab('catalog')}
-              />
-            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {measures
+                .filter((m) => m.category === 'grants' || m.category === 'finance')
+                .map((m) => (
+                  <MeasureCard
+                    key={m.id}
+                    measure={m}
+                    isSaved={savedIds.includes(m.id)}
+                    onToggleSave={handleToggleSave}
+                    onOpenDetail={(item) => setSelectedMeasure(item)}
+                  />
+                ))}
+            </div>
           </div>
         )}
 
-        {/* --- TAB: CHECKLIST --- */}
-        {currentTab === 'checklist' && (
-          <ChecklistView
+        {/* --- TAB: ОБУЧЕНИЕ --- */}
+        {currentTab === 'education' && (
+          <EducationView
+            userName={userName}
             savedMeasures={savedMeasures}
             progress={checklistProgress}
             onToggleItem={handleToggleChecklistItem}
-            onRemoveMeasure={handleToggleSave}
-            onOpenCatalog={() => setCurrentTab('catalog')}
-            onOpenDetail={(m) => setSelectedMeasure(m)}
+            onOpenMeasure={(id) => {
+              const item = measures.find((m) => m.id === id);
+              if (item) setSelectedMeasure(item);
+            }}
           />
         )}
       </main>
 
-      {/* 3. Bottom Navigation Bar */}
+      {/* 3. Bottom Navigation Bar with Center Mascot Button */}
       <BottomNav
         currentTab={currentTab}
         onTabChange={(tab) => setCurrentTab(tab)}
         savedCount={savedIds.length}
       />
 
-      {/* 4. Modals and Overlays */}
-      {/* Story Player Modal */}
+      {/* 4. Modals */}
+      {/* Stories Modal */}
       {activeStory && (
         <StoryModal
           story={activeStory}
@@ -513,11 +439,11 @@ export function App() {
           isSaved={savedIds.includes(selectedMeasure.id)}
           onToggleSave={handleToggleSave}
           onClose={() => setSelectedMeasure(null)}
-          onOpenChecklist={() => setCurrentTab('checklist')}
+          onOpenChecklist={() => setCurrentTab('education')}
         />
       )}
 
-      {/* Onboarding Wizard Modal */}
+      {/* Onboarding Modal */}
       {showOnboarding && (
         <OnboardingModal
           initialProfile={profile}
@@ -538,4 +464,5 @@ export function App() {
     </div>
   );
 }
+
 export default App;

@@ -1,7 +1,8 @@
 import React from 'react';
-import { MapPin, Search, ChevronDown, Sparkles } from 'lucide-react';
+import { Search, ChevronDown } from 'lucide-react';
 import type { Region } from '../../types/api';
 import { triggerHaptic } from '../../lib/maxBridge';
+import { MascotAvatarIcon } from '../illustrations/MascotProps';
 
 interface HeaderProps {
   userName: string;
@@ -14,7 +15,7 @@ interface HeaderProps {
 const REGION_LABELS: Record<Region, string> = {
   kazan: 'Казань',
   moscow: 'Москва',
-  spb: 'Санкт-Петербург',
+  spb: 'СПб',
 };
 
 export const Header: React.FC<HeaderProps> = ({
@@ -34,19 +35,19 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header style={{
-      padding: 'max(16px, env(safe-area-inset-top)) 16px 12px 16px',
+      padding: 'max(14px, env(safe-area-inset-top)) 16px 10px 16px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
       position: 'sticky',
       top: 0,
       zIndex: 40,
-      background: 'rgba(18, 13, 29, 0.82)',
-      backdropFilter: 'blur(20px)',
-      borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+      background: 'rgba(13, 9, 20, 0.92)',
+      backdropFilter: 'blur(24px)',
+      borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
     }}>
-      {/* Left: User Profile badge (Click to edit onboarding/profile) */}
-      <div 
+      {/* Left: ЛК Profile Button (Avatar + Name) */}
+      <div
         onClick={() => {
           triggerHaptic('light');
           onOpenOnboarding();
@@ -57,49 +58,44 @@ export const Header: React.FC<HeaderProps> = ({
           gap: 10,
           cursor: 'pointer',
         }}
-        title="Настройки профиля"
+        title="Личный кабинет и настройки"
       >
         <div style={{
-          width: 38,
-          height: 38,
+          width: 36,
+          height: 36,
           borderRadius: '50%',
-          background: 'linear-gradient(135deg, #7045c6, #ffd21e)',
+          background: 'linear-gradient(135deg, #7045C6, #3B82F6)',
           padding: 2,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 4px 12px rgba(112, 69, 198, 0.35)',
+          boxShadow: '0 2px 10px rgba(112, 69, 198, 0.4)',
         }}>
           <div style={{
             width: '100%',
             height: '100%',
             borderRadius: '50%',
-            background: '#1c132f',
+            background: '#120D1D',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontWeight: 800,
-            fontSize: 14,
-            color: '#ffd21e',
           }}>
-            {userName.charAt(0).toUpperCase()}
+            <MascotAvatarIcon size={24} />
           </div>
         </div>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>
-              {userName}
-            </span>
-            <Sparkles size={12} color="#ffd21e" />
-          </div>
-          <span style={{ fontSize: 11, color: '#a295c5', display: 'block' }}>
-            Настройки бизнеса
-          </span>
-        </div>
+
+        <span style={{
+          fontWeight: 800,
+          fontSize: 17,
+          color: '#FFFFFF',
+          letterSpacing: '-0.02em',
+        }}>
+          {userName}
+        </span>
       </div>
 
-      {/* Right: Search & Geo selector */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {/* Right: Search + Geo Selector */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         {onOpenSearch && (
           <button
             type="button"
@@ -109,19 +105,15 @@ export const Header: React.FC<HeaderProps> = ({
             }}
             aria-label="Поиск"
             style={{
-              width: 36,
-              height: 36,
-              borderRadius: '50%',
-              background: 'rgba(255, 255, 255, 0.07)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              color: '#e2dcf3',
+              color: '#FFFFFF',
+              padding: 4,
             }}
           >
-            <Search size={16} />
+            <Search size={20} strokeWidth={2.2} />
           </button>
         )}
 
-        {/* Geo Selector Pill */}
+        {/* Geo Selector */}
         <div style={{ position: 'relative' }}>
           <button
             type="button"
@@ -130,21 +122,17 @@ export const Header: React.FC<HeaderProps> = ({
               setShowGeoMenu(!showGeoMenu);
             }}
             style={{
-              padding: '6px 12px',
-              borderRadius: 20,
-              background: 'rgba(112, 69, 198, 0.22)',
-              border: '1px solid rgba(112, 69, 198, 0.45)',
-              color: '#ffd21e',
-              fontWeight: 700,
-              fontSize: 13,
+              color: '#FFFFFF',
+              fontWeight: 600,
+              fontSize: 15,
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
+              gap: 4,
+              padding: '4px 6px',
             }}
           >
-            <MapPin size={13} color="#ffd21e" />
             <span>{REGION_LABELS[selectedRegion]}</span>
-            <ChevronDown size={14} style={{ transform: showGeoMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+            <ChevronDown size={14} style={{ transform: showGeoMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', opacity: 0.7 }} />
           </button>
 
           {/* Geo Dropdown */}
@@ -153,11 +141,11 @@ export const Header: React.FC<HeaderProps> = ({
               position: 'absolute',
               top: 'calc(100% + 8px)',
               right: 0,
-              width: 170,
-              background: '#24173e',
+              width: 150,
+              background: '#1F1436',
               border: '1px solid rgba(255, 255, 255, 0.15)',
               borderRadius: 14,
-              boxShadow: '0 12px 30px rgba(0, 0, 0, 0.6)',
+              boxShadow: '0 12px 30px rgba(0, 0, 0, 0.7)',
               padding: 6,
               zIndex: 50,
               backdropFilter: 'blur(24px)',
@@ -175,7 +163,7 @@ export const Header: React.FC<HeaderProps> = ({
                     justifyContent: 'flex-start',
                     fontSize: 13,
                     fontWeight: selectedRegion === r ? 700 : 500,
-                    color: selectedRegion === r ? '#ffd21e' : '#e2dcf3',
+                    color: selectedRegion === r ? '#FFD21E' : '#E2DCF3',
                     background: selectedRegion === r ? 'rgba(112, 69, 198, 0.35)' : 'transparent',
                   }}
                 >

@@ -1,8 +1,9 @@
 import React from 'react';
-import { Home, Compass, Bookmark, CheckSquare, Bot } from 'lucide-react';
+import { Home, LayoutGrid, Award, FileText } from 'lucide-react';
 import { triggerHaptic } from '../../lib/maxBridge';
+import { MascotAvatarIcon } from '../illustrations/MascotProps';
 
-export type TabId = 'home' | 'catalog' | 'mascot' | 'grants' | 'checklist';
+export type TabId = 'home' | 'catalog' | 'mascot' | 'grants' | 'education';
 
 interface BottomNavProps {
   currentTab: TabId;
@@ -26,17 +27,17 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       bottom: 0,
       left: 0,
       right: 0,
-      zIndex: 45,
-      background: 'rgba(18, 13, 29, 0.92)',
-      backdropFilter: 'blur(24px)',
+      zIndex: 50,
+      background: 'rgba(14, 9, 24, 0.96)',
+      backdropFilter: 'blur(30px)',
       borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-      paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
+      paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
       paddingTop: 8,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-around',
     }}>
-      {/* 1. Главная */}
+      {/* 1. главная */}
       <button
         type="button"
         onClick={() => handleTabClick('home')}
@@ -44,18 +45,18 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 3,
-          color: currentTab === 'home' ? '#ffd21e' : '#a295c5',
-          minWidth: 54,
+          gap: 4,
+          color: currentTab === 'home' ? '#3B82F6' : '#8B80A6',
+          minWidth: 56,
         }}
       >
-        <Home size={21} strokeWidth={currentTab === 'home' ? 2.5 : 1.8} />
+        <Home size={22} color={currentTab === 'home' ? '#3B82F6' : '#8B80A6'} />
         <span style={{ fontSize: 10, fontWeight: currentTab === 'home' ? 700 : 500 }}>
-          Главная
+          главная
         </span>
       </button>
 
-      {/* 2. Каталог / Сервисы */}
+      {/* 2. сервисы */}
       <button
         type="button"
         onClick={() => handleTabClick('catalog')}
@@ -63,46 +64,55 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 3,
-          color: currentTab === 'catalog' ? '#ffd21e' : '#a295c5',
-          minWidth: 54,
+          gap: 4,
+          color: currentTab === 'catalog' ? '#3B82F6' : '#8B80A6',
+          minWidth: 56,
         }}
       >
-        <Compass size={21} strokeWidth={currentTab === 'catalog' ? 2.5 : 1.8} />
+        <LayoutGrid size={22} color={currentTab === 'catalog' ? '#3B82F6' : '#8B80A6'} />
         <span style={{ fontSize: 10, fontWeight: currentTab === 'catalog' ? 700 : 500 }}>
-          Каталог
+          сервисы
         </span>
       </button>
 
-      {/* 3. Центральная кнопка: Кот-Маскот / Ассистент */}
+      {/* 3. Center Mascot Button */}
       <div style={{ position: 'relative', top: -14 }}>
         <button
           type="button"
           onClick={() => handleTabClick('mascot')}
-          aria-label="Ассистент Кот-Навигатор"
+          aria-label="Маскот-Ассистент"
           style={{
-            width: 54,
-            height: 54,
+            width: 58,
+            height: 58,
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #7045c6 0%, #24173e 70%, #ffd21e 100%)',
-            border: currentTab === 'mascot' ? '2px solid #ffd21e' : '2px solid rgba(255, 255, 255, 0.25)',
+            background: 'linear-gradient(135deg, #7045C6 0%, #24173E 70%, #FFD21E 100%)',
+            border: currentTab === 'mascot' ? '2.5px solid #FFD21E' : '2px solid rgba(255, 255, 255, 0.25)',
             boxShadow: currentTab === 'mascot'
-              ? '0 0 20px rgba(255, 210, 30, 0.5), 0 8px 24px rgba(0,0,0,0.6)'
-              : '0 8px 24px rgba(112, 69, 198, 0.4), 0 4px 12px rgba(0,0,0,0.5)',
-            color: '#fff',
+              ? '0 0 24px rgba(255, 210, 30, 0.6), 0 8px 24px rgba(0,0,0,0.6)'
+              : '0 8px 24px rgba(112, 69, 198, 0.5), 0 4px 12px rgba(0,0,0,0.5)',
             display: 'flex',
-            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            transform: currentTab === 'mascot' ? 'scale(1.08)' : 'scale(1)',
+            transform: currentTab === 'mascot' ? 'scale(1.1)' : 'scale(1)',
             transition: 'all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+            padding: 2,
           }}
         >
-          <Bot size={26} color={currentTab === 'mascot' ? '#ffd21e' : '#fff'} />
+          <div style={{
+            width: '100%',
+            height: '100%',
+            borderRadius: '50%',
+            background: '#130A24',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <MascotAvatarIcon size={38} />
+          </div>
         </button>
       </div>
 
-      {/* 4. Гранты / Избранное */}
+      {/* 4. гранты */}
       <button
         type="button"
         onClick={() => handleTabClick('grants')}
@@ -110,25 +120,25 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 3,
-          color: currentTab === 'grants' ? '#ffd21e' : '#a295c5',
-          minWidth: 54,
+          gap: 4,
+          color: currentTab === 'grants' ? '#3B82F6' : '#8B80A6',
+          minWidth: 56,
           position: 'relative',
         }}
       >
         <div style={{ position: 'relative' }}>
-          <Bookmark size={21} strokeWidth={currentTab === 'grants' ? 2.5 : 1.8} />
+          <Award size={22} color={currentTab === 'grants' ? '#3B82F6' : '#8B80A6'} />
           {savedCount > 0 && (
             <span style={{
               position: 'absolute',
-              top: -4,
+              top: -3,
               right: -8,
-              background: '#ffd21e',
-              color: '#120d1d',
+              background: '#FFD21E',
+              color: '#120D1D',
               fontSize: 9,
               fontWeight: 800,
-              width: 15,
-              height: 15,
+              width: 14,
+              height: 14,
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
@@ -139,26 +149,26 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           )}
         </div>
         <span style={{ fontSize: 10, fontWeight: currentTab === 'grants' ? 700 : 500 }}>
-          Гранты
+          гранты
         </span>
       </button>
 
-      {/* 5. Чеклист */}
+      {/* 5. обучение */}
       <button
         type="button"
-        onClick={() => handleTabClick('checklist')}
+        onClick={() => handleTabClick('education')}
         style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 3,
-          color: currentTab === 'checklist' ? '#ffd21e' : '#a295c5',
-          minWidth: 54,
+          gap: 4,
+          color: currentTab === 'education' ? '#3B82F6' : '#8B80A6',
+          minWidth: 56,
         }}
       >
-        <CheckSquare size={21} strokeWidth={currentTab === 'checklist' ? 2.5 : 1.8} />
-        <span style={{ fontSize: 10, fontWeight: currentTab === 'checklist' ? 700 : 500 }}>
-          Чеклист
+        <FileText size={22} color={currentTab === 'education' ? '#3B82F6' : '#8B80A6'} />
+        <span style={{ fontSize: 10, fontWeight: currentTab === 'education' ? 700 : 500 }}>
+          обучение
         </span>
       </button>
     </nav>

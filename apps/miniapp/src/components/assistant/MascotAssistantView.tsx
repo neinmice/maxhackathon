@@ -1,359 +1,180 @@
 import React, { useState } from 'react';
-import { Bot, Sparkles, Send, Award, HelpCircle, ArrowRight, CheckCircle2, RotateCcw } from 'lucide-react';
+import { Mic, ArrowRight, Award, RotateCcw, Send } from 'lucide-react';
 import { triggerHaptic } from '../../lib/maxBridge';
+import { MascotDoorIllustration, MascotAvatarIcon } from '../illustrations/MascotProps';
 import { saveCertificate, loadCertificates, type StoredCertificate } from '../../lib/storage';
 
 interface MascotAssistantViewProps {
   userName: string;
   onOpenMeasure: (id: string) => void;
   onOpenCatalog: () => void;
+  onOpenEducation: () => void;
 }
 
 interface ChatMessage {
   id: string;
   sender: 'mascot' | 'user';
   text: string;
-  chips?: { label: string; action: string }[];
-  targetMeasureId?: string;
   timestamp: string;
 }
 
-const INITIAL_MESSAGES: ChatMessage[] = [
-  {
-    id: 'm1',
-    sender: 'mascot',
-    text: 'Привет! Я виртуальный Кот-Навигатор ZVERY. Помогу разобраться в мерах господдержки, налогах и получении субсидий в Казани, Москве и Санкт-Петербурге.',
-    timestamp: '12:00',
-    chips: [
-      { label: 'Как получить 500 000 ₽ на бизнес?', action: 'ask_grant' },
-      { label: 'С чего начать свое дело?', action: 'ask_start' },
-      { label: 'Лайфхаки по налогам 2026', action: 'ask_tax' },
-      { label: 'Пройти квиз на сертификат', action: 'start_quiz' },
-    ],
-  },
-];
-
-const QUIZ_QUESTIONS = [
-  {
-    q: 'До какого возраста можно получить грант молодому предпринимателю (до 500 000 ₽)?',
-    options: ['До 21 года', 'До 25 лет включительно', 'До 35 лет'],
-    correct: 1,
-    explanation: 'По правилам Минэкономразвития, гранты предоставляются гражданам РФ от 14 до 25 лет включительно.',
-  },
-  {
-    q: 'Какая ставка налога действует для самозанятых при получении оплаты от физических лиц?',
-    options: ['4%', '6%', '13%'],
-    correct: 0,
-    explanation: 'Налог на профессиональный доход (НПД) составляет 4% при расчетах с физлицами и 6% — с юрлицами.',
-  },
-  {
-    q: 'Нужно ли самозанятым сдавать налоговые декларации?',
-    options: ['Да, раз в год', 'Нет, учет ведется автоматически в приложении', 'Да, ежеквартально'],
-    correct: 1,
-    explanation: 'Самозанятые освобождены от сдачи деклараций — все чеки и налог формируются автоматически в «Мой налог».',
-  },
+const DEFAULT_CHIPS = [
+  'Гайд по налогам 2026',
+  'Кто ты такой ?',
+  'Что ты умеешь ?',
+  'Где пройти обучение ?',
+  'Как получить 300.000 руб. на бизнес ?',
 ];
 
 export const MascotAssistantView: React.FC<MascotAssistantViewProps> = ({
   userName,
   onOpenMeasure,
   onOpenCatalog,
+  onOpenEducation,
 }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
-  const [inQuiz, setInQuiz] = useState(false);
-  const [quizStep, setQuizStep] = useState(0);
+  // If messages length > 0, we show the active chat dialogue!
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [inputText, setInputText] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const [showQuiz, setShowQuiz] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
-  const [quizFinished, setQuizFinished] = useState(false);
-  const [certificate, setCertificate] = useState<StoredCertificate | null>(() => {
-    const certs = loadCertificates();
-    return certs.length > 0 ? certs[0] : null;
-  });
+  const [certificate, setCertificate] = useState<StoredCertificate | null>(null);
 
-  const appendUserMessage = (text: string) => {
-    const newMsg: ChatMessage = {
+  const handleChipClick = (chipText: string) => {
+    triggerHaptic('medium');
+
+    const userMsg: ChatMessage = {
       id: `u_${Date.now()}`,
       sender: 'user',
-      text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      text: chipText,
+      timestamp: '12:23',
     };
-    setMessages((prev) => [...prev, newMsg]);
-  };
 
-  const appendMascotMessage = (text: string, chips?: { label: string; action: string }[], targetMeasureId?: string) => {
-    const newMsg: ChatMessage = {
-      id: `m_${Date.now()}`,
-      sender: 'mascot',
-      text,
-      chips,
-      targetMeasureId,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-    setMessages((prev) => [...prev, newMsg]);
-  };
-
-  const handleChipClick = (action: string, label: string) => {
-    triggerHaptic('light');
-    appendUserMessage(label);
-
-    setTimeout(() => {
-      if (action === 'ask_grant') {
-        appendMascotMessage(
-          'Для получения гранта до 500 000 ₽ необходимо:\n— Быть в возрасте от 14 до 25 лет включительно\n— Не иметь задолженностей по налогам свыше 3000 ₽\n— Пройти бесплатное обучение в центре «Мой бизнес» (курс «Азбука предпринимателя»)\n— Обеспечить софинансирование от 25% расходов проекта.',
-          [
-            { label: 'Открыть карточку гранта', action: 'open_demo_grant' },
-            { label: 'Пройти экспресс-квиз', action: 'start_quiz' },
-          ],
-          'demo-kazan-support-001',
-        );
-      } else if (action === 'open_demo_grant') {
-        onOpenMeasure('demo-kazan-support-001');
-      } else if (action === 'ask_start') {
-        appendMascotMessage(
-          'Пошаговый старт без лишних затрат:\n1. Определите формат: если работаете один — выбирайте Самозанятость (НПД) без страховых взносов.\n2. Если планируете нанимать людей или продавать товары оптом — регистрируйте ИП на УСН «Доходы» 6%.\n3. Подайте заявку на бесплатное рабочее место в ИТ-парке или инкубаторе.',
-          [
-            { label: 'Посмотреть каталог мер', action: 'go_catalog' },
-            { label: 'Сдать тест на знание мер', action: 'start_quiz' },
-          ],
-        );
-      } else if (action === 'go_catalog') {
-        onOpenCatalog();
-      } else if (action === 'ask_tax') {
-        appendMascotMessage(
-          'Лайфхак 2026: совмещение самозанятости и грантов. Молодой предприниматель может зарегистрироваться как ИП на НПД — тогда он имеет право на получение гранта до 500 000 ₽ и при этом не платит обязательные фиксированные страховые взносы (экономия около 50 000 ₽ в год)!',
-          [
-            { label: 'Пройти квиз на сертификат', action: 'start_quiz' },
-            { label: 'В каталог мер', action: 'go_catalog' },
-          ],
-        );
-      } else if (action === 'start_quiz') {
-        setInQuiz(true);
-        setQuizStep(0);
-        setQuizScore(0);
-        setQuizFinished(false);
-      }
-    }, 300);
-  };
-
-  const handleQuizAnswer = (optionIdx: number) => {
-    triggerHaptic('medium');
-    const isCorrect = optionIdx === QUIZ_QUESTIONS[quizStep].correct;
-    const nextScore = isCorrect ? quizScore + 1 : quizScore;
-    setQuizScore(nextScore);
-
-    if (quizStep < QUIZ_QUESTIONS.length - 1) {
-      setQuizStep((s) => s + 1);
+    let replyText = '';
+    if (chipText.includes('300.000') || chipText.includes('грант')) {
+      replyText = `Привет, для получения гранта на 300.000 руб. необходимо:\n— Не иметь долгов перед государством\n— Пройти обучение в центре "Мой бизнес" (Который в Казани находится по адресу Ул. Петербургская, д. 28)\n— Защитить бизнес-проект\n— Внести минимум 30% от начальных затрат в проект\n\nКстати, записаться на интенсив ты можешь в разделе "обучение" -> "Азы бизнеса"`;
+    } else if (chipText.includes('налогам')) {
+      replyText = `По налогам в 2026 году действует золотое правило:\n— Если работаешь один — оформляй Самозанятость (НПД). Ставка 4-6%, 0 взносов и деклараций.\n— Если нанимаешь персонал или продаешь товары оптом — выбирай ИП на УСН "Доходы" 6%.\n\nПодробные условия и калькуляторы ждут тебя в разделе "сервисы".`;
+    } else if (chipText.includes('Кто ты такой')) {
+      replyText = `Я официальный виртуальный помощник Кот-Навигатор ZVERY! Помогаю молодым предпринимателям и самозанятым находить реальные гранты, субсидии и бесплатные программы в Казани, Москве и Санкт-Петербурге.`;
+    } else if (chipText.includes('Что ты умеешь')) {
+      replyText = `Я умею:\n1. Подбирать гранты и субсидии под твой налоговый режим и регион\n2. Формировать чеклист сбора документов\n3. Направлять на бесплатные акселераторы в ИТ-парке\n4. Проводить квизы и выдавать памятный сертификат!`;
+    } else if (chipText.includes('обучение')) {
+      replyText = `Бесплатное обучение для молодых предпринимателей доступно в центрах "Мой бизнес" (курс "Азбука предпринимателя") и в образовательных треках ИТ-парка им. Башира Рамеева.\n\nЗагляни в раздел "обучение", чтобы увидеть открытые наборы!`;
     } else {
-      // Quiz Finished!
-      setQuizFinished(true);
-      const newCert: StoredCertificate = {
-        id: `ZVERY-NAV-${Math.floor(100000 + Math.random() * 900000)}`,
-        userName: userName || 'Предприниматель MAX',
-        date: new Date().toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' }),
-        score: `${nextScore} из ${QUIZ_QUESTIONS.length}`,
-        title: 'Успешное прохождение квиза «Навигатор господдержки МСП»',
-      };
-      saveCertificate(newCert);
-      setCertificate(newCert);
+      replyText = `Отличный вопрос! Я проверил базу данных мер поддержки. Рекомендую изучить раздел "сервисы" или пройти экспресс-тест в разделе "обучение".`;
+    }
+
+    const mascotMsg: ChatMessage = {
+      id: `m_${Date.now() + 1}`,
+      sender: 'mascot',
+      text: replyText,
+      timestamp: '12:23',
+    };
+
+    setMessages([userMsg, mascotMsg]);
+  };
+
+  const handleSend = () => {
+    if (!inputText.trim()) return;
+    handleChipClick(inputText);
+    setInputText('');
+  };
+
+  const handleMicClick = () => {
+    triggerHaptic('heavy');
+    setIsRecording(!isRecording);
+    if (!isRecording) {
+      setTimeout(() => {
+        setIsRecording(false);
+        setInputText('Как получить грант для молодых предпринимателей?');
+      }, 1500);
     }
   };
 
   return (
-    <div style={{ padding: '16px 16px 90px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* Mascot Card Banner */}
-      <div className="liquid-card" style={{
-        padding: '20px 18px',
-        background: 'linear-gradient(135deg, rgba(73, 31, 155, 0.5) 0%, rgba(26, 13, 54, 0.9) 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 16,
-      }}>
-        <div style={{
-          width: 58,
-          height: 58,
-          borderRadius: '50%',
-          background: 'linear-gradient(135deg, #7045c6, #ffd21e)',
-          padding: 2.5,
-          flexShrink: 0,
-          boxShadow: '0 0 20px rgba(255, 210, 30, 0.4)',
-        }}>
-          <div style={{
-            width: '100%',
-            height: '100%',
-            borderRadius: '50%',
-            background: '#120d1d',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#ffd21e',
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      minHeight: 'calc(100dvh - 140px)',
+      padding: '10px 16px 85px 16px',
+      justifyContent: 'space-between',
+    }}>
+      {/* Top Content: either Prompt Screen or Chat Dialogue */}
+      {messages.length === 0 ? (
+        /* SCREEN 2: Mascot Peeking from Door + Prompt Chips */
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', paddingTop: 10 }}>
+          {/* Mascot Door Illustration */}
+          <MascotDoorIllustration />
+
+          {/* Title from Mockup */}
+          <h1 style={{
+            fontSize: 22,
+            fontWeight: 800,
+            color: '#FFFFFF',
+            margin: '18px 0 20px 0',
+            maxWidth: 300,
+            lineHeight: 1.25,
+            letterSpacing: '-0.02em',
           }}>
-            <Bot size={30} />
+            Я твой помощник по <br />
+            <span style={{ color: '#C4B5FD' }}>«Бизнес-Навигатору»</span>
+          </h1>
+
+          {/* Chips matching Canva reference */}
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            gap: 10,
+            maxWidth: 360,
+          }}>
+            {DEFAULT_CHIPS.map((chip, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleChipClick(chip)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 20,
+                  background: 'rgba(29, 20, 48, 0.85)',
+                  border: '1.5px solid rgba(139, 92, 246, 0.45)',
+                  color: '#FFFFFF',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+                  backdropFilter: 'blur(16px)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                {chip}
+              </button>
+            ))}
           </div>
         </div>
-
-        <div>
-          <h2 style={{ fontSize: 18, fontWeight: 800, color: '#fff', lineHeight: 1.25, marginBottom: 4 }}>
-            Я твой помощник по «Бизнес-Навигатору»
-          </h2>
-          <p style={{ fontSize: 12, color: '#e2dcf3' }}>
-            Детерминированная база знаний и квиз с выдачей памятного сертификата
-          </p>
-        </div>
-      </div>
-
-      {/* QUIZ MODE */}
-      {inQuiz ? (
-        <div className="liquid-card" style={{ padding: 20 }}>
-          {!quizFinished ? (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <span className="badge badge-yellow">
-                  Вопрос {quizStep + 1} из {QUIZ_QUESTIONS.length}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setInQuiz(false)}
-                  style={{ fontSize: 12, color: '#a295c5' }}
-                >
-                  Выйти из квиза
-                </button>
-              </div>
-
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 16, lineHeight: 1.4 }}>
-                {QUIZ_QUESTIONS[quizStep].q}
-              </h3>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {QUIZ_QUESTIONS[quizStep].options.map((opt, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleQuizAnswer(idx)}
-                    className="liquid-card liquid-card-interactive"
-                    style={{
-                      padding: '12px 16px',
-                      textAlign: 'left',
-                      justifyContent: 'flex-start',
-                      fontSize: 14,
-                      color: '#fff',
-                      background: 'rgba(255, 255, 255, 0.05)',
-                    }}
-                  >
-                    <span>{opt}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            /* Quiz Completed -> Certificate view */
-            <div>
-              <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                <div style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: '50%',
-                  background: 'rgba(255, 210, 30, 0.2)',
-                  color: '#ffd21e',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 10,
-                }}>
-                  <Award size={28} />
-                </div>
-                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 4 }}>
-                  Тест успешно пройден!
-                </h3>
-                <p style={{ fontSize: 13, color: '#a295c5' }}>
-                  Ваш результат: {quizScore} из {QUIZ_QUESTIONS.length} правильных ответов
-                </p>
-              </div>
-
-              {/* MEMORABLE CERTIFICATE ACCORDING TO SPECS */}
-              {certificate && (
-                <div style={{
-                  border: '2px solid rgba(255, 210, 30, 0.5)',
-                  borderRadius: 16,
-                  padding: '20px 16px',
-                  background: 'linear-gradient(135deg, rgba(44, 27, 77, 0.8) 0%, rgba(18, 13, 29, 0.95) 100%)',
-                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
-                  marginBottom: 16,
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}>
-                  {/* Decorative emblem */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: '#ffd21e', letterSpacing: '0.1em' }}>
-                      MAX MINI APP · ZVERY
-                    </span>
-                    <span style={{ fontSize: 10, color: '#a295c5' }}>
-                      № {certificate.id}
-                    </span>
-                  </div>
-
-                  <h4 style={{
-                    fontSize: 15,
-                    fontWeight: 800,
-                    color: '#fff',
-                    textAlign: 'center',
-                    marginBottom: 12,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
-                    lineHeight: 1.3,
-                  }}>
-                    ПАМЯТНЫЙ СЕРТИФИКАТ ЗА ПРОХОЖДЕНИЕ КВИЗА*
-                  </h4>
-
-                  <p style={{ fontSize: 12, color: '#e2dcf3', textAlign: 'center', marginBottom: 4 }}>
-                    Настоящим подтверждается, что пользователь
-                  </p>
-                  <p style={{ fontSize: 16, fontWeight: 800, color: '#ffd21e', textAlign: 'center', marginBottom: 12 }}>
-                    {certificate.userName}
-                  </p>
-
-                  <p style={{ fontSize: 12, color: '#a295c5', textAlign: 'center', marginBottom: 16 }}>
-                    успешно прошёл тестирование на знание мер государственной поддержки МСП и налоговых режимов РФ.
-                  </p>
-
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: 11,
-                    color: '#e2dcf3',
-                    borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-                    paddingTop: 10,
-                  }}>
-                    <span>Дата выдачи: {certificate.date}</span>
-                    <span>Результат: {certificate.score}</span>
-                  </div>
-
-                  {/* Mandatory 7-8pt legal disclaimer footnote */}
-                  <p style={{
-                    fontSize: 9,
-                    color: '#8b80a6',
-                    marginTop: 14,
-                    lineHeight: 1.35,
-                    borderTop: '1px dashed rgba(255, 255, 255, 0.1)',
-                    paddingTop: 8,
-                  }}>
-                    *Сертификат носит исключительно информационно-поощрительный характер за прохождение игрового теста в Mini App и не является документом государственного образца об образовании или квалификации.
-                  </p>
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setInQuiz(false)}
-                className="btn-primary"
-                style={{ width: '100%', padding: 12 }}
-              >
-                <span>Вернуться в диалог</span>
-              </button>
-            </div>
-          )}
-        </div>
       ) : (
-        /* CHAT MODE */
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        /* SCREEN 3: Active Chat Dialogue */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 10 }}>
+          {/* Reset chat button */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              onClick={() => setMessages([])}
+              style={{
+                fontSize: 12,
+                color: '#A295C5',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '4px 8px',
+              }}
+            >
+              <RotateCcw size={13} />
+              <span>Новый вопрос</span>
+            </button>
+          </div>
+
           {messages.map((msg) => (
             <div
               key={msg.id}
@@ -365,54 +186,139 @@ export const MascotAssistantView: React.FC<MascotAssistantViewProps> = ({
             >
               <div
                 style={{
-                  maxWidth: '88%',
-                  padding: '12px 16px',
-                  borderRadius: 18,
-                  borderBottomLeftRadius: msg.sender === 'mascot' ? 4 : 18,
-                  borderBottomRightRadius: msg.sender === 'user' ? 4 : 18,
+                  maxWidth: '86%',
+                  padding: '14px 18px',
+                  borderRadius: 22,
+                  borderBottomRightRadius: msg.sender === 'user' ? 4 : 22,
+                  borderBottomLeftRadius: msg.sender === 'mascot' ? 4 : 22,
                   background: msg.sender === 'user'
-                    ? 'linear-gradient(135deg, #7045c6, #5b2bb8)'
-                    : 'rgba(36, 23, 62, 0.9)',
-                  border: msg.sender === 'mascot' ? '1px solid rgba(255, 255, 255, 0.12)' : 'none',
-                  color: '#fff',
+                    ? '#5B2BB8'
+                    : 'rgba(26, 17, 44, 0.95)',
+                  border: msg.sender === 'mascot' ? '1.5px solid rgba(255, 255, 255, 0.12)' : 'none',
+                  color: '#FFFFFF',
                   fontSize: 14,
                   lineHeight: 1.45,
                   whiteSpace: 'pre-line',
-                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.3)',
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
                 }}
               >
                 {msg.text}
               </div>
-              <span style={{ fontSize: 10, color: '#a295c5', marginTop: 4, marginInline: 6 }}>
-                {msg.timestamp}
-              </span>
 
-              {/* Chips suggestions */}
-              {msg.chips && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10, maxWidth: '100%' }}>
-                  {msg.chips.map((chip, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => handleChipClick(chip.action, chip.label)}
-                      className="badge badge-yellow"
-                      style={{
-                        padding: '8px 12px',
-                        fontSize: 12,
-                        textTransform: 'none',
-                        cursor: 'pointer',
-                        borderRadius: 14,
-                      }}
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
-                </div>
-              )}
+              {/* Timestamp & Mascot Avatar */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                marginTop: 4,
+                marginInline: 8,
+              }}>
+                {msg.sender === 'mascot' && <MascotAvatarIcon size={16} />}
+                <span style={{ fontSize: 11, color: '#8B80A6' }}>{msg.timestamp}</span>
+              </div>
             </div>
           ))}
+
+          {/* Quick link button to Education */}
+          <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+            <button
+              type="button"
+              onClick={() => onOpenEducation()}
+              className="btn-primary"
+              style={{ flex: 1, padding: 12, fontSize: 13 }}
+            >
+              <span>Записаться на обучение</span>
+              <ArrowRight size={15} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpenMeasure('demo-kazan-support-001')}
+              className="btn-secondary"
+              style={{ padding: '12px 14px', fontSize: 13 }}
+            >
+              <span>Карточка гранта</span>
+            </button>
+          </div>
         </div>
       )}
+
+      {/* Bottom Input Field with Microphone (From Mockup) */}
+      <div style={{
+        marginTop: 20,
+        position: 'sticky',
+        bottom: 74,
+        zIndex: 30,
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          background: 'rgba(26, 17, 44, 0.92)',
+          border: '1.5px solid rgba(139, 92, 246, 0.35)',
+          borderRadius: 24,
+          padding: '8px 12px 8px 18px',
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.6)',
+          backdropFilter: 'blur(20px)',
+        }}>
+          <input
+            type="text"
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSend();
+            }}
+            placeholder="Как получить грант для молодых предп...."
+            style={{
+              flex: 1,
+              background: 'none',
+              border: 'none',
+              outline: 'none',
+              color: '#FFFFFF',
+              fontSize: 14,
+              fontFamily: 'inherit',
+            }}
+          />
+
+          {inputText.trim() ? (
+            <button
+              type="button"
+              onClick={handleSend}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                background: '#FFD21E',
+                color: '#120D1D',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Send size={16} />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleMicClick}
+              title="Голосовой ввод"
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                background: isRecording ? '#EF4444' : 'rgba(255, 255, 255, 0.08)',
+                color: isRecording ? '#FFFFFF' : '#E2DCF3',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: isRecording ? '0 0 12px #EF4444' : 'none',
+                transition: 'all 0.2s',
+              }}
+            >
+              <Mic size={18} />
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

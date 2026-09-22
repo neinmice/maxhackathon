@@ -1,64 +1,57 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Zap, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { triggerHaptic } from '../../lib/maxBridge';
+import { SquiggleDecorations } from '../illustrations/MascotProps';
 
 interface FactItem {
   id: string;
   stat: string;
   text: string;
   tag: string;
-  ctaText?: string;
-  action?: 'onboarding' | 'catalog' | 'quiz';
 }
 
 const FACTS: FactItem[] = [
   {
     id: 'f1',
     stat: '90%',
-    text: 'боятся начать бизнес из-за страха неизвестности и налоговой отчетности.',
+    text: 'Боятся начать из за страха незнания.',
     tag: 'Аналитика МСП',
-    ctaText: 'Пройти гид новичка',
-    action: 'onboarding',
   },
   {
     id: 'f2',
-    stat: '500 000 ₽',
-    text: 'безвозмездный грант молодым предпринимателям до 25 лет на развитие проекта.',
-    tag: 'Господдержка 2026',
-    ctaText: 'Смотреть гранты',
-    action: 'catalog',
+    stat: '500.000 ₽',
+    text: 'Безвозмездный грант молодым предпринимателям до 25 лет.',
+    tag: 'Господдержка',
   },
   {
     id: 'f3',
     stat: '0 ₽',
-    text: 'расходов на страховые взносы при выборе режима Самозанятости (НПД).',
-    tag: 'Лайфхак по налогам',
-    ctaText: 'Сдать экспресс-тест',
-    action: 'quiz',
+    text: 'Расходов на взносы и бухгалтерию при выборе Самозанятости.',
+    tag: 'Лайфхак',
   },
   {
     id: 'f4',
     stat: '100% субсидия',
-    text: 'на размещение стартапов в ИТ-парке им. Башира Рамеева (Казань) на 6 месяцев.',
-    tag: 'ИТ-инфраструктура',
-    ctaText: 'Узнать подробности',
-    action: 'catalog',
+    text: 'На размещение в ИТ-парке им. Башира Рамеева (Казань).',
+    tag: 'ИТ-парк',
   },
 ];
 
 interface FactTickerProps {
-  onAction: (action: 'onboarding' | 'catalog' | 'quiz') => void;
+  onAction?: (action: string) => void;
 }
 
 export const FactTicker: React.FC<FactTickerProps> = ({ onAction }) => {
   const [index, setIndex] = useState(0);
 
-  const handlePrev = () => {
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
     triggerHaptic('light');
     setIndex((prev) => (prev > 0 ? prev - 1 : FACTS.length - 1));
   };
 
-  const handleNext = () => {
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
     triggerHaptic('light');
     setIndex((prev) => (prev < FACTS.length - 1 ? prev + 1 : 0));
   };
@@ -66,87 +59,96 @@ export const FactTicker: React.FC<FactTickerProps> = ({ onAction }) => {
   const current = FACTS[index];
 
   return (
-    <div style={{ padding: '0 16px', marginBottom: 16 }}>
+    <div style={{ padding: '0 16px', margin: '8px 0 16px 0' }}>
       <div
-        className="liquid-card"
+        onClick={() => {
+          triggerHaptic('light');
+          if (onAction) onAction('open_catalog');
+        }}
+        className="liquid-card liquid-card-interactive"
         style={{
-          padding: '16px 18px',
-          background: 'linear-gradient(135deg, rgba(44, 27, 77, 0.75) 0%, rgba(18, 13, 29, 0.85) 100%)',
-          border: '1px solid rgba(255, 210, 30, 0.25)',
-          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35)',
+          padding: '14px 18px',
+          background: 'linear-gradient(145deg, rgba(29, 18, 48, 0.95) 0%, rgba(16, 10, 28, 0.98) 100%)',
+          border: '1.5px solid rgba(139, 92, 246, 0.35)',
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+          position: 'relative',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6,
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Zap size={14} color="#ffd21e" />
-            <span style={{ fontSize: 11, fontWeight: 800, color: '#ffd21e', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              {current.tag}
-            </span>
-          </div>
+        {/* Yellow lightning top squiggle */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <svg width="34" height="14" viewBox="0 0 34 14" fill="none">
+            <path
+              d="M2 10 L11 3 L18 11 L27 2 L32 7"
+              stroke="#FFD21E"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
 
-          {/* Navigation Arrows */}
-          <div style={{ display: 'flex', gap: 6 }}>
+          {/* Mini arrows controls */}
+          <div style={{ display: 'flex', gap: 4 }}>
             <button
               type="button"
               onClick={handlePrev}
-              aria-label="Предыдущий факт"
+              aria-label="Назад"
               style={{
-                width: 26,
-                height: 26,
+                width: 22,
+                height: 22,
                 borderRadius: '50%',
                 background: 'rgba(255, 255, 255, 0.08)',
                 color: '#e2dcf3',
               }}
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={14} />
             </button>
             <button
               type="button"
               onClick={handleNext}
-              aria-label="Следующий факт"
+              aria-label="Вперед"
               style={{
-                width: 26,
-                height: 26,
+                width: 22,
+                height: 22,
                 borderRadius: '50%',
                 background: 'rgba(255, 255, 255, 0.08)',
                 color: '#e2dcf3',
               }}
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={14} />
             </button>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
-          <span style={{ fontSize: 24, fontWeight: 800, color: '#ffd21e' }}>
-            {current.stat}
-          </span>
-          <span style={{ fontSize: 13, color: '#ffffff', fontWeight: 600, lineHeight: 1.35 }}>
+        {/* Text exactly matching the Canva reference */}
+        <div style={{ textAlign: 'center', padding: '2px 0 6px 0' }}>
+          <h2 style={{
+            fontSize: 16,
+            fontWeight: 800,
+            color: '#FFFFFF',
+            lineHeight: 1.35,
+            letterSpacing: '-0.01em',
+          }}>
+            <span style={{ color: '#FFD21E' }}>{current.stat} </span>
             {current.text}
-          </span>
+          </h2>
         </div>
 
-        {current.ctaText && (
-          <button
-            type="button"
-            onClick={() => {
-              triggerHaptic('light');
-              if (current.action) onAction(current.action);
-            }}
-            style={{
-              paddingTop: 6,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: 12,
-              fontWeight: 700,
-              color: '#ffd21e',
-            }}
-          >
-            <span>{current.ctaText}</span>
-            <ArrowRight size={13} />
-          </button>
-        )}
+        {/* Purple wavy arrow bottom right */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <svg width="44" height="16" viewBox="0 0 44 16" fill="none">
+            <path
+              d="M2 8 Q10 2 18 8 T34 8 L30 4 M34 8 L30 12"
+              stroke="#A78BFA"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
       </div>
     </div>
   );
