@@ -8,16 +8,17 @@
     "build": "tsc -b && vite build"
   },
   "dependencies": {
-    "vite": "latest",
-    "typescript": "latest",
+    "lucide-react": "^1.47.0",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "typescript": "latest",
+    "vite": "latest"
   },
   "devDependencies": {
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "typescript": "latest"
+    "typescript": "latest",
+    "vite": "latest"
   }
 }

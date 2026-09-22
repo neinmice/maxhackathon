@@ -1,0 +1,70 @@
+:root {
+  /* Color Palette: MAX Purple */
+  --max-purple-50: #f5f2ff;
+  --max-purple-100: #ece5ff;
+  --max-purple-200: #d8cdfe;
+  --max-purple-300: #b89ffe;
+  --max-purple-400: #9367fc;
+  --max-purple-500: #7045c6;
+  --max-purple-600: #5b2bb8;
+  --max-purple-700: #491f9b;
+  --max-purple-800: #341571;
+  --max-purple-900: #1a0d36;
+  --max-purple-950: #120d1d;
+
+  /* Color Palette: ZVERY Yellow */
+  --zvery-yellow-300: #fff176;
+  --zvery-yellow-400: #ffe14d;
+  --zvery-yellow-500: #ffd21e;
+  --zvery-yellow-600: #e6b800;
+  --zvery-yellow-700: #b89300;
+
+  /* Neutrals & Text */
+  --text-primary: #ffffff;
+  --text-secondary: #e2dcf3;
+  --text-muted: #a295c5;
+  --text-faint: #6c6187;
+
+  /* Status Colors */
+  --status-success: #10b981;
+  --status-success-bg: rgba(16, 185, 129, 0.15);
+  --status-success-border: rgba(16, 185, 129, 0.35);
+  --status-warning: #f59e0b;
+  --status-warning-bg: rgba(245, 158, 11, 0.15);
+  --status-info: #3b82f6;
+  --status-info-bg: rgba(59, 130, 246, 0.15);
+
+  /* Liquid Glass System Tokens */
+  --glass-bg: rgba(26, 17, 44, 0.72);
+  --glass-bg-subtle: rgba(255, 255, 255, 0.05);
+  --glass-bg-elevated: rgba(36, 23, 62, 0.88);
+  --glass-bg-card: rgba(29, 20, 49, 0.75);
+  --glass-bg-active: rgba(112, 69, 198, 0.28);
+  
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-subtle: rgba(255, 255, 255, 0.06);
+  --glass-border-glow: rgba(255, 210, 30, 0.4);
+  --glass-border-purple: rgba(112, 69, 198, 0.45);
+
+  --glass-blur: blur(20px);
+  --glass-blur-heavy: blur(32px);
+  --glass-shadow: 0 16px 40px -8px rgba(5, 2, 12, 0.6);
+  --glass-shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --glass-glow: 0 0 24px rgba(112, 69, 198, 0.25);
+  --glass-glow-yellow: 0 0 20px rgba(255, 210, 30, 0.2);
+
+  /* Radius */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --radius-pill: 9999px;
+
+  /* Safe Area / Spacing */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Typography */
+  --font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
