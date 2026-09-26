@@ -7,14 +7,42 @@ services:
       - "8000:8000"
     env_file:
       - ../.env.example
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-navigator}:${POSTGRES_PASSWORD:-navigator}@db:5432/${POSTGRES_DB:-navigator}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  bot:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.bot
+    ports:
+      - "8001:8001"
+    env_file:
+      - ../.env.example
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-navigator}:${POSTGRES_PASSWORD:-navigator}@db:5432/${POSTGRES_DB:-navigator}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: navigator
-      POSTGRES_USER: navigator
-      POSTGRES_PASSWORD: navigator
+      POSTGRES_DB: ${POSTGRES_DB:-navigator}
+      POSTGRES_USER: ${POSTGRES_USER:-navigator}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-navigator}
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U navigator -d navigator"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
   web:
     build:
@@ -22,3 +50,26 @@ services:
       dockerfile: infra/Dockerfile.web
     ports:
       - "8080:80"
+
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["production"]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - bot
+      - web
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

@@ -10,8 +10,11 @@ Initial routes:
 - `GET /api/v1/catalog/filters`
 - `POST /api/v1/recommendations`
 - `GET /api/v1/measures/{measure_id}`
-- `POST /api/v1/quiz/submit` (reserved contract)
-- `POST /api/v1/notifications/opt-in` (reserved contract)
-- `POST /webhooks/max` (reserved contract)
+- `POST /api/v1/auth/max/launch-data` (bot service)
+- `POST|DELETE /api/v1/measures/{measure_id}/save` (bot service, verified MAX launch data)
+- `GET /api/v1/measures/saved` (bot service, verified MAX launch data)
+- `POST /api/v1/quiz/submit` (bot service, verified MAX launch data)
+- `POST /api/v1/notifications/opt-in` (bot service, verified MAX launch data)
+- `POST /webhooks/max` (bot service, MAX secret)
 
-Do not add fields by guessing. Update OpenAPI, tests and frontend types together.
+`/webhooks/max` не является браузерным API: его вызывает только MAX. Все пользовательские bot routes требуют заголовок `X-Max-Init-Data`, кроме endpoint явной проверки launch data. Update OpenAPI, tests and frontend types together.

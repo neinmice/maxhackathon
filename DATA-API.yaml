@@ -12,3 +12,13 @@ checks:
     role: session
     expected_status: 200
     required_response_fields: [items, catalog_version]
+  - method: GET
+    path: /bot/health
+    role: public
+    expected_status: 200
+    expected_content_type: application/json
+  - method: POST
+    path: /webhooks/max
+    role: max
+    expected_status: 200
+    required_request_header: X-Max-Bot-Api-Secret

@@ -1,0 +1,45 @@
+{$PUBLIC_DOMAIN} {
+    encode zstd gzip
+
+    handle /webhooks/max {
+        reverse_proxy bot:8001
+    }
+
+    handle /api/v1/auth/max/launch-data {
+        reverse_proxy bot:8001
+    }
+
+    handle /api/v1/quiz/submit {
+        reverse_proxy bot:8001
+    }
+
+    handle /api/v1/notifications/opt-in {
+        reverse_proxy bot:8001
+    }
+
+    handle /api/v1/measures/saved {
+        reverse_proxy bot:8001
+    }
+
+    @measure_save path_regexp measure_save ^/api/v1/measures/[^/]+/save$
+    handle @measure_save {
+        reverse_proxy bot:8001
+    }
+
+    handle /bot/health {
+        uri strip_prefix /bot
+        reverse_proxy bot:8001
+    }
+
+    handle /api/* {
+        reverse_proxy api:8000
+    }
+
+    handle /health {
+        reverse_proxy api:8000
+    }
+
+    handle {
+        reverse_proxy web:80
+    }
+}

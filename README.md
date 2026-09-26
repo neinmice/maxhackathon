@@ -32,6 +32,26 @@ npm run dev
 docker compose -f infra/compose.yaml up --build
 ```
 
+Для production-профиля с доменом и HTTPS сначала создайте `.env`:
+
+```bash
+cp .env.example .env
+# заполните MAX_BOT_TOKEN, MAX_BOT_USERNAME, секреты и PUBLIC_DOMAIN
+docker compose -f infra/compose.yaml --profile production up --build -d
+```
+
+## Запуск Bot service
+
+```bash
+cd services/bot
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -r requirements.txt
+PYTHONPATH=. uvicorn app.main:app --reload --port 8001
+```
+
+Подробная настройка Ubuntu 24, DNS, HTTPS и регистрация MAX webhook описаны в `docs/VPS_DEPLOYMENT.md`.
+
 ## Контракт
 
 - `openapi.yaml` — HTTP-контракт;
@@ -39,6 +59,7 @@ docker compose -f infra/compose.yaml up --build
 - `docs/ARCHITECTURE.md` — границы слоёв;
 - `docs/MAX_OFFICIAL_RESEARCH.md` — проверенные MAX mechanics;
 - `docs/API_CONTRACT.md` — правила изменения API;
+- `docs/VPS_DEPLOYMENT.md` — развёртывание на Ubuntu 24;
 - `AGENTS.md` — правила EA-агентов.
 
 ## Ограничения MVP
