@@ -1,3 +1,9 @@
+/**
+ * [ZVERY MVP] Задача Паши №12: Onboarding и подбор мер поддержки
+ * Автор: Паша (в стилистике Стаса)
+ * Назначение: выбор региона (Казань/Москва/СПб), формы бизнеса (НПД/ИП/ООО),
+ * налогового режима и цели с последующей фильтрацией мер.
+ */
 import { useState } from 'react'
 import { CheckIcon, Rays, StartSticker } from './icons'
 import Sheet from './Sheet'
