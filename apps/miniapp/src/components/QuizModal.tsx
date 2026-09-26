@@ -78,7 +78,20 @@ export default function QuizModal() {
   const [step, setStep] = useState<number>(0)
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState<boolean>(false)
-  const [result, setResult] = useState<QuizSubmitResult | null>(null)
+  const [result, setResult] = useState<QuizSubmitResult | null>(() => {
+    if (typeof window !== 'undefined' && window.location.search.includes('cert=1')) {
+      return {
+        attempt_id: 'demo-cert-1',
+        score: 100,
+        passed: true,
+        certificate: {
+          certificate_id: 'CERT-ZVERY-2026-A1B2C3D4',
+          payload: 'signed-demo-payload',
+        },
+      }
+    }
+    return null
+  })
 
   if (!quizOpen) return null
 
@@ -199,33 +212,49 @@ export default function QuizModal() {
                   marginBottom: '1rem',
                 }}
               >
-                <Rays
-                  style={{
-                    position: 'absolute',
-                    top: '-15%',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    width: '180px',
-                    height: '180px',
-                    opacity: 0.18,
-                    pointerEvents: 'none',
-                  }}
-                  color="#f5c56d"
-                />
-
                 <div
                   style={{
-                    width: '64px',
-                    height: '64px',
-                    margin: '0 auto 0.75rem',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #f5c56d 0%, #b98a33 100%)',
-                    display: 'grid',
-                    placeItems: 'center',
-                    boxShadow: '0 4px 18px rgba(245, 197, 109, 0.4)',
+                    position: 'relative',
+                    width: '100%',
+                    height: '84px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 0.6rem',
                   }}
                 >
-                  <StartSticker style={{ width: 36, height: 36 }} />
+                  <Rays
+                    style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: '210px',
+                      height: '210px',
+                      opacity: 0.35,
+                      pointerEvents: 'none',
+                      zIndex: 1,
+                    }}
+                    color="#f5c56d"
+                    shade="#b98a33"
+                  />
+
+                  <div
+                    style={{
+                      position: 'relative',
+                      zIndex: 2,
+                      width: '68px',
+                      height: '68px',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #fce09b 0%, #f5c56d 45%, #b98a33 100%)',
+                      border: '2.5px solid #ffe8b5',
+                      display: 'grid',
+                      placeItems: 'center',
+                      boxShadow: '0 8px 24px rgba(245, 197, 109, 0.5), 0 0 16px rgba(245, 197, 109, 0.3)',
+                    }}
+                  >
+                    <StartSticker style={{ width: 40, height: 40 }} />
+                  </div>
                 </div>
 
                 <div style={{ fontSize: '0.72rem', letterSpacing: '0.12em', color: 'var(--yellow)', fontWeight: 800 }}>

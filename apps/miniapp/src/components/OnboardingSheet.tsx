@@ -55,20 +55,20 @@ export default function OnboardingSheet() {
   return (
     <Sheet open={onboardingOpen} onClose={() => setOnboardingOpen(false)} title="Подбор мер поддержки">
       <div className="onboard-sheet" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingBottom: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--card-2)', padding: '0.85rem', borderRadius: '1rem', border: '1px solid var(--line)' }}>
-          <div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--muted-2)' }}>Твой регион</div>
-            <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--yellow)' }}>{city}</div>
+        <div style={{ background: 'var(--card-2)', padding: '0.75rem 0.85rem', borderRadius: '1rem', border: '1px solid var(--line)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.55rem' }}>
+            <span style={{ fontSize: '0.82rem', color: 'var(--muted-2)' }}>Твой регион</span>
+            <span style={{ fontWeight: 700, fontSize: '0.98rem', color: 'var(--yellow)' }}>{city}</span>
           </div>
-          <div style={{ display: 'flex', gap: '0.4rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem' }}>
             {cities.map((c) => (
               <button
                 key={c}
                 className={`filter ${c === city ? 'is-active' : ''}`}
-                style={{ padding: '0.35rem 0.65rem', fontSize: '0.8rem' }}
+                style={{ width: '100%', textAlign: 'center', padding: '0.4rem 0', fontSize: '0.82rem' }}
                 onClick={() => setCity(c)}
               >
-                {c.split('-')[0]}
+                {c === 'Санкт-Петербург' ? 'СПб' : c}
               </button>
             ))}
           </div>

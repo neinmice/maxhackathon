@@ -30,9 +30,9 @@ function Shell() {
       params.get('start_param') ||
       (window as any).WebApp?.initDataUnsafe?.start_param
 
-    if (!startParam) return
+    if (!startParam && params.get('cert') !== '1') return
 
-    if (startParam === 'quiz') {
+    if (startParam === 'quiz' || startParam === 'cert' || params.get('cert') === '1') {
       setQuizOpen(true)
     } else if (startParam === 'catalog') {
       nav('/grants')
