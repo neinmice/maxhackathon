@@ -24,6 +24,9 @@ type Ctx = {
   showToast: (t: string) => void
   onboardingOpen: boolean
   setOnboardingOpen: (v: boolean) => void
+  introOpen: boolean
+  setIntroOpen: (v: boolean) => void
+  dismissIntro: () => void
   measureDetail: any | null
   setMeasureDetail: (m: any | null) => void
   quizOpen: boolean
@@ -52,8 +55,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
   })
   const [toast, setToast] = useState<string | null>(null)
   const [onboardingOpen, setOnboardingOpen] = useState(false)
+  const [introOpen, setIntroOpen] = useState(() => {
+    try {
+      return !localStorage.getItem('zvery_intro_seen')
+    } catch {
+      return false
+    }
+  })
   const [measureDetail, setMeasureDetail] = useState<any | null>(null)
   const [quizOpen, setQuizOpen] = useState(false)
+
+  const dismissIntro = () => {
+    setIntroOpen(false)
+    try {
+      localStorage.setItem('zvery_intro_seen', 'true')
+    } catch {
+      // no-op
+    }
+  }
 
   // Инициализация MAX Bridge и пользователя
   useEffect(() => {
@@ -121,6 +140,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         showToast,
         onboardingOpen,
         setOnboardingOpen,
+        introOpen,
+        setIntroOpen,
+        dismissIntro,
         measureDetail,
         setMeasureDetail,
         quizOpen,
@@ -135,3 +157,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
 export const useApp = () => useContext(AppCtx)
 
 export const cityIn = (c: City) => ({ Москва: 'Москве', 'Санкт-Петербург': 'Петербурге', Казань: 'Казани' })[c]
+
+export function cityToRegion(city: City): 'kazan' | 'moscow' | 'spb' {
+  switch (city) {
+    case 'Казань':
+      return 'kazan'
+    case 'Москва':
+      return 'moscow'
+    case 'Санкт-Петербург':
+      return 'spb'
+  }
+}

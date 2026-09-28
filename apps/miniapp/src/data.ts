@@ -1,3 +1,8 @@
+import storyRocket from './assets/stories/story-rocket.jpg'
+import storyPercent from './assets/stories/story-percent.jpg'
+import storyGrant from './assets/stories/story-grant.jpg'
+import storyAgro from './assets/stories/story-agro.jpg'
+
 export type City = 'Москва' | 'Санкт-Петербург' | 'Казань'
 export const CITIES: { name: City; short: string; region: string }[] = [
   { name: 'Москва', short: 'Москва', region: 'Центр «Мой бизнес», ул. Покровка, д. 23' },
@@ -8,12 +13,13 @@ export const CITIES: { name: City; short: string; region: string }[] = [
 /* ---------- stories ---------- */
 
 export type StorySlide = { title: string; text: string; accent?: string; bg: string; big?: string }
-export type Story = { id: string; title: string; slides: StorySlide[] }
+export type Story = { id: string; title: string; cover?: string; slides: StorySlide[] }
 
 export const STORIES: Story[] = [
   {
     id: 'new',
     title: 'Новинки',
+    cover: storyRocket,
     slides: [
       {
         title: 'Бизнес-Навигатор 2.0',
@@ -33,6 +39,7 @@ export const STORIES: Story[] = [
   {
     id: 'news',
     title: 'Новости',
+    cover: storyPercent,
     slides: [
       {
         title: 'Налоговые каникулы продлены',
@@ -58,6 +65,7 @@ export const STORIES: Story[] = [
   {
     id: 'interview',
     title: 'Интервью',
+    cover: storyGrant,
     slides: [
       {
         title: 'Кофейня за 300.000',
@@ -74,6 +82,7 @@ export const STORIES: Story[] = [
   {
     id: 'numbers',
     title: 'Цифры',
+    cover: storyAgro,
     slides: [
       {
         title: 'Молодые предприниматели',
@@ -126,8 +135,8 @@ export const SECTIONS: Section[] = [
       {
         id: 'where-to-start',
         title: 'С чего начать',
-        subtitle: 'Первые шаги в бизнесе',
-        tag: '5 шагов',
+        subtitle: 'Чек-лист ИП',
+        tag: 'старт',
         body: [
           'Определи идею и проверь спрос: поговори с 10 потенциальными клиентами.',
           'Посчитай стартовые затраты и точку безубыточности.',
@@ -137,9 +146,16 @@ export const SECTIONS: Section[] = [
         ],
       },
       {
+        id: 'idea',
+        title: 'Грант 300к',
+        subtitle: 'Без возврата',
+        tag: 'финансы',
+        body: ['Опиши клиента и его боль.', 'Найди 3 конкурента и их слабые места.', 'Сделай MVP за неделю и получи первые продажи.'],
+      },
+      {
         id: 'guide',
         title: 'Инструкция',
-        subtitle: 'Пошаговый гайд по регистрации',
+        subtitle: 'Пошаговый гайд',
         tag: 'гайд',
         body: [
           'Подготовь паспорт, ИНН и СНИЛС.',
@@ -151,20 +167,13 @@ export const SECTIONS: Section[] = [
       {
         id: 'forms',
         title: 'ИП или ООО',
-        subtitle: 'Сравнение форм бизнеса',
-        tag: 'сравнение',
+        subtitle: 'Сравнение форм',
+        tag: 'выбор',
         body: [
           'ИП проще открыть и вести, отвечает всем имуществом.',
           'ООО отвечает только уставным капиталом, но сложнее в отчётности.',
           'Самозанятость подходит для старта с доходом до 2,4 млн ₽ в год.',
         ],
-      },
-      {
-        id: 'idea',
-        title: 'Проверка идеи',
-        subtitle: 'Как понять, что идея взлетит',
-        tag: 'чек‑лист',
-        body: ['Опиши клиента и его боль.', 'Найди 3 конкурента и их слабые места.', 'Сделай MVP за неделю и получи первые продажи.'],
       },
     ],
   },
@@ -177,30 +186,30 @@ export const SECTIONS: Section[] = [
     cards: [
       {
         id: 'events-city',
-        title: 'Мероприятия в {city}',
-        subtitle: 'Офлайн-встречи и воркшопы',
+        title: 'Встречи в {city}',
+        subtitle: 'Офлайн-воркшопы',
         tag: 'офлайн',
         body: ['Питч-сессии с инвесторами каждую пятницу.', 'Воркшопы по маркетингу и финансам.', 'Нетворкинг для молодых предпринимателей.'],
       },
       {
         id: 'events-online',
-        title: 'Онлайн мероприятия',
-        subtitle: 'Вебинары и эфиры',
+        title: 'Онлайн-эфиры',
+        subtitle: 'Вебинары с экспертами',
         tag: 'онлайн',
         body: ['Еженедельные вебинары с экспертами.', 'Разборы бизнес-планов в прямом эфире.', 'Записи доступны в разделе «Обучение».'],
       },
       {
         id: 'accelerator',
         title: 'Акселератор',
-        subtitle: '8 недель с наставником',
+        subtitle: '8 недель с ментором',
         tag: 'набор',
         body: ['Наставник из реального бизнеса.', 'Демо-день с инвесторами.', 'Лучшие проекты получают гранты.'],
       },
       {
         id: 'mentoring',
-        title: 'Наставничество',
-        subtitle: 'Личный ментор бесплатно',
-        tag: '1 на 1',
+        title: 'Менторство',
+        subtitle: 'Личный наставник',
+        tag: 'старт',
         body: ['Подберём наставника по твоей сфере.', 'Встречи раз в две недели.', 'Помощь с финмоделью и стратегией.'],
       },
     ],
@@ -214,8 +223,8 @@ export const SECTIONS: Section[] = [
     cards: [
       {
         id: 'grant-300',
-        title: '300.000 на развитие',
-        subtitle: 'Грант молодым предпринимателям',
+        title: '300.000 ₽',
+        subtitle: 'Грант на бизнес',
         tag: 'до 25 лет',
         body: [
           'Не иметь долгов перед государством.',
@@ -226,15 +235,15 @@ export const SECTIONS: Section[] = [
       },
       {
         id: 'credit',
-        title: 'Кредит без процентов',
-        subtitle: 'Микрозаймы фонда поддержки',
-        tag: '0%',
+        title: '0% ставка',
+        subtitle: 'Без залога до 3 лет',
+        tag: 'льгота',
         body: ['Сумма до 1 млн ₽ на срок до 3 лет.', 'Без залога для сумм до 500.000 ₽.', 'Решение за 5 рабочих дней.'],
       },
       {
         id: 'subsidy',
-        title: 'Субсидия на аренду',
-        subtitle: 'Компенсация до 50%',
+        title: 'Субсидия 50%',
+        subtitle: 'На аренду офиса',
         tag: 'аренда',
         body: ['Компенсация до 50% стоимости аренды.', 'Для резидентов бизнес-инкубаторов.', 'Выплаты ежеквартально.'],
       },

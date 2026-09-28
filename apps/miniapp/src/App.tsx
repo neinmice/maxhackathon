@@ -5,21 +5,38 @@ import TabBar from './components/TabBar'
 import OnboardingSheet from './components/OnboardingSheet'
 import MeasureDetailSheet from './components/MeasureDetailSheet'
 import QuizModal from './components/QuizModal'
+import SpotlightTutorial from './components/SpotlightTutorial'
 import Assistant from './pages/Assistant'
 import Home from './pages/Home'
 import { CardPage, Course, Grants, Learning, Profile, Search, SectionPage, Services } from './pages/Other'
 import { AppProvider, useApp } from './store'
+import { bindBackButton, hideBackButton } from './lib/maxBridge'
 
 function Shell() {
   const { pathname, search } = useLocation()
   const nav = useNavigate()
-  const { toast, setQuizOpen, setOnboardingOpen, setMeasureDetail } = useApp()
+  const { toast, setQuizOpen, setOnboardingOpen, setMeasureDetail, introOpen, dismissIntro } = useApp()
   const main = useRef<HTMLElement>(null)
   const bare = pathname.startsWith('/search') || pathname.startsWith('/profile')
 
   useEffect(() => {
     main.current?.scrollTo(0, 0)
   }, [pathname])
+
+  useEffect(() => {
+    const isSubroute =
+      pathname.startsWith('/card/') ||
+      pathname.startsWith('/section/') ||
+      pathname.startsWith('/learning/') ||
+      pathname.startsWith('/profile') ||
+      pathname.startsWith('/search')
+
+    if (isSubroute) {
+      return bindBackButton(() => nav(-1))
+    } else {
+      hideBackButton()
+    }
+  }, [pathname, nav])
 
   // Deep linking: обработка ?startapp= (quiz, catalog, saved, home, onboarding, measure)
   useEffect(() => {
@@ -69,6 +86,14 @@ function Shell() {
       <OnboardingSheet />
       <MeasureDetailSheet />
       <QuizModal />
+      {introOpen && pathname === '/' && (
+        <SpotlightTutorial
+          onComplete={() => {
+            dismissIntro()
+            setOnboardingOpen(true)
+          }}
+        />
+      )}
       {toast && <div className="toast">{toast}</div>}
     </div>
   )

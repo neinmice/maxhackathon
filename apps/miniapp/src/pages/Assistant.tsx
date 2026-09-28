@@ -1,32 +1,65 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { useLocation } from 'react-router-dom'
-import mascot from '../assets/mascot-door.png'
+import { useLocation, useNavigate } from 'react-router-dom'
+import mascot from '../assets/mascot/mascot-door.png'
 import { Avatar } from '../components/Header'
 import { MicIcon, Rays, Scribble, SendIcon } from '../components/icons'
 import { CITIES, QUICK_QUESTIONS, quickText } from '../data'
+import { triggerHaptic } from '../lib/maxBridge'
 import { cityIn, useApp } from '../store'
 
 type Msg = { id: number; from: 'user' | 'bot'; text: ReactNode; time: string }
 
 const now = () => new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
 
-function answer(q: string, city: string, address: string): ReactNode {
+function answer(
+  q: string,
+  city: string,
+  address: string,
+  actions: {
+    nav: (path: string) => void
+    openQuiz: () => void
+  },
+): ReactNode {
   const t = q.toLowerCase()
   if (t.includes('грант') || t.includes('300')) {
     return (
       <>
         <p>
-          Привет, для получения гранта на 300.000 руб. <a className="link-y">необходимо:</a>
+          Привет! Для получения гранта на 300.000 руб. <span className="text-y">необходимо:</span>
         </p>
         <p>
           — Не иметь долгов перед государством
-          <br />— Пройти обучение в центре “Мой бизнес” (Который в {city} находится по адресу {address})
+          <br />— Пройти обучение в центре «Мой бизнес» (в {city} по адресу {address})
           <br />— Защитить бизнес-проект
           <br />— Внести минимум 30% от начальных затрат в проект
         </p>
         <p>
-          Кстати, записаться на интенсив ты можешь в разделе <span className="text-y">“обучение” → “Азы бизнеса”</span>
+          Кстати, записаться на интенсив можно в разделе «Обучение», а изучить все доступные меры — в каталоге.
         </p>
+        <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="filter is-active"
+            onClick={() => {
+              triggerHaptic('light')
+              actions.nav('/grants')
+            }}
+            style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '10px' }}
+          >
+            💰 Каталог грантов →
+          </button>
+          <button
+            type="button"
+            className="filter"
+            onClick={() => {
+              triggerHaptic('light')
+              actions.nav('/learning')
+            }}
+            style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '10px' }}
+          >
+            📚 Курс «Азы бизнеса»
+          </button>
+        </div>
       </>
     )
   }
@@ -34,7 +67,7 @@ function answer(q: string, city: string, address: string): ReactNode {
     return (
       <>
         <p>
-          Коротко о <a className="link-y">налогах 2027</a> для начинающих:
+          Коротко о <span className="text-y">налогах 2027</span> для начинающих:
         </p>
         <p>
           — Самозанятость (НПД): 4% с физлиц, 6% с юрлиц
@@ -42,8 +75,21 @@ function answer(q: string, city: string, address: string): ReactNode {
           <br />— Патент: фиксированная сумма, зависит от вида деятельности
         </p>
         <p>
-          Посчитать точную сумму можно в <span className="text-y">“сервисы” → “Калькулятор налогов”</span>
+          Посчитать точную сумму можно в онлайн-калькуляторе:
         </p>
+        <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="filter is-active"
+            onClick={() => {
+              triggerHaptic('light')
+              actions.nav('/services')
+            }}
+            style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '10px' }}
+          >
+            🧮 Калькулятор налогов →
+          </button>
+        </div>
       </>
     )
   }
@@ -52,10 +98,23 @@ function answer(q: string, city: string, address: string): ReactNode {
       <>
         <p>Бесплатное обучение можно пройти:</p>
         <p>
-          — Онлайн в разделе <span className="text-y">“обучение”</span>
-          <br />— Офлайн в центре “Мой бизнес” ({address})
+          — Онлайн в разделе «Обучение»
+          <br />— Офлайн в центре «Мой бизнес» ({address})
           <br />— В акселераторе для молодых предпринимателей
         </p>
+        <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="filter is-active"
+            onClick={() => {
+              triggerHaptic('light')
+              actions.nav('/learning')
+            }}
+            style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '10px' }}
+          >
+            📚 Раздел «Обучение» →
+          </button>
+        </div>
       </>
     )
   }
@@ -69,13 +128,37 @@ function answer(q: string, city: string, address: string): ReactNode {
           <br />— Считать налоги и стартовые затраты
           <br />— Записывать на обучение и мероприятия
         </p>
+        <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="filter is-active"
+            onClick={() => {
+              triggerHaptic('light')
+              actions.nav('/grants')
+            }}
+            style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '10px' }}
+          >
+            Подобрать гранты →
+          </button>
+          <button
+            type="button"
+            className="filter"
+            onClick={() => {
+              triggerHaptic('light')
+              actions.openQuiz()
+            }}
+            style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '10px' }}
+          >
+            🎯 Пройти квиз
+          </button>
+        </div>
       </>
     )
   }
   if (t.includes('кто')) {
     return (
       <p>
-        Я Навик, твой помощник по «Бизнес-Навигатору» 🙂 Отвечаю на вопросы про открытие бизнеса, гранты и обучение в {city}.
+        Я твой персональный помощник по «Бизнес-Навигатору» 🙂 Отвечаю на вопросы про открытие бизнеса, гранты и обучение в {city}.
       </p>
     )
   }
@@ -83,25 +166,64 @@ function answer(q: string, city: string, address: string): ReactNode {
     return (
       <>
         <p>
-          В ZVERY доступен <a className="link-y">Квиз готовности бизнес-проекта</a>!
+          В ZVERY доступен <span className="text-y">Квиз готовности бизнес-проекта</span>!
         </p>
         <p>
           Ответь на 5 вопросов по налогам, грантам и открытию своего дела. При результате от 70% формируется именной верифицированный сертификат.
         </p>
+        <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="filter is-active"
+            onClick={() => {
+              triggerHaptic('light')
+              actions.openQuiz()
+            }}
+            style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '10px' }}
+          >
+            🎯 Начать квиз →
+          </button>
+        </div>
       </>
     )
   }
   return (
-    <p>
-      Хороший вопрос! Сейчас я работаю в демо-режиме, но скоро смогу ответить подробно. Попробуй спросить про <a className="link-y">гранты</a> или{' '}
-      <a className="link-y">налоги</a>.
-    </p>
+    <>
+      <p>
+        Хороший вопрос! Сейчас я работаю в демо-режиме, но скоро смогу ответить подробно. Попробуй спросить про гранты или налоги.
+      </p>
+      <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        <button
+          type="button"
+          className="filter is-active"
+          onClick={() => {
+            triggerHaptic('light')
+            actions.nav('/grants')
+          }}
+          style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '10px' }}
+        >
+          💰 Каталог мер
+        </button>
+        <button
+          type="button"
+          className="filter"
+          onClick={() => {
+            triggerHaptic('light')
+            actions.nav('/services')
+          }}
+          style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '10px' }}
+        >
+          🧮 Калькулятор
+        </button>
+      </div>
+    </>
   )
 }
 
 export default function Assistant() {
   const { city, setQuizOpen } = useApp()
   const loc = useLocation()
+  const nav = useNavigate()
   const [msgs, setMsgs] = useState<Msg[]>([])
   const [text, setText] = useState('')
   const [typing, setTyping] = useState(false)
@@ -118,7 +240,18 @@ export default function Assistant() {
     setTyping(true)
     window.setTimeout(() => {
       setTyping(false)
-      setMsgs((m) => [...m, { id: ++idRef.current, from: 'bot', text: answer(v, cityIn(city), address), time: now() }])
+      setMsgs((m) => [
+        ...m,
+        {
+          id: ++idRef.current,
+          from: 'bot',
+          text: answer(v, cityIn(city), address, {
+            nav,
+            openQuiz: () => setQuizOpen(true),
+          }),
+          time: now(),
+        },
+      ])
     }, 1300)
   }
 

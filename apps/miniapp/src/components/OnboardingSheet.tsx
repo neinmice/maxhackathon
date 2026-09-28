@@ -60,7 +60,7 @@ export default function OnboardingSheet() {
 
   return (
     <Sheet open={onboardingOpen} onClose={() => setOnboardingOpen(false)} title="Подбор мер поддержки">
-      <div className="onboard-sheet" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingBottom: '1rem' }}>
+      <div className="onboard-sheet" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingBottom: '2rem' }}>
         <div style={{ background: 'var(--card-2)', padding: '0.75rem 0.85rem', borderRadius: '1rem', border: '1px solid var(--line)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.55rem' }}>
             <span style={{ fontSize: '0.82rem', color: 'var(--muted-2)' }}>Твой регион</span>
@@ -140,14 +140,23 @@ export default function OnboardingSheet() {
           </div>
         </div>
 
-        <button
-          className="btn btn--primary btn--block"
-          style={{ marginTop: '0.5rem', position: 'relative', overflow: 'hidden' }}
-          disabled={loading}
-          onClick={handleApply}
-        >
-          {loading ? 'Подбираем меры...' : 'Подобрать меры поддержки'}
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '0.5rem' }}>
+          <button
+            className="btn btn--primary btn--block"
+            disabled={loading}
+            onClick={handleApply}
+          >
+            {loading ? 'Подбираем меры...' : 'Подобрать меры поддержки'}
+          </button>
+          <button
+            type="button"
+            className="btn btn--ghost btn--block"
+            onClick={() => setOnboardingOpen(false)}
+            style={{ color: '#8d93a3', fontSize: '0.85rem' }}
+          >
+            Пропустить анкету
+          </button>
+        </div>
       </div>
     </Sheet>
   )

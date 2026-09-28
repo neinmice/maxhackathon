@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>ZVERY Assets Approval Showcase</title>
+  <style>
+    body {
+      background: #120d1d;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 32px 24px;
+    }
+    h1 { font-size: 26px; color: #f5c06a; margin-bottom: 8px; }
+    p.lead { color: #b9b9bd; font-size: 15px; margin-bottom: 32px; }
+    .section { margin-bottom: 40px; background: #1c152b; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 24px; }
+    .section-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; color: #e2dcf3; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px; }
+    .grid { display: flex; gap: 20px; flex-wrap: wrap; align-items: center; }
+    .card { background: #261c3b; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 140px; text-align: center; border: 1px solid rgba(255,255,255,0.06); }
+    .card-label { font-size: 12px; color: #a295c5; font-weight: 500; }
+    .card-sub { font-size: 10px; color: #f5c06a; }
+    svg { display: block; }
+    .mascot-img { width: 140px; height: 140px; object-fit: contain; }
+    .stories-preview-card {
+      width: 100px;
+      height: 100px;
+      border-radius: 18px;
+      background: linear-gradient(145deg, #261a40 0%, #170f28 100%);
+      border: 2px solid #7a35d8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 8px;
+      box-sizing: border-box;
+      position: relative;
+      overflow: hidden;
+    }
+    .stories-preview-card .hero-graphic { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 900; color: #f5c06a; }
+    .stories-preview-card .title { font-size: 10.5px; font-weight: 600; text-align: center; color: #fff; line-height: 1.15; }
+  </style>
+</head>
+<body>
+
+  <h1>🎨 ZVERY — Витрина ассетов для согласования</h1>
+  <p class="lead">Все ассеты подготовлены для Фазы 2. Пожалуйста, сравни варианты маскота, SVG иконки, 3D глиняные элементы и концепт превью сторис.</p>
+
+  <!-- 1. Сравнение маскота: 3D-растр vs SVG -->
+  <div class="section">
+    <div class="section-title">1. Маскот: Вариант 1 (3D-растр) vs Вариант 2 (Стилизованный SVG)</div>
+    <div class="grid">
+      <!-- 3D Растр Поза 1 -->
+      <div class="card" style="width: 170px;">
+        <img class="mascot-img" src="file:///Users/stanislav/.gemini/antigravity/brain/73ebd93f-0bb3-45a2-a3b4-027a4ccd9041/mascot_shrug_transparent.png" alt="3D Shrug">
+        <span class="card-label">Вариант 1.1: 3D Растр</span>
+        <span class="card-sub">«Пожимает лапами» (Empty)</span>
+      </div>
+
+      <!-- 3D Растр Поза 2 -->
+      <div class="card" style="width: 170px;">
+        <img class="mascot-img" src="file:///Users/stanislav/.gemini/antigravity/brain/73ebd93f-0bb3-45a2-a3b4-027a4ccd9041/mascot_wave_transparent.png" alt="3D Wave">
+        <span class="card-label">Вариант 1.2: 3D Растр</span>
+        <span class="card-sub">«Приветствие / Машет»</span>
+      </div>
+
+      <!-- SVG Маскот Поза 1 -->
+      <div class="card" style="width: 170px;">
+        <svg width="140" height="140" viewBox="0 0 100 100" fill="none">
+          <!-- Shadow -->
+          <ellipse cx="50" cy="94" rx="28" ry="4" fill="#0b0714" opacity="0.6"/>
+          <!-- Legs -->
+          <rect x="36" y="70" width="10" height="20" rx="5" fill="#8455f6"/>
+          <rect x="54" y="70" width="10" height="20" rx="5" fill="#8455f6"/>
+          <!-- Feet -->
+          <ellipse cx="41" cy="90" rx="7" ry="4" fill="#6036b8"/>
+          <ellipse cx="59" cy="90" rx="7" ry="4" fill="#6036b8"/>
+          <!-- Body -->
+          <rect x="32" y="44" width="36" height="34" rx="14" fill="#9367fc"/>
+          <ellipse cx="50" cy="58" rx="12" ry="14" fill="#f5f2ff"/>
+          <!-- Belt / Rivets -->
+          <circle cx="43" cy="50" r="1.8" fill="#f5c06a"/>
+          <circle cx="57" cy="50" r="1.8" fill="#f5c06a"/>
+          <!-- Open Arms (Shrug) -->
+          <path d="M32 50 C20 46, 14 56, 12 58" stroke="#8455f6" stroke-width="7" stroke-linecap="round"/>
+          <ellipse cx="11" cy="57" rx="4" ry="3" fill="#f5f2ff"/>
+          <path d="M68 50 C80 46, 86 56, 88 58" stroke="#8455f6" stroke-width="7" stroke-linecap="round"/>
+          <ellipse cx="89" cy="57" rx="4" ry="3" fill="#f5f2ff"/>
+          <!-- Head / Helmet -->
+          <rect x="25" y="14" width="50" height="38" rx="16" fill="#8455f6"/>
+          <!-- Ears -->
+          <path d="M30 15 L36 3 C38 1, 41 3, 41 7 L40 15 Z" fill="#6036b8"/>
+          <path d="M70 15 L64 3 C62 1, 59 3, 59 7 L60 15 Z" fill="#6036b8"/>
+          <!-- Screen Face -->
+          <rect x="29" y="18" width="42" height="30" rx="11" fill="#1b122e"/>
+          <!-- Glowing Eyes -->
+          <ellipse cx="40" cy="30" rx="3.5" ry="4.5" fill="#fef2b8"/>
+          <ellipse cx="60" cy="30" rx="3.5" ry="4.5" fill="#fef2b8"/>
+          <!-- Cute Smile -->
+          <path d="M46 36 Q50 40 54 36" stroke="#f5c06a" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+        </svg>
+        <span class="card-label">Вариант 2.1: Вектор SVG</span>
+        <span class="card-sub">«Пожимает лапами»</span>
+      </div>
+
+      <!-- SVG Маскот Поза 2 -->
+      <div class="card" style="width: 170px;">
+        <svg width="140" height="140" viewBox="0 0 100 100" fill="none">
+          <ellipse cx="50" cy="94" rx="28" ry="4" fill="#0b0714" opacity="0.6"/>
+          <rect x="36" y="70" width="10" height="20" rx="5" fill="#8455f6"/>
+          <rect x="54" y="70" width="10" height="20" rx="5" fill="#8455f6"/>
+          <ellipse cx="41" cy="90" rx="7" ry="4" fill="#6036b8"/>
+          <ellipse cx="59" cy="90" rx="7" ry="4" fill="#6036b8"/>
+          <rect x="32" y="44" width="36" height="34" rx="14" fill="#9367fc"/>
+          <ellipse cx="50" cy="58" rx="12" ry="14" fill="#f5f2ff"/>
+          <circle cx="43" cy="50" r="1.8" fill="#f5c06a"/>
+          <circle cx="57" cy="50" r="1.8" fill="#f5c06a"/>
+          <!-- Left Arm down -->
+          <path d="M32 50 C26 56, 26 68, 28 72" stroke="#8455f6" stroke-width="7" stroke-linecap="round"/>
+          <ellipse cx="28" cy="73" rx="3.5" ry="3" fill="#f5f2ff"/>
+          <!-- Right Arm waving high -->
+          <path d="M68 50 C76 42, 82 30, 86 20" stroke="#8455f6" stroke-width="7" stroke-linecap="round"/>
+          <ellipse cx="87" cy="18" rx="4.5" ry="4" fill="#f5f2ff"/>
+          <circle cx="86" cy="17" r="1.8" fill="#f5c06a"/>
+          <!-- Head / Helmet -->
+          <rect x="25" y="14" width="50" height="38" rx="16" fill="#8455f6"/>
+          <path d="M30 15 L36 3 C38 1, 41 3, 41 7 L40 15 Z" fill="#6036b8"/>
+          <path d="M70 15 L64 3 C62 1, 59 3, 59 7 L60 15 Z" fill="#6036b8"/>
+          <rect x="29" y="18" width="42" height="30" rx="11" fill="#1b122e"/>
+          <ellipse cx="40" cy="30" rx="3.5" ry="4.5" fill="#fef2b8"/>
+          <ellipse cx="60" cy="30" rx="3.5" ry="4.5" fill="#fef2b8"/>
+          <path d="M46 36 Q50 40 54 36" stroke="#f5c06a" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+        </svg>
+        <span class="card-label">Вариант 2.2: Вектор SVG</span>
+        <span class="card-sub">«Машет лапой»</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Иконки сервисов (для нижнего блока) -->
+  <div class="section">
+    <div class="section-title">2. Четыре иконки для блока «Сервисы» (в самом низу главной)</div>
+    <div class="grid">
+      <div class="card">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#f5c06a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <path d="m9 15 2 2 4-4"/>
+        </svg>
+        <span class="card-label">Регистрация</span>
+        <span class="card-sub">/card/guide</span>
+      </div>
+
+      <div class="card">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#f5c06a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="2" width="16" height="20" rx="3"/>
+          <line x1="8" y1="6" x2="16" y2="6"/>
+          <line x1="16" y1="14" x2="16" y2="18"/>
+          <path d="M8 12h.01M12 12h.01M16 12h.01M8 15h.01M12 15h.01M8 18h.01M12 18h.01"/>
+        </svg>
+        <span class="card-label">Налоги</span>
+        <span class="card-sub">/card/forms</span>
+      </div>
+
+      <div class="card">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#f5c06a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          <line x1="12" y1="11" x2="12" y2="17"/>
+          <line x1="9" y1="14" x2="15" y2="14"/>
+        </svg>
+        <span class="card-label">Документы</span>
+        <span class="card-sub">/services</span>
+      </div>
+
+      <div class="card">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#f5c06a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+          <path d="M6 12v5c0 2 3 3 6 3s6-1 6-3v-5"/>
+        </svg>
+        <span class="card-label">Обучение</span>
+        <span class="card-sub">/learning</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Иконки таббара (контур vs заливка) -->
+  <div class="section">
+    <div class="section-title">3. Иконки таббара: Обычное (контур) vs Активное (фиолетовая заливка #7a35d8)</div>
+    <div class="grid">
+      <!-- Главная -->
+      <div class="card">
+        <div style="display: flex; gap: 14px; align-items: center;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8d93a3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="#7a35d8" stroke="#7a35d8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          </svg>
+        </div>
+        <span class="card-label">Главная</span>
+      </div>
+
+      <!-- Сервисы -->
+      <div class="card">
+        <div style="display: flex; gap: 14px; align-items: center;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8d93a3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/>
+            <rect x="14" y="14" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/>
+          </svg>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="#7a35d8" stroke="#7a35d8" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="2.5"/><rect x="14" y="3" width="7" height="7" rx="2.5"/>
+            <rect x="14" y="14" width="7" height="7" rx="2.5"/><rect x="3" y="14" width="7" height="7" rx="2.5"/>
+          </svg>
+        </div>
+        <span class="card-label">Сервисы</span>
+      </div>
+
+      <!-- Гранты -->
+      <div class="card">
+        <div style="display: flex; gap: 14px; align-items: center;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8d93a3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/>
+            <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>
+          </svg>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="#7a35d8" stroke="#7a35d8" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="6" width="18" height="14" rx="3"/>
+            <path d="M16 11h5v4h-5z" fill="#120d1d"/>
+            <circle cx="18" cy="13" r="1" fill="#f5c06a"/>
+          </svg>
+        </div>
+        <span class="card-label">Гранты</span>
+      </div>
+
+      <!-- Обучение -->
+      <div class="card">
+        <div style="display: flex; gap: 14px; align-items: center;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8d93a3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="#7a35d8" stroke="#7a35d8" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            <line x1="8" y1="7" x2="16" y2="7" stroke="#120d1d" stroke-width="2"/>
+            <line x1="8" y1="11" x2="14" y2="11" stroke="#120d1d" stroke-width="2"/>
+          </svg>
+        </div>
+        <span class="card-label">Обучение</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Новые 3D глиняные акценты -->
+  <div class="section">
+    <div class="section-title">4. Новые 3D глиняные акценты (в фиолетово-жёлтой палитре)</div>
+    <div class="grid">
+      <!-- SparkleClay (Золотые искры) -->
+      <div class="card">
+        <svg width="44" height="44" viewBox="0 0 40 40" fill="none">
+          <!-- Shade -->
+          <path d="M20 4 L23.5 15.5 L35 19 L23.5 22.5 L20 34 L16.5 22.5 L5 19 L16.5 15.5 Z" fill="#b98524" transform="translate(1.5, 2.5)"/>
+          <!-- Top -->
+          <path d="M20 4 L23.5 15.5 L35 19 L23.5 22.5 L20 34 L16.5 22.5 L5 19 L16.5 15.5 Z" fill="#f5c06a"/>
+          <circle cx="20" cy="19" r="3" fill="#fff" opacity="0.7"/>
+        </svg>
+        <span class="card-label">SparkleClay</span>
+        <span class="card-sub">Золотые 3D искры</span>
+      </div>
+
+      <!-- ClayBadge (Фиолетовый стикер) -->
+      <div class="card">
+        <svg width="60" height="32" viewBox="0 0 60 32" fill="none">
+          <rect x="2" y="4" width="56" height="26" rx="8" fill="#4d3599"/>
+          <rect x="2" y="2" width="56" height="26" rx="8" fill="#8455f6"/>
+          <text x="30" y="19" text-anchor="middle" font-weight="900" font-size="11" fill="#fff" letter-spacing="1">HOT</text>
+        </svg>
+        <span class="card-label">ClayBadge</span>
+        <span class="card-sub">Объёмная плашка</span>
+      </div>
+
+      <!-- WavePatternClay (3D разделитель) -->
+      <div class="card" style="width: 170px;">
+        <svg width="140" height="24" viewBox="0 0 140 24" fill="none">
+          <path d="M4 14 Q 24 4, 44 14 T 84 14 T 124 14" stroke="#4d3599" stroke-width="6" stroke-linecap="round" fill="none" transform="translate(1, 2)"/>
+          <path d="M4 14 Q 24 4, 44 14 T 84 14 T 124 14" stroke="#7a35d8" stroke-width="6" stroke-linecap="round" fill="none"/>
+        </svg>
+        <span class="card-label">WavePattern</span>
+        <span class="card-sub">Глиняная 3D волна</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Концепт превью сторис 1:1 по референсам Т-Банк / Альфа / VK -->
+  <div class="section">
+    <div class="section-title">5. Концепция превью сторис 1:1 (референсы Т-Банк / Альфа-Банк / VK)</div>
+    <p style="font-size: 13px; color: #a295c5; margin-bottom: 16px;">
+      Квадратные плитки 1:1 с Apple-скруглением (18px), фиолетовая кайма для непросмотренных, контрастный графический акцент по центру и понятный заголовок внизу.
+    </p>
+    <div class="grid">
+      <!-- Story 1 -->
+      <div class="stories-preview-card">
+        <div class="hero-graphic">12</div>
+        <div class="title">Программы старта</div>
+      </div>
+
+      <!-- Story 2 -->
+      <div class="stories-preview-card">
+        <div class="hero-graphic" style="color: #ff8a5c;">0%</div>
+        <div class="title">Нулевая ставка</div>
+      </div>
+
+      <!-- Story 3 -->
+      <div class="stories-preview-card">
+        <div class="hero-graphic" style="font-size: 20px;">300к</div>
+        <div class="title">Грант на дело</div>
+      </div>
+
+      <!-- Story 4 -->
+      <div class="stories-preview-card">
+        <div class="hero-graphic">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#f5c06a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12A10 10 0 0 1 12 2z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="title">Агро и IT меры</div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

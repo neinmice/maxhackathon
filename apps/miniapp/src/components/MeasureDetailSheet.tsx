@@ -154,7 +154,7 @@ export default function MeasureDetailSheet() {
               nav('/assistant', { state: { q: `Расскажи подробнее про меру: ${title}` } })
             }}
           >
-            Спросить Навика о мере
+            Спросить ассистента о мере
           </button>
         </div>
       </div>

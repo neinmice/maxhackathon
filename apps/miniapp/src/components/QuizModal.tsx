@@ -6,11 +6,12 @@
  */
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import mascot from '../assets/mascot-door.png'
+import mascotShrug from '../assets/mascot/mascot-shrug.png'
 import { CheckIcon, Rays, Scribble, StartSticker } from './icons'
 import Sheet from './Sheet'
 import { useApp } from '../store'
 import { apiClient, type QuizSubmitResult } from '../api/client'
+import { triggerHaptic, triggerNotification, triggerSelectionChanged } from '../lib/maxBridge'
 
 type Question = {
   id: string
@@ -104,17 +105,21 @@ export default function QuizModal() {
   const curQ = QUESTIONS[step]
 
   const handleSelectOption = (key: string) => {
+    triggerHaptic('light')
     setAnswers((prev) => ({ ...prev, [curQ.id]: key }))
   }
 
   const handleNext = async () => {
     if (step < QUESTIONS.length - 1) {
+      triggerSelectionChanged()
       setStep((s) => s + 1)
     } else {
       setSubmitting(true)
       try {
         const res = await apiClient.submitQuiz('v1', answers)
         setResult(res)
+        if (res.passed) triggerNotification('success')
+        else triggerNotification('warning')
       } catch {
         setResult({
           attempt_id: `offline-${Date.now()}`,
@@ -125,6 +130,7 @@ export default function QuizModal() {
             payload: 'demo-signed-payload',
           },
         })
+        triggerNotification('success')
       } finally {
         setSubmitting(false)
       }
@@ -294,7 +300,7 @@ export default function QuizModal() {
               </div>
             ) : (
               <div style={{ padding: '1rem 0' }}>
-                <img src={mascot} alt="" style={{ width: 90, height: 90, margin: '0 auto 1rem', display: 'block' }} />
+                <img src={mascotShrug} alt="" style={{ width: 90, height: 90, margin: '0 auto 1rem', display: 'block' }} />
                 <h3>Почти получилось!</h3>
                 <p className="muted">Набрано {result.score}%, для сертификата необходимо от 70%.</p>
                 <button className="btn btn--primary btn--block" onClick={handleRestart} style={{ marginTop: '1rem' }}>

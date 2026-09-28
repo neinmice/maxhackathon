@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Story } from '../data'
 import { useApp } from '../store'
 import { CloseIcon, HeartIcon, Rays, ShareIcon, ZigArrow } from './icons'
-import { Avatar } from './Header'
 import { createPortal } from 'react-dom'
 import { appRoot } from './Sheet'
 
@@ -124,9 +123,6 @@ export default function StoryViewer({ stories, startIndex, onClose }: { stories:
       </div>
 
       <div className="story__top">
-        <Avatar size={30} />
-        <b>{story.title}</b>
-        <span className="story__time">сегодня</span>
         <button className="icon-btn story__close" onClick={onClose} aria-label="Закрыть">
           <CloseIcon />
         </button>

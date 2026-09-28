@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import mascot from '../assets/mascot-door.png'
+import mascotWave from '../assets/mascot/mascot-wave.png'
 import { apiClient } from '../api/client'
 import { Avatar } from '../components/Header'
+import EmptyState from '../components/ui/EmptyState'
 import {
   BackIcon,
   BellIcon,
@@ -155,6 +156,14 @@ export function Grants() {
         {list.map((g) => (
           <GrantCard key={g.id} g={g} onOpen={() => setMeasureDetail(g)} />
         ))}
+        {list.length === 0 && (
+          <EmptyState
+            title="В этой категории пока нет программ"
+            description="Выберите «Все» или измените категорию, чтобы увидеть доступные меры господдержки."
+            onResetFilters={() => setF('Все')}
+            resetLabel="Показать все гранты"
+          />
+        )}
       </div>
     </div>
   )
@@ -221,7 +230,7 @@ export function Course() {
     <div className="page">
       <PageTitle hl={c.title} back color="yellow" />
       <div className="course-hero">
-        <img src={mascot} alt="" />
+        <img src={mascotWave} alt="" />
         <div>
           <b>
             {c.done} / {c.lessons}
@@ -491,13 +500,14 @@ export function Search() {
           </button>
         ))}
         {q && res.length === 0 && (
-          <div className="empty">
-            <img src={mascot} alt="" />
-            <p>Ничего не нашлось</p>
-            <button className="btn btn--primary" onClick={() => nav('/assistant', { state: { q } })}>
-              Спросить помощника
-            </button>
-          </div>
+          <EmptyState
+            title="Ничего не нашлось"
+            description={`По запросу «${q}» ничего не найдено. Наш помощник готов ответить на ваши вопросы.`}
+            action={{
+              label: 'Спросить помощника',
+              onClick: () => nav('/assistant', { state: { q } }),
+            }}
+          />
         )}
       </div>
     </div>

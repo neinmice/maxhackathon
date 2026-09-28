@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import mascot from '../assets/mascot-door.png'
 import {
@@ -10,13 +11,14 @@ import {
   WalletFilledIcon,
   WalletIcon,
 } from './icons'
+import { triggerSelectionChanged } from '../lib/maxBridge'
 
 const TABS = [
-  { to: '/', label: 'главная', Icon: HomeOutlineIcon, Active: HomeIcon, dot: true },
-  { to: '/services', label: 'сервисы', Icon: ServicesIcon, Active: ServicesFilledIcon },
+  { to: '/', label: 'главная', Icon: HomeOutlineIcon, Active: HomeIcon, hasDot: false },
+  { to: '/services', label: 'сервисы', Icon: ServicesIcon, Active: ServicesFilledIcon, hasDot: true },
   null,
-  { to: '/grants', label: 'гранты', Icon: WalletIcon, Active: WalletFilledIcon, dot: true },
-  { to: '/learning', label: 'обучение', Icon: DocIcon, Active: DocFilledIcon },
+  { to: '/grants', label: 'гранты', Icon: WalletIcon, Active: WalletFilledIcon, hasDot: true },
+  { to: '/learning', label: 'обучение', Icon: DocIcon, Active: DocFilledIcon, hasDot: true },
 ]
 
 const match = (path: string, to: string) => (to === '/' ? path === '/' || path.startsWith('/section') || path.startsWith('/card') : path.startsWith(to))
@@ -25,20 +27,53 @@ export default function TabBar() {
   const { pathname } = useLocation()
   const assistantActive = pathname.startsWith('/assistant')
 
+  const [seenDots, setSeenDots] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = sessionStorage.getItem('zvery_tabs_seen')
+      return saved ? JSON.parse(saved) : {}
+    } catch {
+      return {}
+    }
+  })
+
+  const markTabSeen = (to: string) => {
+    triggerSelectionChanged()
+    if (!seenDots[to]) {
+      const next = { ...seenDots, [to]: true }
+      setSeenDots(next)
+      try {
+        sessionStorage.setItem('zvery_tabs_seen', JSON.stringify(next))
+      } catch {
+        // no-op
+      }
+    }
+  }
+
   return (
     <nav className="tabbar">
       {TABS.map((t) =>
         t === null ? (
-          <NavLink key="assistant" to="/assistant" className={`tab tab--mascot ${assistantActive ? 'is-active' : ''}`} aria-label="Ассистент">
+          <NavLink
+            key="assistant"
+            to="/assistant"
+            onClick={() => triggerSelectionChanged()}
+            className={`tab tab--mascot ${assistantActive ? 'is-active' : ''}`}
+            aria-label="Ассистент"
+          >
             <span className="tab__mascot">
               <img src={mascot} alt="" draggable={false} />
             </span>
           </NavLink>
         ) : (
-          <NavLink key={t.to} to={t.to} className={`tab ${match(pathname, t.to) ? 'is-active' : ''}`}>
+          <NavLink
+            key={t.to}
+            to={t.to}
+            onClick={() => markTabSeen(t.to)}
+            className={`tab ${match(pathname, t.to) ? 'is-active' : ''}`}
+          >
             <span className="tab__icon">
               {match(pathname, t.to) ? <t.Active /> : <t.Icon />}
-              {t.dot && <i className="tab__dot" />}
+              {t.hasDot && !seenDots[t.to] && <i className="tab__dot" />}
             </span>
             <span className="tab__label">{t.label}</span>
           </NavLink>
@@ -47,3 +82,4 @@ export default function TabBar() {
     </nav>
   )
 }
+

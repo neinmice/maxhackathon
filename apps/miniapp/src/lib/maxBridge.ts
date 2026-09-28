@@ -109,6 +109,51 @@ export function triggerHaptic(style: 'light' | 'medium' | 'heavy' = 'light'): vo
   }
 }
 
+export function triggerSelectionChanged(): void {
+  try {
+    getBridge().HapticFeedback?.selectionChanged();
+  } catch {
+    // ignore in browsers
+  }
+}
+
+export function triggerNotification(type: 'error' | 'success' | 'warning'): void {
+  try {
+    getBridge().HapticFeedback?.notificationOccurred(type);
+  } catch {
+    // ignore in browsers
+  }
+}
+
+export function bindBackButton(onBack: () => void): () => void {
+  try {
+    const bridge = getBridge();
+    if (bridge.BackButton) {
+      bridge.BackButton.show();
+      bridge.BackButton.onClick(onBack);
+      return () => {
+        try {
+          bridge.BackButton.offClick(onBack);
+          bridge.BackButton.hide();
+        } catch {
+          // ignore
+        }
+      };
+    }
+  } catch {
+    // ignore in browsers
+  }
+  return () => {};
+}
+
+export function hideBackButton(): void {
+  try {
+    getBridge().BackButton?.hide();
+  } catch {
+    // ignore in browsers
+  }
+}
+
 export function openExternalUrl(url: string): void {
   try {
     getBridge().openLink(url);

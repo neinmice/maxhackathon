@@ -21,10 +21,17 @@ export const PinIcon = ({ className, style }: P) => (
 )
 
 export const HomeIcon = ({ className, style }: P) => (
-  <svg className={className} style={style} width="28" height="28" viewBox="0 0 28 28" fill="none">
+  <svg className={className} style={style} width="26" height="26" viewBox="0 0 28 28" fill="none">
+    <defs>
+      <mask id="homeDoorMask">
+        <rect width="28" height="28" fill="white" />
+        <rect x="11.5" y="15" width="5" height="9" rx="2" fill="black" />
+      </mask>
+    </defs>
     <path
-      d="M3.5 12.6c0-.9.4-1.7 1.1-2.3l7.6-6.3a2.8 2.8 0 0 1 3.6 0l7.6 6.3c.7.6 1.1 1.4 1.1 2.3v10.1a2.8 2.8 0 0 1-2.8 2.8h-3.3a1 1 0 0 1-1-1v-5.2a1.5 1.5 0 0 0-1.5-1.5h-2a1.5 1.5 0 0 0-1.5 1.5v5.2a1 1 0 0 1-1 1H6.3a2.8 2.8 0 0 1-2.8-2.8V12.6Z"
+      d="M4.5 12.8c0-.9.4-1.7 1.1-2.3L12.3 4a2.6 2.6 0 0 1 3.4 0l6.7 6.5c.7.6 1.1 1.4 1.1 2.3v8.5a2.6 2.6 0 0 1-2.6 2.6H7.1a2.6 2.6 0 0 1-2.6-2.6V12.8Z"
       fill="currentColor"
+      mask="url(#homeDoorMask)"
     />
   </svg>
 )
@@ -348,22 +355,86 @@ export const Rays = ({ className, style, color = '#7b5cf0', shade = '#4f38b0' }:
 
 /** Pixel "START" sticker */
 export const StartSticker = ({ className, style }: P) => (
-  <svg className={className} style={style} viewBox="0 0 64 30" fill="none" shapeRendering="crispEdges">
+  <svg className={className} style={style} width="64" height="30" viewBox="0 0 64 30" fill="none" shapeRendering="crispEdges">
     <path d="M6 4h52l3 3v14l-3 3v3H8l-3-3V8l1-1V4Z" fill="#6b3fb3" />
     <path d="M6 2h52l3 3v14l-3 3H6l-3-3V5l3-3Z" fill="#be88e3" />
     <path d="M7 4h50l2 2v12l-2 2H7l-2-2V6l2-2Z" fill="#a8dcaf" />
     <text
       x="32"
-      y="17.2"
+      y="15.5"
       textAnchor="middle"
-      fontFamily="Silkscreen, monospace"
-      fontSize="12.5"
-      fill="#b57de6"
-      stroke="#8a4fc9"
-      strokeWidth=".6"
-      letterSpacing="-.4"
+      fontFamily="'VK Sans Display Expanded', monospace"
+      fontSize="11"
+      fontWeight="900"
+      fill="#1f1a2e"
     >
       START
     </text>
   </svg>
 )
+
+/** Pixel "HOT" sticker */
+export const HotSticker = ({ className, style }: P) => (
+  <svg className={className} style={style} width="64" height="30" viewBox="0 0 64 30" fill="none" shapeRendering="crispEdges">
+    <path d="M6 4h52l3 3v14l-3 3v3H8l-3-3V8l1-1V4Z" fill="#7a35d8" />
+    <path d="M6 2h52l3 3v14l-3 3H6l-3-3V5l3-3Z" fill="#d49b38" />
+    <path d="M7 4h50l2 2v12l-2 2H7l-2-2V6l2-2Z" fill="#f5c06a" />
+    <text x="32" y="15.5" textAnchor="middle" fontFamily="'VK Sans Display Expanded', monospace" fontSize="11" fontWeight="900" fill="#1f1a2e">
+      HOT
+    </text>
+  </svg>
+)
+
+/** Pixel "0%" sticker */
+export const ZeroPercentSticker = ({ className, style }: P) => (
+  <svg className={className} style={style} width="64" height="30" viewBox="0 0 64 30" fill="none" shapeRendering="crispEdges">
+    <path d="M6 4h52l3 3v14l-3 3v3H8l-3-3V8l1-1V4Z" fill="#3b1875" />
+    <path d="M6 2h52l3 3v14l-3 3H6l-3-3V5l3-3Z" fill="#7a35d8" />
+    <path d="M7 4h50l2 2v12l-2 2H7l-2-2V6l2-2Z" fill="#c499f3" />
+    <text x="32" y="15.5" textAnchor="middle" fontFamily="'VK Sans Display Expanded', monospace" fontSize="11" fontWeight="900" fill="#120d1d">
+      0%
+    </text>
+  </svg>
+)
+
+/** Pixel "15.10 ДЕДЛАЙН" sticker */
+export const DeadlineSticker = ({ className, style }: P) => (
+  <svg className={className} style={style} width="64" height="30" viewBox="0 0 64 30" fill="none" shapeRendering="crispEdges">
+    <path d="M6 4h52l3 3v14l-3 3v3H8l-3-3V8l1-1V4Z" fill="#4d1b28" />
+    <path d="M6 2h52l3 3v14l-3 3H6l-3-3V5l3-3Z" fill="#e05368" />
+    <path d="M7 4h50l2 2v12l-2 2H7l-2-2V6l2-2Z" fill="#ff8a99" />
+    <text x="32" y="15.5" textAnchor="middle" fontFamily="'VK Sans Display Expanded', monospace" fontSize="10.5" fontWeight="900" fill="#2d0b13">
+      15.10
+    </text>
+  </svg>
+)
+
+/** Golden twin sparkle */
+export const TwinSparkle = ({ className, style, size = 26 }: P & { size?: number }) => (
+  <svg className={className} style={style} width={size} height={size * 0.8} viewBox="0 0 50 40" fill="none">
+    <path d="M18 4 L21 13 L30 16 L21 19 L18 28 L15 19 L6 16 L15 13 Z" fill="#b98524" transform="translate(1.5, 2)" />
+    <path d="M18 4 L21 13 L30 16 L21 19 L18 28 L15 19 L6 16 L15 13 Z" fill="#f5c06a" />
+    <path d="M38 18 L39.5 23 L44 24.5 L39.5 26 L38 31 L36.5 26 L32 24.5 L36.5 23 Z" fill="#b98524" transform="translate(1, 1.5)" />
+    <path d="M38 18 L39.5 23 L44 24.5 L39.5 26 L38 31 L36.5 26 L32 24.5 L36.5 23 Z" fill="#f5c06a" />
+  </svg>
+)
+
+/** Golden clay coin with ₽ */
+export const ClayCoin = ({ className, style, size = 26 }: P & { size?: number }) => (
+  <svg className={className} style={style} width={size} height={size} viewBox="0 0 40 40" fill="none">
+    <circle cx="20" cy="22" r="16" fill="#b98524" />
+    <circle cx="20" cy="19" r="16" fill="#f5c06a" />
+    <circle cx="20" cy="19" r="13" stroke="#b98524" strokeWidth="1.5" fill="none" />
+    <text x="20" y="25" textAnchor="middle" fontFamily="'VK Sans Display Expanded', sans-serif" fontWeight="900" fontSize="16" fill="#755010">₽</text>
+  </svg>
+)
+
+/** Golden sparkle clay */
+export const SparkleClay = ({ className, style, size = 26 }: P & { size?: number }) => (
+  <svg className={className} style={style} width={size} height={size} viewBox="0 0 40 40" fill="none">
+    <path d="M20 4 L23.5 15.5 L35 19 L23.5 22.5 L20 34 L16.5 22.5 L5 19 L16.5 15.5 Z" fill="#b98524" transform="translate(1.5, 2.5)" />
+    <path d="M20 4 L23.5 15.5 L35 19 L23.5 22.5 L20 34 L16.5 22.5 L5 19 L16.5 15.5 Z" fill="#f5c06a" />
+    <circle cx="20" cy="19" r="3" fill="#fff" opacity="0.8" />
+  </svg>
+)
+
