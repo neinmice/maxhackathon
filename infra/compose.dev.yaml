@@ -1,0 +1,32 @@
+# Local override only. Never deploy this file to the VPS.
+# Host ports exist so the Vite dev server (apps/miniapp/vite.config.ts) can proxy:
+#   /api and /health -> http://localhost:8000
+# Bot is published on localhost:8001 for direct local calls (services/bot/README.md).
+# PostgreSQL is published on localhost:5432 for local clients.
+# Bindings are 127.0.0.1, not 0.0.0.0.
+
+services:
+  api:
+    environment:
+      APP_ENV: development
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  bot:
+    environment:
+      APP_ENV: development
+    ports:
+      - "127.0.0.1:8001:8001"
+
+  db:
+    environment:
+      APP_ENV: development
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  web:
+    ports:
+      - "127.0.0.1:8080:80"
+
+  caddy:
+    profiles: ["edge"]

@@ -3,8 +3,10 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import re
 from typing import Any
 
+from .catalog import measure_exists
 from .config import Settings
 from .max_client import MaxApiClient
 
@@ -47,16 +49,46 @@ def _callback_payload(body: dict[str, Any]) -> str:
     return str(callback.get("payload") or "").strip()
 
 
-def main_menu(settings: Settings) -> list[dict[str, Any]]:
+def _start_payload(body: dict[str, Any]) -> str:
+    for key in ("payload", "start_payload", "start_param"):
+        value = body.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+
+_START_PARAM_RE = re.compile(r"^[A-Za-z0-9_-]{1,512}$")
+_MEASURE_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+
+
+def start_app_payload(value: str) -> str | None:
+    payload = value.strip()
+    if not payload or _START_PARAM_RE.fullmatch(payload) is None:
+        return None
+    if payload == "measure" or payload.startswith("measure_"):
+        measure_id = payload.removeprefix("measure_")
+        if not measure_id or _MEASURE_ID_RE.fullmatch(measure_id) is None:
+            return None
+        if not measure_exists(measure_id):
+            return None
+        return f"measure_{measure_id}"
+    if payload in {"home", "quiz", "catalog", "saved", "onboarding"}:
+        return payload
+    return None
+
+
+def main_menu(settings: Settings, start_payload: str | None = None) -> list[dict[str, Any]]:
     if not settings.max_bot_username:
         return []
+    open_payload = start_payload if start_payload and start_payload.startswith("measure_") else "home"
+    open_text = "Открыть меру" if open_payload != "home" else "Открыть ZVERY"
     buttons = [
         [
             {
                 "type": "open_app",
-                "text": "Открыть ZVERY",
+                "text": open_text,
                 "web_app": settings.max_bot_username,
-                "payload": "home",
+                "payload": open_payload,
             }
         ],
         [
@@ -92,6 +124,12 @@ class BotHandlers:
         self.max_client = max_client
 
     async def process(self, update: dict[str, Any]) -> None:
+        """Handle one claimed update.
+
+        The caller marks the update processed only after this returns.
+        A raised error leaves the claim uncommitted so a retry can run.
+        Success here is not exactly-once delivery to MAX.
+        """
         event_type = _event_type(update)
         body = _event_body(update, event_type)
         user_id = _user_id(body)
@@ -100,13 +138,19 @@ class BotHandlers:
             self.store.touch_user(user_id)
 
         if event_type == "bot_started" and user_id:
+            payload = start_app_payload(_start_payload(body))
+            text = (
+                "Добро пожаловать в ZVERY — навигатор по мерам поддержки бизнеса. "
+                "Выберите действие ниже."
+            )
+            if payload and payload.startswith("measure_"):
+                text = "Откройте карточку меры в Mini App. Квиз и вход не пропускаются."
+            elif payload is None and _start_payload(body):
+                text = "Ссылка запуска не распознана. Откройте Mini App из меню."
             await self.max_client.send_message(
                 user_id=user_id,
-                text=(
-                    "Добро пожаловать в ZVERY — навигатор по мерам поддержки бизнеса. "
-                    "Выберите действие ниже."
-                ),
-                attachments=main_menu(self.settings),
+                text=text,
+                attachments=main_menu(self.settings, payload),
             )
             return
 

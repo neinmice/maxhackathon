@@ -2,22 +2,110 @@ openapi: 3.1.0
 info:
   title: ZVERY Business Navigator API
   version: 0.1.0
+  description: >
+    Один контракт /api/v1. services/api слушает :8000 и отдаёт каталог.
+    services/bot слушает :8001 и отдаёт пользовательские маршруты.
+    Прямой :8000 не реализует bot-маршруты. GET /api/v1/measures/saved на API
+    совпадает с карточкой ID saved и отвечает 404 measure_not_found.
 servers:
-  - url: http://localhost:8000
+  - url: http://127.0.0.1:8000
+    description: services/api, прямой порт каталога
+  - url: http://127.0.0.1:8001
+    description: services/bot, прямой порт пользователя и webhook
   - url: https://zverybot.ru
+    description: Публичный gateway. Маршрутизация этой фазой не меняется.
 paths:
   /health:
     get:
+      x-zvery-service: api
+      x-zvery-also-served-by: bot
+      operationId: serviceHealth
+      description: >
+        Один путь на двух портах. :8000 отвечает ApiHealth.
+        :8001 отвечает BotHealth. Прямой bot health — GET /health, не /bot/health.
+      servers:
+        - url: http://127.0.0.1:8000
+          description: services/api
+        - url: http://127.0.0.1:8001
+          description: services/bot
       responses:
         '200':
-          description: OK
+          description: Health of the service that owns the port
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ApiHealth'
+                  - $ref: '#/components/schemas/BotHealth'
+        default:
+          description: Error envelope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/catalog/filters:
     get:
+      x-zvery-service: api
+      operationId: catalogFilters
       responses:
         '200':
-          description: Available filters
+          description: Filter vocabulary and content gaps
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogFilters'
+        '500':
+          description: Catalog failed schema validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/measures:
+    get:
+      x-zvery-service: api
+      operationId: listMeasures
+      responses:
+        '200':
+          description: Catalog records in file order. JSON array, not an items wrapper.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeasureList'
+        '500':
+          description: Catalog failed schema validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/measures/{measure_id}:
+    get:
+      x-zvery-service: api
+      operationId: getMeasure
+      parameters:
+        - $ref: '#/components/parameters/MeasureId'
+      responses:
+        '200':
+          description: One catalog record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeasureRecord'
+        '404':
+          description: Unknown id, including the literal id saved on the API port
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Catalog failed schema validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/recommendations:
     post:
+      x-zvery-service: api
+      operationId: recommendMeasures
       requestBody:
         required: true
         content:
@@ -26,118 +114,224 @@ paths:
               $ref: '#/components/schemas/RecommendationRequest'
       responses:
         '200':
-          description: Matching prepared records
-  /api/v1/measures/{measure_id}:
-    get:
-      parameters:
-        - in: path
-          name: measure_id
-          required: true
-          schema: {type: string}
-      responses:
-        '200':
-          description: Measure card
-        '404':
-          description: Measure not found
+          description: Matching catalog ids. Valid filters with no rows return items [].
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendationResponse'
+        '422':
+          description: Body or goal/sector outside the catalog
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Catalog failed schema validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/auth/max/launch-data:
     post:
+      x-zvery-service: bot
+      operationId: verifyLaunchData
+      servers:
+        - url: http://127.0.0.1:8001
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [init_data]
-              properties:
-                init_data: {type: string}
+              $ref: '#/components/schemas/LaunchDataRequest'
       responses:
         '200':
           description: Verified MAX user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LaunchDataResponse'
         '401':
           description: Invalid launch data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/measures/{measure_id}/save:
     post:
+      x-zvery-service: bot
+      operationId: saveMeasure
+      servers:
+        - url: http://127.0.0.1:8001
       parameters:
-        - in: path
-          name: measure_id
-          required: true
-          schema: {type: string}
-        - in: header
-          name: X-Max-Init-Data
-          required: true
-          schema: {type: string}
+        - $ref: '#/components/parameters/MeasureId'
+        - $ref: '#/components/parameters/MaxInitData'
       responses:
         '200':
           description: Measure saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaveResult'
+        '401':
+          description: Launch data rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Measure id is not in the catalog
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
     delete:
+      x-zvery-service: bot
+      operationId: removeSavedMeasure
+      servers:
+        - url: http://127.0.0.1:8001
       parameters:
-        - in: path
-          name: measure_id
-          required: true
-          schema: {type: string}
-        - in: header
-          name: X-Max-Init-Data
-          required: true
-          schema: {type: string}
+        - $ref: '#/components/parameters/MeasureId'
+        - $ref: '#/components/parameters/MaxInitData'
       responses:
         '200':
-          description: Measure unsaved
+          description: Measure unsaved. Repeated delete is idempotent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RemoveSavedResult'
+        '401':
+          description: Launch data rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/measures/saved:
     get:
+      x-zvery-service: bot
+      operationId: listSavedMeasures
+      servers:
+        - url: http://127.0.0.1:8001
       parameters:
-        - in: header
-          name: X-Max-Init-Data
-          required: true
-          schema: {type: string}
+        - $ref: '#/components/parameters/MaxInitData'
       responses:
         '200':
-          description: Saved measure ids
+          description: Saved measure ids for the verified user. Not served by API :8000.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedMeasures'
+        '401':
+          description: Launch data rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/quiz/submit:
     post:
+      x-zvery-service: bot
+      operationId: submitQuiz
+      servers:
+        - url: http://127.0.0.1:8001
       parameters:
-        - in: header
-          name: X-Max-Init-Data
-          required: true
-          schema: {type: string}
+        - $ref: '#/components/parameters/MaxInitData'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [quiz_version, answers]
-              properties:
-                quiz_version: {type: string}
-                answers: {type: object, additionalProperties: {type: string}}
+              $ref: '#/components/schemas/QuizSubmitRequest'
       responses:
         '200':
           description: Quiz result and optional signed certificate payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizSubmitResponse'
+        '401':
+          description: Launch data rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: Quiz payload rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: Quiz or certificate signing is not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/notifications/opt-in:
-    post:
+    get:
+      x-zvery-service: bot
+      operationId: getNotificationOptIn
+      servers:
+        - url: http://127.0.0.1:8001
       parameters:
-        - in: header
-          name: X-Max-Init-Data
-          required: true
-          schema: {type: string}
+        - $ref: '#/components/parameters/MaxInitData'
+      responses:
+        '200':
+          description: Global notification consent. Default is disabled. Not a reminder subscription.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OptInResponse'
+        '401':
+          description: Launch data rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      x-zvery-service: bot
+      operationId: notificationOptIn
+      servers:
+        - url: http://127.0.0.1:8001
+      parameters:
+        - $ref: '#/components/parameters/MaxInitData'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [enabled]
-              properties:
-                enabled: {type: boolean}
+              $ref: '#/components/schemas/OptInRequest'
       responses:
         '200':
-          description: Notification preference updated
+          description: Stores the global consent flag. Does not send reminders.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OptInResponse'
+        '401':
+          description: Launch data rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /webhooks/max:
     post:
+      x-zvery-service: bot
+      operationId: maxWebhook
+      servers:
+        - url: http://127.0.0.1:8001
       parameters:
-        - in: header
-          name: X-Max-Bot-Api-Secret
-          required: true
-          schema: {type: string}
+        - $ref: '#/components/parameters/MaxWebhookSecret'
       requestBody:
         required: true
         content:
@@ -148,14 +342,348 @@ paths:
       responses:
         '200':
           description: MAX update accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookAck'
+        '401':
+          description: Webhook secret rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: Webhook secret is not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
 components:
+  parameters:
+    MeasureId:
+      in: path
+      name: measure_id
+      required: true
+      schema:
+        type: string
+    MaxInitData:
+      in: header
+      name: X-Max-Init-Data
+      required: true
+      schema:
+        type: string
+      description: Исходная строка запуска MAX. Пустое или неверное значение — 401.
+    MaxWebhookSecret:
+      in: header
+      name: X-Max-Bot-Api-Secret
+      required: true
+      schema:
+        type: string
   schemas:
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, request_id]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            request_id:
+              type: string
+              description: Создаёт сервер. Заголовок X-Request-ID клиента игнорируется.
+          additionalProperties: false
+      additionalProperties: false
+    ApiHealth:
+      type: object
+      required: [status, version]
+      properties:
+        status:
+          type: string
+          const: ok
+        version:
+          type: string
+      additionalProperties: false
+    BotHealth:
+      type: object
+      required: [status, service, version, max_configured, webhook_configured, database_ready]
+      properties:
+        status:
+          type: string
+          enum: [ok, not_ready]
+        service:
+          type: string
+          const: bot
+        version:
+          type: string
+        max_configured:
+          type: boolean
+        webhook_configured:
+          type: boolean
+        database_ready:
+          type: boolean
+          description: False means HTTP 503. The service is not ready without the database.
+    CatalogFilters:
+      type: object
+      required: [regions, roles, tax_modes, sectors, goals, accepted_tax_modes, content_gaps, catalog_version]
+      properties:
+        regions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Region'
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+        tax_modes:
+          type: array
+          description: Режимы, которые есть в записях, не весь enum.
+          items:
+            $ref: '#/components/schemas/TaxMode'
+        sectors:
+          type: array
+          items:
+            type: string
+        goals:
+          type: array
+          items:
+            type: string
+        accepted_tax_modes:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxMode'
+        content_gaps:
+          type: array
+          items:
+            $ref: '#/components/schemas/Region'
+        catalog_version:
+          type: string
+          const: demo-2026-09-19
+    MeasureList:
+      type: array
+      items:
+        $ref: '#/components/schemas/MeasureRecord'
+    MeasureRecord:
+      type: object
+      required:
+        - id
+        - title
+        - operator
+        - region
+        - roles
+        - tax_modes
+        - sector
+        - goal
+        - eligibility
+        - documents
+        - deadline
+        - source_name
+        - source_url
+        - last_checked
+        - freshness_status
+        - data_status
+        - disclaimer
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        operator:
+          type: string
+        region:
+          $ref: '#/components/schemas/Region'
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+        tax_modes:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxMode'
+        sector:
+          type: string
+        goal:
+          type: string
+        eligibility:
+          type: string
+        documents:
+          type: array
+          items:
+            type: string
+        deadline:
+          type: ['string', 'null']
+        source_name:
+          type: string
+        source_url:
+          type: string
+        last_checked:
+          type: string
+        freshness_status:
+          type: string
+          enum: [fresh, reviewed, model]
+        data_status:
+          type: string
+          enum: ['MODEL DATA', CONFIRMED]
+        disclaimer:
+          type: string
     RecommendationRequest:
       type: object
       required: [region, role, tax_mode]
       properties:
-        region: {type: string, enum: [kazan, moscow, spb]}
-        role: {type: string, enum: [ip, self_employed, llc]}
-        tax_mode: {type: string}
-        sector: {type: string}
-        goal: {type: string}
+        region:
+          $ref: '#/components/schemas/Region'
+        role:
+          $ref: '#/components/schemas/Role'
+        tax_mode:
+          $ref: '#/components/schemas/TaxMode'
+        sector:
+          type: string
+        goal:
+          type: string
+    RecommendationResponse:
+      type: object
+      required: [items, catalog_version]
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            required: [id, title, data_status]
+            properties:
+              id:
+                type: string
+              title:
+                type: string
+              data_status:
+                type: string
+                enum: ['MODEL DATA', CONFIRMED]
+        catalog_version:
+          type: string
+          const: demo-2026-09-19
+    LaunchDataRequest:
+      type: object
+      required: [init_data]
+      properties:
+        init_data:
+          type: string
+    LaunchDataResponse:
+      type: object
+      required: [user, auth_date]
+      properties:
+        user:
+          type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+            first_name:
+              type: ['string', 'null']
+            last_name:
+              type: ['string', 'null']
+            username:
+              type: ['string', 'null']
+        auth_date:
+          type: integer
+    SaveResult:
+      type: object
+      required: [measure_id, saved, created]
+      properties:
+        measure_id:
+          type: string
+        saved:
+          type: boolean
+          const: true
+        created:
+          type: boolean
+    RemoveSavedResult:
+      type: object
+      required: [measure_id, saved, removed]
+      properties:
+        measure_id:
+          type: string
+        saved:
+          type: boolean
+          const: false
+        removed:
+          type: boolean
+    SavedMeasures:
+      type: object
+      required: [measure_ids]
+      properties:
+        measure_ids:
+          type: array
+          items:
+            type: string
+    QuizSubmitRequest:
+      type: object
+      required: [quiz_version, answers]
+      properties:
+        quiz_version:
+          type: string
+        answers:
+          type: object
+          additionalProperties:
+            type: string
+    QuizSubmitResponse:
+      type: object
+      required: [attempt_id, score, passed, pass_score, certificate]
+      properties:
+        attempt_id:
+          type: string
+        score:
+          type: integer
+        passed:
+          type: boolean
+        pass_score:
+          type: integer
+          description: Server threshold. The client must not invent one.
+        certificate:
+          description: Null when not passed. Never a public verification document.
+          oneOf:
+            - type: 'null'
+            - type: object
+              required: [certificate_id, title, disclaimer, payload]
+              properties:
+                certificate_id:
+                  type: string
+                title:
+                  type: string
+                disclaimer:
+                  type: string
+                payload:
+                  type: string
+                  description: base64url JSON plus HMAC-SHA256 hex. Not a cryptographic signature of a state document and not a public verification URL.
+    OptInRequest:
+      type: object
+      required: [enabled]
+      properties:
+        enabled:
+          type: boolean
+    OptInResponse:
+      type: object
+      required: [enabled]
+      properties:
+        enabled:
+          type: boolean
+    WebhookAck:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+          const: true
+        duplicate:
+          type: boolean
+    Region:
+      type: string
+      enum: [kazan, moscow, spb]
+    Role:
+      type: string
+      enum: [ip, self_employed, llc]
+    TaxMode:
+      type: string
+      enum: [npd, usn6, usn15, ausn, osno, none]
+      description: npd не равен none. ausn не равен usn6 или usn15.

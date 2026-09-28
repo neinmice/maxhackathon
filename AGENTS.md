@@ -18,7 +18,7 @@
 - `services/api` — Саша, FastAPI/API.
 - `services/bot` — Саша, MAX Bot handlers.
 - `data` — Стас утверждает содержание; Саша подключает seed.
-- `packages/contracts` — совместная зона, изменения только через review Стаса.
+- контракт ревьюится через `openapi.yaml`, `DATA-API.yaml` и `docs/API_CONTRACT.md`.
 - `docs` — архитектура и контракты.
 
 ## Definition of Done

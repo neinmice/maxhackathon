@@ -2,6 +2,8 @@
 
 Документ создан для прозрачности командной разработки, чтобы **Стас** (дизайн/фронтенд) и **Саша** (бэкенд/бот) точно видели, где чей исходный код, что именно было добавлено Пашей для объединения MVP и как вносить правки.
 
+> Статус: ветка `fix/honest-vertical`, база `c22ee1e`. Изменения после базы **не закоммичены** и включают правки в `apps/miniapp/**`, `services/api/**`, `services/bot/**`, `infra/**`, контракты и docs. Список файлов — `git status`. Откат — `git checkout`/`git restore` от `c22ee1e`; untracked-файлы удалять только осознанно.
+
 ---
 
 ## 📂 1. Общая структура монорепозитория
@@ -53,14 +55,14 @@ maxhackathon/
 ## 🔍 3. Детали добавленного функционала (где смотреть код)
 
 ### А. Онбординг и подбор мер поддержки (Задача Паши №12)
-* **Файл**: [`apps/miniapp/src/components/OnboardingSheet.tsx`](file:///d:/MAXXX/maxhack/maxhackathon/apps/miniapp/src/components/OnboardingSheet.tsx)
+* **Файл**: [`apps/miniapp/src/components/OnboardingSheet.tsx`](../apps/miniapp/src/components/OnboardingSheet.tsx)
 * **Как работает**:
   * Читает и обновляет глобальное состояние в `store.tsx`: `city`, `role`, `taxMode`, `goal`.
   * Кнопки городов используют адаптивную сетку из 3 колонок (`Казань`, `Москва`, `СПб`).
   * По нажатию на кнопку «Подобрать меры поддержки» сохраняет выбор и показывает тост.
 
 ### Б. Детальная карточка меры и чеклист документов (Задачи Паши №8 и №10)
-* **Файл**: [`apps/miniapp/src/components/MeasureDetailSheet.tsx`](file:///d:/MAXXX/maxhack/maxhackathon/apps/miniapp/src/components/MeasureDetailSheet.tsx)
+* **Файл**: [`apps/miniapp/src/components/MeasureDetailSheet.tsx`](../apps/miniapp/src/components/MeasureDetailSheet.tsx)
 * **Как работает**:
   * Открывается при клике на любую меру поддержки (`setMeasureDetail(item)`).
   * Отображает плашку свежести `ПРОВЕРЕНО · 2026`.
@@ -69,7 +71,7 @@ maxhackathon/
   * Содержит официальный дисклеймер и ссылку на портал поддержки МСП.
 
 ### В. Квиз и Золотой Сертификат (Задача Паши №14)
-* **Файл**: [`apps/miniapp/src/components/QuizModal.tsx`](file:///d:/MAXXX/maxhack/maxhackathon/apps/miniapp/src/components/QuizModal.tsx)
+* **Файл**: [`apps/miniapp/src/components/QuizModal.tsx`](../apps/miniapp/src/components/QuizModal.tsx)
 * **Как работает**:
   * Содержит 5 практических вопросов по налогам, грантам и открытию бизнеса.
   * Отправляет ответы на эндпоинт Саши `POST /api/v1/quiz/submit`.
@@ -79,7 +81,7 @@ maxhackathon/
     * Отображает криптографическую подпись ZVERY Core (SHA-256) и официальный дисклеймер.
 
 ### Г. Deep-linking из MAX-бота
-* **Файл**: [`apps/miniapp/src/App.tsx`](file:///d:/MAXXX/maxhack/maxhackathon/apps/miniapp/src/App.tsx#L24-L48)
+* **Файл**: [`apps/miniapp/src/App.tsx`](../apps/miniapp/src/App.tsx)
 * **Как работает**:
   * Читает параметры `?startapp=` из URL или `WebApp.initDataUnsafe.start_param`:
     * `quiz` / `cert` → сразу открывает окно квиза/сертификата;
@@ -93,11 +95,11 @@ maxhackathon/
 ## 🛠 4. Памятка для сокомандников: как вносить изменения
 
 ### Если Стас захочет изменить дизайн или цвета:
-* Все CSS-классы находятся в [`apps/miniapp/src/styles.css`](file:///d:/MAXXX/maxhack/maxhackathon/apps/miniapp/src/styles.css).
-* Все векторные иконки и цвета лучей/стрелок — в [`apps/miniapp/src/components/icons.tsx`](file:///d:/MAXXX/maxhack/maxhackathon/apps/miniapp/src/components/icons.tsx).
+* Все CSS-классы находятся в [`apps/miniapp/src/styles.css`](../apps/miniapp/src/styles.css).
+* Все векторные иконки и цвета лучей/стрелок — в [`apps/miniapp/src/components/icons.tsx`](../apps/miniapp/src/components/icons.tsx).
 * Новые шторки (`OnboardingSheet`, `MeasureDetailSheet`, `QuizModal`) используют стандартный класс `.sheet` Стаса, поэтому их анимация, затемнение и скругления автоматически соответствуют остальному приложению.
 
 ### Если Саша захочет изменить бэкенд или проверку квиза:
-* Логика проверки ответов квиза задаётся в переменной окружения `QUIZ_ANSWER_KEY_JSON` в [`services/bot/app/config.py`](file:///d:/MAXXX/maxhack/maxhackathon/services/bot/app/config.py).
+* Логика проверки ответов квиза задаётся в переменной окружения `QUIZ_ANSWER_KEY_JSON` в [`services/bot/app/config.py`](../services/bot/app/config.py).
 * Клиент отправляет ответы по ключам `q1`, `q2`, `q3`, `q4`, `q5` в формате `{"q1": "a", "q2": "b", ...}` на `POST /api/v1/quiz/submit`.
-* Клиентские методы находятся в [`apps/miniapp/src/api/client.ts`](file:///d:/MAXXX/maxhack/maxhackathon/apps/miniapp/src/api/client.ts).
+* Клиентские методы находятся в [`apps/miniapp/src/api/client.ts`](../apps/miniapp/src/api/client.ts).

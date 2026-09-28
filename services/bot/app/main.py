@@ -2,14 +2,17 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 import base64
-from datetime import datetime, timezone
 import hashlib
 import hmac
 import json
 import logging
 from typing import Any
+import uuid
 
-from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, Header, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel, Field
 
 from .catalog import measure_exists
@@ -17,7 +20,7 @@ from .config import Settings
 from .handlers import BotHandlers, update_hash
 from .max_client import MaxApiClient
 from .security import LaunchDataError, LaunchIdentity, validate_launch_data
-from .store import InMemoryStore, PostgresStore
+from .store import PostgresStore
 
 logger = logging.getLogger(__name__)
 
@@ -35,17 +38,101 @@ class NotificationOptInRequest(BaseModel):
     enabled: bool
 
 
-def _error(status_code: int, code: str, message: str) -> HTTPException:
-    return HTTPException(
-        status_code=status_code,
-        detail={"error": {"code": code, "message": message}},
-    )
+class ApiError(Exception):
+    def __init__(self, status_code: int, code: str, message: str) -> None:
+        self.status_code = status_code
+        self.code = code
+        self.message = message
+        super().__init__(message)
+
+
+def request_id_for(request: Request) -> str:
+    current = getattr(request.state, "request_id", None)
+    if isinstance(current, str) and current:
+        return current
+    generated = uuid.uuid4().hex
+    request.state.request_id = generated
+    return generated
+
+
+def error_body(request: Request, code: str, message: str) -> dict[str, Any]:
+    return {
+        "error": {
+            "code": code,
+            "message": message,
+            "request_id": request_id_for(request),
+        }
+    }
+
+
+def _error(status_code: int, code: str, message: str) -> ApiError:
+    return ApiError(status_code, code, message)
+
+
+def install_error_handlers(app: FastAPI) -> None:
+    @app.middleware("http")
+    async def assign_request_id(request: Request, call_next):
+        request.state.request_id = uuid.uuid4().hex
+        return await call_next(request)
+
+    @app.exception_handler(ApiError)
+    async def api_error_handler(request: Request, exc: ApiError) -> JSONResponse:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=error_body(request, exc.code, exc.message),
+        )
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_error_handler(
+        request: Request,
+        exc: StarletteHTTPException,
+    ) -> JSONResponse:
+        code = "http_error"
+        message = "Запрос отклонён"
+        detail = exc.detail
+        if isinstance(detail, dict):
+            raw_code = detail.get("code") or detail.get("error", {}).get("code")
+            raw_message = detail.get("message") or detail.get("error", {}).get("message")
+            if isinstance(raw_code, str) and raw_code:
+                code = raw_code
+            if isinstance(raw_message, str) and raw_message:
+                message = raw_message
+        elif isinstance(detail, str) and detail:
+            message = detail
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=error_body(request, code, message),
+            headers=getattr(exc, "headers", None),
+        )
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_error_handler(
+        request: Request,
+        exc: RequestValidationError,
+    ) -> JSONResponse:
+        del exc
+        return JSONResponse(
+            status_code=422,
+            content=error_body(request, "validation_error", "Некорректный запрос"),
+        )
+
+    @app.exception_handler(Exception)
+    async def unexpected_error_handler(
+        request: Request,
+        exc: Exception,
+    ) -> JSONResponse:
+        logger.exception("unhandled bot error request_id=%s", request_id_for(request))
+        return JSONResponse(
+            status_code=500,
+            content=error_body(request, "internal_error", "Внутренняя ошибка"),
+        )
 
 
 def _certificate_payload(
     *,
     certificate_id: str,
     quiz_version: str,
+    score: int,
     issued_at: str,
     signing_secret: str,
 ) -> str:
@@ -54,6 +141,7 @@ def _certificate_payload(
     payload = {
         "certificate_id": certificate_id,
         "quiz_version": quiz_version,
+        "score": score,
         "issued_at": issued_at,
     }
     encoded = base64.urlsafe_b64encode(
@@ -77,14 +165,18 @@ def create_app(
     app_store = store or PostgresStore(app_settings.database_url)
     app_max_client = max_client or MaxApiClient(app_settings)
 
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        try:
+        if app_settings.app_env == "production":
             app_store.ensure_schema()
-        except Exception:
-            if app_settings.app_env == "production":
-                raise
-            logger.warning("Bot database is unavailable; use BOT_STORAGE=memory for local handler tests")
+        else:
+            try:
+                app_store.ensure_schema()
+            except Exception:
+                logger.warning(
+                    "Bot database is unavailable; readiness stays not ready until it connects"
+                )
         yield
 
     app = FastAPI(
@@ -92,6 +184,7 @@ def create_app(
         version="0.1.0",
         lifespan=lifespan,
     )
+    install_error_handlers(app)
     app.state.settings = app_settings
     app.state.store = app_store
     app.state.max_client = app_max_client
@@ -121,22 +214,30 @@ def create_app(
                 max_age_seconds=settings.max_launch_max_age_seconds,
             )
         except LaunchDataError as exc:
-            raise _error(401, "invalid_launch_data", str(exc)) from exc
+            raise _error(401, "invalid_launch_data", "Некорректные данные запуска") from exc
+
 
     @app.get("/health")
-    def health(settings: Settings = Depends(settings_dependency)) -> dict[str, Any]:
-        return {
-            "status": "ok",
+    def health(
+        request: Request,
+        settings: Settings = Depends(settings_dependency),
+    ) -> JSONResponse:
+        store = store_dependency(request)
+        database_ready = bool(store.ping())
+        body = {
+            "status": "ok" if database_ready else "not_ready",
             "service": "bot",
             "version": "0.1.0",
             "max_configured": bool(settings.max_bot_token),
             "webhook_configured": bool(settings.max_webhook_secret and settings.public_base_url),
+            "database_ready": database_ready,
         }
+        return JSONResponse(status_code=200 if database_ready else 503, content=body)
+
 
     @app.post("/webhooks/max")
     async def receive_max_webhook(
         update: dict[str, Any],
-        background_tasks: BackgroundTasks,
         request: Request,
         x_max_bot_api_secret: str | None = Header(default=None, alias="X-Max-Bot-Api-Secret"),
     ) -> dict[str, Any]:
@@ -150,10 +251,19 @@ def create_app(
             raise _error(401, "invalid_webhook_secret", "Неверный секрет webhook")
 
         store = store_dependency(request)
-        if not store.claim_update(update_hash(update)):
+        payload_hash = update_hash(update)
+        if not store.claim_update(payload_hash):
             return {"ok": True, "duplicate": True}
 
-        background_tasks.add_task(request.app.state.handlers.process, update)
+        # Claim is processing, not processed. A handler error releases it.
+        # This is at-least-once handling, not exactly-once delivery to MAX.
+        try:
+            await request.app.state.handlers.process(update)
+        except Exception:
+            store.release_update(payload_hash)
+            logger.exception("webhook handler failed; claim released for retry")
+            raise _error(500, "webhook_processing_failed", "Событие не обработано")
+        store.complete_update(payload_hash)
         return {"ok": True}
 
     @app.post("/api/v1/auth/max/launch-data")
@@ -170,7 +280,7 @@ def create_app(
                 max_age_seconds=settings.max_launch_max_age_seconds,
             )
         except LaunchDataError as exc:
-            raise _error(401, "invalid_launch_data", str(exc)) from exc
+            raise _error(401, "invalid_launch_data", "Некорректные данные запуска") from exc
         store.touch_user(identity.user_id)
         return {
             "user": {
@@ -209,14 +319,23 @@ def create_app(
     ) -> dict[str, list[str]]:
         return {"measure_ids": store.list_saved_measures(identity.user_id)}
 
+
+    @app.get("/api/v1/notifications/opt-in")
+    def notification_opt_in_state(
+        identity: LaunchIdentity = Depends(identity_dependency),
+        store: Any = Depends(store_dependency),
+    ) -> dict[str, Any]:
+        return {"enabled": store.get_notifications(identity.user_id)}
+
     @app.post("/api/v1/notifications/opt-in")
     def notification_opt_in(
         payload: NotificationOptInRequest,
         identity: LaunchIdentity = Depends(identity_dependency),
         store: Any = Depends(store_dependency),
     ) -> dict[str, Any]:
-        store.set_notifications(identity.user_id, payload.enabled)
-        return {"enabled": payload.enabled}
+        enabled = store.set_notifications(identity.user_id, payload.enabled)
+        return {"enabled": enabled}
+
 
     @app.post("/api/v1/quiz/submit")
     def submit_quiz(
@@ -232,13 +351,17 @@ def create_app(
             answer_key = json.loads(settings.quiz_answer_key_json).get(payload.quiz_version)
         except json.JSONDecodeError as exc:
             raise _error(503, "quiz_config_invalid", "Конфигурация квиза некорректна") from exc
-        if not isinstance(answer_key, dict):
+        if not isinstance(answer_key, dict) or not answer_key:
             raise _error(422, "quiz_version_not_found", "Версия квиза не найдена")
         if set(payload.answers) != set(answer_key):
             raise _error(422, "quiz_answers_invalid", "Набор ответов не соответствует квизу")
+        if any(not isinstance(value, str) or not value for value in payload.answers.values()):
+            raise _error(422, "quiz_answers_invalid", "Набор ответов не соответствует квизу")
+        if any(not isinstance(value, str) or not value for value in answer_key.values()):
+            raise _error(503, "quiz_config_invalid", "Конфигурация квиза некорректна")
 
-        correct = sum(payload.answers[key] == str(value) for key, value in answer_key.items())
-        score = round(correct * 100 / len(answer_key)) if answer_key else 0
+        correct = sum(payload.answers[key] == value for key, value in answer_key.items())
+        score = round(correct * 100 / len(answer_key))
         passed = score >= settings.quiz_pass_score
         if passed and not settings.certificate_signing_secret:
             raise _error(
@@ -246,29 +369,43 @@ def create_app(
                 "certificate_signing_not_configured",
                 "Сертификаты пока не настроены",
             )
-        result = store.record_quiz_attempt(
-            user_id=identity.user_id,
-            quiz_version=payload.quiz_version,
-            score=score,
-            passed=passed,
-        )
-        response: dict[str, Any] = {
-            "attempt_id": result["attempt_id"],
-            "score": score,
-            "passed": passed,
-            "certificate": None,
-        }
-        if passed and result["certificate_id"]:
-            response["certificate"] = {
-                "certificate_id": result["certificate_id"],
+        try:
+            result = store.record_quiz_attempt(
+                user_id=identity.user_id,
+                quiz_version=payload.quiz_version,
+                score=score,
+                passed=passed,
+            )
+        except Exception as exc:
+            raise _error(500, "quiz_store_failed", "Результат квиза не сохранён") from exc
+        certificate = None
+        if passed:
+            certificate_id = result.get("certificate_id")
+            issued_at = result.get("issued_at")
+            if not certificate_id or not issued_at:
+                raise _error(500, "quiz_store_failed", "Результат квиза не сохранён")
+            certificate = {
+                "certificate_id": certificate_id,
+                "title": "Памятный сертификат за прохождение квиза*",
+                "disclaimer": (
+                    "Сертификат носит информационно-поощрительный характер и не является "
+                    "документом государственного образца об образовании или квалификации."
+                ),
                 "payload": _certificate_payload(
-                    certificate_id=result["certificate_id"],
+                    certificate_id=certificate_id,
                     quiz_version=payload.quiz_version,
-                    issued_at=result["issued_at"],
+                    score=score,
+                    issued_at=issued_at,
                     signing_secret=settings.certificate_signing_secret,
                 ),
             }
-        return response
+        return {
+            "attempt_id": result["attempt_id"],
+            "score": score,
+            "passed": passed,
+            "pass_score": settings.quiz_pass_score,
+            "certificate": certificate,
+        }
 
     return app
 
