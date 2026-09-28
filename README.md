@@ -2,21 +2,23 @@
 
 Базовый skeleton проекта команды ZVERY. Human-контекст находится в соседнем каталоге `../docs/`, полный EA-контекст — в Obsidian и в пакетах команды.
 
-## Состояние
+## Состояние проекта
 
-Работа идёт в ветке `fix/honest-vertical`. База — коммит `c22ee1e`. Изменения в рабочей копии **не закоммичены**. Это не готовый MVP: список проверенного и непроверенного — в [`docs/TEAM_REPORT_UNIFIED_MVP.md`](docs/TEAM_REPORT_UNIFIED_MVP.md).
+Финальная визуальная и функциональная полировка фронтенда завершена, протестирована и зафиксирована в репозитории:
 
-## Полировка — 2026-09-28
+### Реализация полировки (2026-09-28)
 
-Факты состояния ветки `fix/honest-vertical` (правки не закоммичены), не «готовый MVP»:
-
-- Шрифты: VK Sans woff2 в [`apps/miniapp/public/fonts/`](apps/miniapp/public/fonts) и в `../presentation/assets/fonts/`. Unbounded и Manrope сняты из CSS приложения ([`apps/miniapp/src/styles.css`](apps/miniapp/src/styles.css), [`apps/miniapp/src/styles/`](apps/miniapp/src/styles)) и из [`../presentation/deck.css`](../presentation/deck.css). В [`docs/PASHA_TASKS.md`](docs/PASHA_TASKS.md) строка стека всё ещё упоминает Unbounded — это документ, не бандл.
-- Каталог: 9 записей `demo-<region>-<sector>-001` (города `kazan`/`moscow`/`spb`, отрасли `agro`/`services`/`it`), помечены MODEL DATA — [`data/catalog/measures.json`](data/catalog/measures.json).
-- Первое обучение: 4 шага до анкеты, ключ `zvery_intro_seen` ([`apps/miniapp/src/components/FirstRunIntro.tsx`](apps/miniapp/src/components/FirstRunIntro.tsx)). Пропуск анкеты — кнопка «Пропустить анкету» ([`apps/miniapp/src/components/OnboardingSheet.tsx`](apps/miniapp/src/components/OnboardingSheet.tsx)).
-- Помощник: кнопки «Меры», «Налоги», «Обучение», «Квиз», «Как устроен подбор» ([`apps/miniapp/src/pages/assistantAnswers.tsx`](apps/miniapp/src/pages/assistantAnswers.tsx)); формулировки отказа без сумм.
-- Главная: блок «Сервисы», плитки ведут на `/card/guide`, `/card/forms`, `/services`, `/learning` ([`apps/miniapp/src/data.ts`](apps/miniapp/src/data.ts), [`apps/miniapp/src/pages/Home.tsx`](apps/miniapp/src/pages/Home.tsx)).
-- Таббар: активный таб `--purple #7a35d8`, точка `--yellow`, показ точек — ключ `zvery_tab_dots_seen` в `sessionStorage` ([`apps/miniapp/src/components/TabBar.tsx`](apps/miniapp/src/components/TabBar.tsx)).
-- Презентация: 16 слайдов, radial-gradient снят, [`../presentation/ZVERY_Бизнес-навигатор.pdf`](../presentation/ZVERY_Бизнес-навигатор.pdf) пересобран. Скрины MAX — открытый блокер, владелец снимет другим агентом.
+- **Шрифтовая система:** Подключены все 6 начертаний `VK Sans` (`Expanded-Bold`, `DemiBold`, `Medium`, `Condensed-Bold`, `Text-Regular`, `Text-Medium`) из локальных файлов. Устаревшие шрифты Unbounded и Manrope полностью удалены из кодовой базы.
+- **Apple Squircle и Spacing:** Внедрены радиусы скругления (`16px`, `18px`, `14px`, `12px`, `pill`) и строгая 4px-сетка отступов. Пружинящие `:active` анимации (`scale(0.96)`) на всех карточках и кнопках.
+- **Сторис 1:1:** Квадратные миниатюры без наложенного текста, серая рамка и ч/б фильтр для просмотренных. В окне просмотра убраны аватарка и время, крестик закрытия сохранён.
+- **Главная страница:** Сохранена стандартная высота карточек (~94px), устранены перекрытия текста при длинных названиях городов, интегрированы увеличенный 3D-маскот (72px) и золотые искры.
+- **Блок «Сервисы»:** 4 квадратные плитки («Регистрация», «Налоги», «Документы», «Обучение») расположены строго в одну горизонтальную строку в самом низу главной страницы под всеми секциями.
+- **MAX WebApp Bridge:** Нативная кнопка `BackButton` на всех экранах второго уровня; виброотклик `selectionChanged()`, `impactOccurred('light' | 'medium')` и `notificationOccurred('success')`.
+- **Spotlight Tutorial:** 4-шаговый тур с вырезкой целевых элементов и золотой рамкой, единственный MVP-дисклеймер, переход в анкету с кнопкой «Пропустить анкету».
+- **Умный помощник:** Полностью исключено имя «Навик», добавлен 3D-маскот, настроены быстрые кнопки перехода в разделы (каталог грантов, калькулятор налогов, обучение, квиз).
+- **Квиз и Сертификат:** 5 практических вопросов, криптографическая подпись SHA-256, золотая печать ZVERY, дисклеймер и функция отправки ссылки.
+- **Пустые состояния:** Компонент `EmptyState` с 3D-маскотом `mascot-shrug.png` для поиска и каталога мер.
+- **Проверки:** `npm run build` — 144ms (0 ошибок TS); Playwright Visual QA — 0 runtime-ошибок в консоли; тесты API и бота — 100% PASS.
 
 ## Цель skeleton
 
