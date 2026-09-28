@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FACTS, SECTIONS, STORIES, type Card, type Section } from '../data'
 import { cityIn, useApp } from '../store'
@@ -23,35 +23,76 @@ export function SectionTitle({ s, onClick }: { s: Section; onClick?: () => void 
 }
 
 function Stories() {
-  const { viewedStories } = useApp()
-  const [open, setOpen] = useState<number | null>(null)
+  const { viewedSlides, isStoryFullyViewed } = useApp()
+  const [openStoryId, setOpenStoryId] = useState<string | null>(null)
 
   // Пока человек не просмотрел, ни одна из историй не отображается серым.
-  // Просмотренные истории автоматически уходят вправо.
-  const sortedStories = [...STORIES].sort((a, b) => {
-    const aViewed = viewedStories.has(a.id) ? 1 : 0
-    const bViewed = viewedStories.has(b.id) ? 1 : 0
-    return aViewed - bViewed
-  })
+  // Просмотренные истории автоматически уходят вправо (только когда все слайды просмотрены).
+  const sortedStories = useMemo(() => {
+    return [...STORIES].sort((a, b) => {
+      const aDone = isStoryFullyViewed(a.id, a.slides.length) ? 1 : 0
+      const bDone = isStoryFullyViewed(b.id, b.slides.length) ? 1 : 0
+      return aDone - bDone
+    })
+  }, [viewedSlides, isStoryFullyViewed])
+
+  const activeStoryIndex = openStoryId ? STORIES.findIndex((s) => s.id === openStoryId) : -1
 
   return (
     <>
       <div className="stories">
-        {sortedStories.map((s, i) => (
-          <button
-            key={s.id}
-            className={`story-tile ${viewedStories.has(s.id) ? 'is-viewed' : ''}`}
-            onClick={() => {
-              triggerHaptic('light')
-              setOpen(i)
-            }}
-            aria-label={s.title}
-          >
-            {s.cover ? <img src={s.cover} alt={s.title} /> : <span>{s.title}</span>}
-          </button>
-        ))}
+        {sortedStories.map((s) => {
+          const fullyViewed = isStoryFullyViewed(s.id, s.slides.length)
+          const count = s.slides.length
+          const gap = count === 1 ? 0 : count === 2 ? 4 : 3.5
+          const len = (100 - count * gap) / count
+
+          return (
+            <button
+              key={s.id}
+              className={`story-tile ${fullyViewed ? 'is-viewed' : ''}`}
+              onClick={() => {
+                triggerHaptic('light')
+                setOpenStoryId(s.id)
+              }}
+              aria-label={s.title}
+            >
+              <svg className="story-ring" viewBox="0 0 100 100">
+                {s.slides.map((_, idx) => {
+                  const done = viewedSlides.has(`${s.id}:${idx}`)
+                  return (
+                    <rect
+                      key={idx}
+                      x="2"
+                      y="2"
+                      width="96"
+                      height="96"
+                      rx="16"
+                      fill="none"
+                      stroke={done ? '#555558' : '#8455f6'}
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      pathLength={100}
+                      strokeDasharray={`${len} ${100 - len}`}
+                      strokeDashoffset={`${-(idx * (len + gap) + gap / 2)}`}
+                    />
+                  )
+                })}
+              </svg>
+              <div className="story-tile__inner">
+                {s.cover ? <img src={s.cover} alt={s.title} /> : <span>{s.title}</span>}
+              </div>
+            </button>
+          )
+        })}
       </div>
-      {open !== null && <StoryViewer stories={sortedStories} startIndex={open} onClose={() => setOpen(null)} />}
+      {openStoryId !== null && (
+        <StoryViewer
+          stories={STORIES}
+          startIndex={activeStoryIndex >= 0 ? activeStoryIndex : 0}
+          onClose={() => setOpenStoryId(null)}
+        />
+      )}
     </>
   )
 }
@@ -122,9 +163,9 @@ function SingleCard({ c, sId, index }: { c: Card; sId: string; index: number }) 
   }
 
   if (sId === 'finance') {
-    // Style A: Крупная цифра + золотой акцент 28px
+    // Style A: Крупная цифра + золотой акцент 48px (в 2 раза больше)
     const isPurpleTag = index % 2 === 1
-    const icon = index === 0 ? <TwinSparkle size={28} /> : index === 1 ? <ClayCoin size={28} /> : <SparkleClay size={28} />
+    const icon = index === 0 ? <TwinSparkle size={48} /> : index === 1 ? <ClayCoin size={48} /> : <SparkleClay size={48} />
     return (
       <button className="card card--style-a" onClick={handleClick}>
         <div className="card__top">
@@ -154,13 +195,13 @@ function SingleCard({ c, sId, index }: { c: Card; sId: string; index: number }) 
     )
   }
 
-  // Обычные карточки (например, «Бесплатные программы»)
+  // Обычные карточки (например, «Бесплатные программы») — иконки в 2 раза больше (38px)
   return (
     <button className="card" onClick={handleClick}>
       <div className="card__top">
         {c.tag && <span className="card__tag">{c.tag}</span>}
         <div className="card__icon">
-          <SparkleClay size={20} />
+          <SparkleClay size={38} />
         </div>
       </div>
       <div
@@ -204,7 +245,18 @@ const BOTTOM_SERVICES = [
     title: 'Налоги',
     to: '/card/forms',
     icon: (
-      <svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><rect x="7" y="5" width="10" height="3" rx="0.5"/><path d="M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/></svg>
+      <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none">
+        <rect x="4" y="2" width="16" height="20" rx="3" stroke="currentColor" strokeWidth="1.8" fill="none" />
+        <rect className="calc-screen" x="7" y="5" width="10" height="3.5" rx="1" fill="#f5c06a" fillOpacity="0.3" stroke="#f5c06a" strokeWidth="1.2" />
+        <rect className="calc-btn" x="7" y="11" width="2.2" height="2.2" rx="0.5" fill="#f5c06a" stroke="none" />
+        <rect className="calc-btn" x="11" y="11" width="2.2" height="2.2" rx="0.5" fill="#f5c06a" stroke="none" />
+        <rect className="calc-btn" x="15" y="11" width="2.2" height="2.2" rx="0.5" fill="#f5c06a" stroke="none" />
+        <rect className="calc-btn" x="7" y="14.5" width="2.2" height="2.2" rx="0.5" fill="#f5c06a" stroke="none" />
+        <rect className="calc-btn" x="11" y="14.5" width="2.2" height="2.2" rx="0.5" fill="#f5c06a" stroke="none" />
+        <rect className="calc-btn" x="15" y="14.5" width="2.2" height="2.2" rx="0.5" fill="#f5c06a" stroke="none" />
+        <rect className="calc-btn" x="7" y="18" width="6.2" height="2" rx="0.5" fill="#f5c06a" stroke="none" />
+        <rect className="calc-btn" x="15" y="18" width="2.2" height="2" rx="0.5" fill="#f5c06a" stroke="none" />
+      </svg>
     ),
   },
   {

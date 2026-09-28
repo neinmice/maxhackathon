@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { apiClient } from './api/client'
-import type { City } from './data'
+import { CITIES, STORIES, type City } from './data'
 
 export type UserRole = 'self_employed' | 'ip' | 'llc' | 'intern' | 'planning'
 export type UserTaxMode = 'npd' | 'usn6' | 'usn15' | 'ausn'
@@ -17,7 +17,10 @@ type Ctx = {
   goal: UserGoal
   setGoal: (g: UserGoal) => void
   viewedStories: Set<string>
+  viewedSlides: Set<string>
+  markSlideViewed: (storyId: string, slideIdx: number) => void
   markViewed: (id: string) => void
+  isStoryFullyViewed: (storyId: string, slidesCount: number) => boolean
   savedMeasures: Set<string>
   toggleSaveMeasure: (id: string) => void
   toast: string | null
@@ -43,10 +46,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [taxMode, setTaxMode] = useState<UserTaxMode>('usn6')
   const [goal, setGoal] = useState<UserGoal>('start')
 
-  // По умолчанию ни одна из историй не просмотрена (нет серой рамки)
-  const [viewedStories, setViewed] = useState<Set<string>>(() => {
+  // Хранилище просмотренных слайдов: "storyId:slideIndex"
+  const [viewedSlides, setViewedSlides] = useState<Set<string>>(() => {
     try {
-      const raw = localStorage.getItem('zvery_viewed_stories')
+      const raw = localStorage.getItem('zvery_viewed_slides')
       return raw ? new Set(JSON.parse(raw)) : new Set<string>()
     } catch {
       return new Set<string>()
@@ -98,16 +101,50 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const markViewed = (id: string) =>
-    setViewed((s) => {
-      const next = new Set(s).add(id)
+  const markSlideViewed = (storyId: string, slideIdx: number) => {
+    setViewedSlides((prev) => {
+      const key = `${storyId}:${slideIdx}`
+      if (prev.has(key)) return prev
+      const next = new Set(prev).add(key)
       try {
-        localStorage.setItem('zvery_viewed_stories', JSON.stringify(Array.from(next)))
+        localStorage.setItem('zvery_viewed_slides', JSON.stringify(Array.from(next)))
       } catch {
         // no-op
       }
       return next
     })
+  }
+
+  const isStoryFullyViewed = (storyId: string, slidesCount: number) => {
+    for (let i = 0; i < slidesCount; i++) {
+      if (!viewedSlides.has(`${storyId}:${i}`)) return false
+    }
+    return true
+  }
+
+  const markViewed = (storyId: string) => {
+    const s = STORIES.find((x) => x.id === storyId)
+    if (!s) return
+    setViewedSlides((prev) => {
+      const next = new Set(prev)
+      for (let i = 0; i < s.slides.length; i++) {
+        next.add(`${storyId}:${i}`)
+      }
+      try {
+        localStorage.setItem('zvery_viewed_slides', JSON.stringify(Array.from(next)))
+      } catch {
+        // no-op
+      }
+      return next
+    })
+  }
+
+  const viewedStories = new Set<string>()
+  for (const s of STORIES) {
+    if (isStoryFullyViewed(s.id, s.slides.length)) {
+      viewedStories.add(s.id)
+    }
+  }
 
   const showToast = (t: string) => {
     setToast(t)
@@ -149,7 +186,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         goal,
         setGoal,
         viewedStories,
+        viewedSlides,
+        markSlideViewed,
         markViewed,
+        isStoryFullyViewed,
         savedMeasures,
         toggleSaveMeasure,
         toast,

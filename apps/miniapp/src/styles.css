@@ -367,15 +367,16 @@ p {
 }
 
 .story-tile {
+  position: relative;
   aspect-ratio: 1;
-  border: 3px solid #7a35d8;
+  border: none;
   border-radius: var(--radius-story, 18px);
-  padding: 0;
+  padding: 2px;
   display: block;
-  background: #1a1a1b;
-  box-shadow: 0 4px 12px rgba(122, 53, 216, 0.25);
+  background: transparent;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
   transition: transform 0.15s;
-  overflow: hidden;
+  overflow: visible;
   cursor: pointer;
 }
 
@@ -383,20 +384,34 @@ p {
   transform: scale(0.95);
 }
 
-.story-tile img {
+.story-tile__inner {
+  width: 100%;
+  height: 100%;
+  border-radius: calc(var(--radius-story, 18px) - 2px);
+  overflow: hidden;
+  position: relative;
+  background: #1a1a1b;
+}
+
+.story-tile__inner img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
 
-.story-tile.is-viewed {
-  border-color: #444446;
-  box-shadow: none;
+.story-tile.is-viewed .story-tile__inner img {
+  filter: grayscale(1) opacity(0.45);
 }
 
-.story-tile.is-viewed img {
-  filter: grayscale(1) opacity(0.45);
+.story-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+  overflow: visible;
 }
 
 /* ============ home: facts ============ */
@@ -557,13 +572,17 @@ p {
 .cards-wrap {
   position: relative;
   margin: 0.45rem calc(var(--pad) * -1) 0;
+  padding-top: 10px;
+  margin-top: -6px;
 }
 
 .cards {
   display: flex;
   gap: 0.6rem;
   overflow-x: auto;
-  padding: 0 var(--pad);
+  padding: 8px var(--pad);
+  margin-top: -8px;
+  margin-bottom: -8px;
   scroll-snap-type: x mandatory;
   scroll-padding: 0 var(--pad);
   scrollbar-width: none;
@@ -603,7 +622,7 @@ p {
 }
 
 .card__tag {
-  font-family: var(--display);
+  font-family: var(--ui);
   font-size: 0.58rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -629,12 +648,14 @@ p {
 }
 
 .card__icon {
-  width: 26px;
-  height: 26px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   flex-shrink: 0;
+  margin-right: -4px;
+  margin-top: -6px;
 }
 
 .card__title {
@@ -669,18 +690,19 @@ p {
   position: relative;
   display: flex;
   flex-direction: row;
+  overflow: visible;
 }
 
 .card__start-sticker {
   position: absolute;
   top: -8px;
-  left: 60px;
-  width: 48px;
-  height: 22px;
-  transform: rotate(-6deg);
-  z-index: 3;
+  right: -4px;
+  width: 52px;
+  height: 24px;
+  transform: rotate(8deg);
+  z-index: 4;
   pointer-events: none;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
 }
 
 .card--style-b .card__content {
@@ -813,6 +835,17 @@ p {
   stroke: #f5c06a;
   stroke-width: 1.8;
   fill: none;
+}
+
+.services-bottom-tile svg .calc-btn {
+  fill: #f5c06a !important;
+  stroke: none !important;
+}
+
+.services-bottom-tile svg .calc-screen {
+  fill: #f5c06a !important;
+  fill-opacity: 0.3 !important;
+  stroke: #f5c06a !important;
 }
 
 .services-bottom-tile span {

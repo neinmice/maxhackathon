@@ -8,7 +8,7 @@ import { appRoot } from './Sheet'
 const DURATION = 5000
 
 export default function StoryViewer({ stories, startIndex, onClose }: { stories: Story[]; startIndex: number; onClose: () => void }) {
-  const { markViewed, showToast } = useApp()
+  const { markSlideViewed, showToast } = useApp()
   const [si, setSi] = useState(startIndex)
   const [slide, setSlide] = useState(0)
   const [progress, setProgress] = useState(0)
@@ -18,11 +18,13 @@ export default function StoryViewer({ stories, startIndex, onClose }: { stories:
   const touch = useRef<{ x: number; y: number; t: number } | null>(null)
 
   const story = stories[si]
-  const s = story.slides[slide]
+  const s = story?.slides[slide]
 
   useEffect(() => {
-    markViewed(story.id)
-  }, [story.id]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (story) {
+      markSlideViewed(story.id, slide)
+    }
+  }, [story?.id, slide]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const next = useCallback(() => {
     setProgress(0)
