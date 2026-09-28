@@ -7,9 +7,8 @@ import { appRoot } from './Sheet'
 
 const DURATION = 5000
 
-export default function StoryViewer({ stories, startIndex, onClose }: { stories: Story[]; startIndex: number; onClose: () => void }) {
+export default function StoryViewer({ story, onClose }: { story: Story; onClose: () => void }) {
   const { markSlideViewed, showToast } = useApp()
-  const [si, setSi] = useState(startIndex)
   const [slide, setSlide] = useState(0)
   const [progress, setProgress] = useState(0)
   const [paused, setPaused] = useState(false)
@@ -17,7 +16,6 @@ export default function StoryViewer({ stories, startIndex, onClose }: { stories:
   const [dragY, setDragY] = useState(0)
   const touch = useRef<{ x: number; y: number; t: number } | null>(null)
 
-  const story = stories[si]
   const s = story?.slides[slide]
 
   useEffect(() => {
@@ -28,19 +26,17 @@ export default function StoryViewer({ stories, startIndex, onClose }: { stories:
 
   const next = useCallback(() => {
     setProgress(0)
-    if (slide < story.slides.length - 1) setSlide(slide + 1)
-    else if (si < stories.length - 1) {
-      setSi(si + 1)
-      setSlide(0)
-    } else onClose()
-  }, [slide, si, story.slides.length, stories.length, onClose])
+    if (slide < story.slides.length - 1) {
+      setSlide(slide + 1)
+    } else {
+      onClose()
+    }
+  }, [slide, story.slides.length, onClose])
 
   const prev = () => {
     setProgress(0)
-    if (slide > 0) setSlide(slide - 1)
-    else if (si > 0) {
-      setSi(si - 1)
-      setSlide(stories[si - 1].slides.length - 1)
+    if (slide > 0) {
+      setSlide(slide - 1)
     }
   }
 
@@ -59,7 +55,7 @@ export default function StoryViewer({ stories, startIndex, onClose }: { stories:
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [paused, si, slide])
+  }, [paused, slide])
 
   useEffect(() => {
     if (progress >= 1) next()
@@ -87,16 +83,8 @@ export default function StoryViewer({ stories, startIndex, onClose }: { stories:
     setDragY(0)
     if (dy > 110) return onClose()
     if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
-      // свайп между историями
-      if (dx < 0 && si < stories.length - 1) {
-        setSi(si + 1)
-        setSlide(0)
-        setProgress(0)
-      } else if (dx > 0 && si > 0) {
-        setSi(si - 1)
-        setSlide(0)
-        setProgress(0)
-      }
+      if (dx < 0) next()
+      else prev()
       return
     }
     if (Date.now() - st.t < 250 && Math.abs(dx) < 10 && Math.abs(dy) < 10) {

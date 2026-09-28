@@ -594,20 +594,22 @@ p {
 
 .card {
   flex: 0 0 calc((100% - 0.6rem) / 2);
-  height: 5.9rem;
+  min-width: calc((100% - 0.6rem) / 2);
+  height: 6.2rem;
   background: #2a2a2b;
   border: 1px solid #363638;
   border-radius: var(--radius-card, 16px);
-  padding: 0.6rem 0.75rem;
+  padding: 0.55rem 0.7rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   text-align: left;
   scroll-snap-align: start;
   transition: transform 0.15s;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 .card:active {
@@ -619,6 +621,9 @@ p {
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  height: 24px;
+  position: relative;
+  z-index: 2;
 }
 
 .card__tag {
@@ -648,49 +653,62 @@ p {
 }
 
 .card__icon {
-  width: 44px;
-  height: 44px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   flex-shrink: 0;
-  margin-right: -4px;
-  margin-top: -6px;
+  margin-right: -2px;
+  margin-top: -2px;
+}
+
+.card__body {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 3px;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
+
+.card--start .card__body {
+  width: 60%;
 }
 
 .card__title {
   font-family: 'VK Sans Display Expanded', var(--display);
-  font-size: clamp(0.82rem, 3.8vw, 0.95rem);
+  font-size: 0.85rem;
   font-weight: 700;
   color: #ffffff;
   line-height: 1.15;
   letter-spacing: -0.01em;
-}
-
-.card--style-a .card__title {
-  font-family: 'VK Sans Display Expanded', var(--display);
-  font-size: clamp(0.95rem, 4.2vw, 1.1rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: #ffffff;
-  line-height: 1.1;
-  white-space: nowrap;
+  white-space: pre-line;
+  overflow: hidden;
 }
 
 .card__sub {
-  font-size: 0.66rem;
+  font-family: var(--body);
+  font-size: 0.65rem;
+  font-weight: 500;
   color: #8d93a3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.15;
 }
 
-/* Style B: Секция «Начни свое дело» — увеличенный маскот и привязанная иконка Старт */
-.card--style-b {
-  position: relative;
-  display: flex;
-  flex-direction: row;
-  overflow: visible;
+.card__sticker {
+  position: absolute;
+  top: -8px;
+  right: -4px;
+  width: 52px;
+  height: 24px;
+  transform: rotate(8deg);
+  z-index: 4;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
 }
 
 .card__start-sticker {
@@ -705,26 +723,7 @@ p {
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
 }
 
-.card--style-b .card__content {
-  width: 58%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  z-index: 2;
-  height: 100%;
-}
-
-.card--style-b .card__title {
-  font-family: 'VK Sans Display Expanded', var(--display);
-  font-size: 0.86rem;
-  font-weight: 700;
-  color: #ffffff;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
-  white-space: pre-line;
-}
-
-.card--style-b .card__mascot {
+.card__mascot {
   position: absolute;
   right: 2px;
   bottom: 0;
@@ -736,26 +735,6 @@ p {
   z-index: 1;
   pointer-events: none;
   filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
-}
-
-.deco-rays {
-  position: absolute;
-  z-index: 2;
-  left: 39.5%;
-  top: -1.1rem;
-  width: 2.6rem;
-  height: 2.2rem;
-  pointer-events: none;
-}
-
-.deco-rays-right {
-  position: absolute;
-  z-index: 2;
-  right: -0.1rem;
-  top: 0.55rem;
-  width: 2.6rem;
-  height: 2.2rem;
-  pointer-events: none;
 }
 
 /* ============ tab bar ============ */
@@ -830,11 +809,17 @@ p {
 }
 
 .services-bottom-tile svg {
-  width: 20px;
-  height: 20px;
-  stroke: #f5c06a;
+  width: 22px;
+  height: 22px;
+  stroke: #8455f6;
   stroke-width: 1.8;
   fill: none;
+}
+
+.services-bottom-tile svg .calc-frame {
+  stroke: #8455f6 !important;
+  stroke-width: 1.8 !important;
+  fill: none !important;
 }
 
 .services-bottom-tile svg .calc-btn {
@@ -846,6 +831,7 @@ p {
   fill: #f5c06a !important;
   fill-opacity: 0.3 !important;
   stroke: #f5c06a !important;
+  stroke-width: 1.2 !important;
 }
 
 .services-bottom-tile span {

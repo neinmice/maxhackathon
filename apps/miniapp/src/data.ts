@@ -119,7 +119,7 @@ export type Section = {
   hl: string
   post?: string
   hlColor: 'yellow' | 'purple'
-  deco: 'start' | 'rays' | 'rays-right'
+  deco?: 'start' | 'none'
   cards: Card[]
 }
 
@@ -182,7 +182,6 @@ export const SECTIONS: Section[] = [
     hl: 'Бесплатные',
     post: 'программы',
     hlColor: 'yellow',
-    deco: 'rays',
     cards: [
       {
         id: 'events-city',
@@ -219,7 +218,6 @@ export const SECTIONS: Section[] = [
     pre: 'Финансовая',
     hl: 'поддержка',
     hlColor: 'purple',
-    deco: 'rays-right',
     cards: [
       {
         id: 'grant-300',
