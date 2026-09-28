@@ -68,7 +68,9 @@ export const CategoryBlock: React.FC<CategoryBlockProps> = ({
           )}
         </div>
 
-        <span style={{ fontSize: 16, fontWeight: 700, color: '#A78BFA' }}>&gt;</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m9 18 6-6-6-6" />
+        </svg>
       </div>
 
       {/* 2-Column Card Grid (Matching Canva Reference Exactly) */}

@@ -25,7 +25,7 @@
 @font-face {
   font-family: 'VK Sans Display Expanded';
   src: url('/fonts/VKSansDisplayExpanded-Bold.woff2') format('woff2');
-  font-weight: 700;
+  font-weight: 500 900;
   font-style: normal;
   font-display: swap;
 }
@@ -333,6 +333,8 @@ p {
 
 .header__geo {
   position: relative;
+  font-family: var(--display);
+  font-weight: 600;
   font-size: 0.97rem;
   letter-spacing: 0.02em;
   padding: 0.3rem 0;
@@ -426,13 +428,25 @@ p {
 }
 
 .facts__cta {
-  font-family: var(--ui);
+  font-family: var(--display);
   font-style: normal;
   font-size: 0.72rem;
   font-weight: 700;
-  color: #f5c06a;
-  letter-spacing: 0.03em;
-  opacity: 0.95;
+  color: #120d1d;
+  background: linear-gradient(135deg, #ffd21e 0%, #f5c06a 100%);
+  letter-spacing: 0.04em;
+  padding: 0.22rem 0.65rem;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(245, 192, 106, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 4px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.facts__cta:active {
+  transform: scale(0.96);
 }
 
 .facts__text.from-left {
@@ -471,14 +485,14 @@ p {
 }
 
 .facts__arrow--left {
-  left: -0.4rem;
+  left: 0.2rem;
   top: 0;
   width: 5.1rem;
   height: 1.9rem;
 }
 
 .facts__arrow--right {
-  right: -0.4rem;
+  right: 0.2rem;
   bottom: 0.05rem;
   width: 5.5rem;
   height: 2rem;
@@ -487,8 +501,8 @@ p {
 /* ============ home: sections ============ */
 
 .sec-title {
-  font-family: var(--display);
-  font-weight: 800;
+  font-family: 'VK Sans Display Expanded', var(--display);
+  font-weight: 700;
   font-size: 0.97rem;
   letter-spacing: 0.01em;
   line-height: 1.2;
@@ -503,8 +517,12 @@ p {
 }
 
 .sec-title__gt {
-  margin-left: 0.25rem;
-  font-size: 1.05em;
+  margin-left: 0.35rem;
+  display: inline-block;
+  align-self: center;
+  color: var(--muted);
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
 }
 
 .hl {
@@ -585,14 +603,19 @@ p {
 }
 
 .card__tag {
+  font-family: var(--display);
   font-size: 0.58rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: #f5c06a;
   background: rgba(245, 192, 106, 0.15);
-  padding: 0.15rem 0.4rem;
+  padding: 0.18rem 0.55rem;
   border-radius: 6px;
+  width: fit-content;
+  max-width: 100%;
+  white-space: nowrap;
+  display: inline-block;
 }
 
 .card__tag--purple {
@@ -615,9 +638,19 @@ p {
 }
 
 .card__title {
-  font-family: var(--display);
-  font-size: clamp(0.82rem, 3.8vw, 0.92rem);
+  font-family: 'VK Sans Display Expanded', var(--display);
+  font-size: clamp(0.82rem, 3.8vw, 0.95rem);
   font-weight: 700;
+  color: #ffffff;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.card--style-a .card__title {
+  font-family: 'VK Sans Display Expanded', var(--display);
+  font-size: clamp(0.95rem, 4.2vw, 1.1rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: #ffffff;
   line-height: 1.1;
   white-space: nowrap;
@@ -631,10 +664,23 @@ p {
   text-overflow: ellipsis;
 }
 
-/* Style B: Секция «Начни свое дело» — увеличенный маскот 72px */
+/* Style B: Секция «Начни свое дело» — увеличенный маскот и привязанная иконка Старт */
 .card--style-b {
+  position: relative;
   display: flex;
   flex-direction: row;
+}
+
+.card__start-sticker {
+  position: absolute;
+  top: -8px;
+  left: 60px;
+  width: 48px;
+  height: 22px;
+  transform: rotate(-6deg);
+  z-index: 3;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
 }
 
 .card--style-b .card__content {
@@ -647,34 +693,27 @@ p {
 }
 
 .card--style-b .card__title {
-  font-family: var(--ui);
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-family: 'VK Sans Display Expanded', var(--display);
+  font-size: 0.86rem;
+  font-weight: 700;
   color: #ffffff;
-  line-height: 1.2;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  white-space: pre-line;
 }
 
 .card--style-b .card__mascot {
   position: absolute;
-  right: -4px;
-  bottom: -4px;
-  width: 72px;
-  height: 72px;
+  right: 2px;
+  bottom: 0;
+  height: calc(100% - 4px);
+  width: auto;
+  max-width: 44%;
   object-fit: contain;
+  object-position: bottom right;
   z-index: 1;
   pointer-events: none;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
-}
-
-.deco-start {
-  position: absolute;
-  z-index: 2;
-  left: 36.5%;
-  top: -0.85rem;
-  width: 3.9rem;
-  height: 1.9rem;
-  transform: rotate(-4deg);
-  pointer-events: none;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
 }
 
 .deco-rays {
@@ -902,6 +941,9 @@ p {
   bottom: 0;
   height: 100%;
   width: auto;
+  max-width: 48%;
+  object-fit: contain;
+  flex-shrink: 0;
   border-radius: 0.6rem 0 0 0.6rem;
 }
 

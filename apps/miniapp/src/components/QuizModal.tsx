@@ -217,11 +217,14 @@ export default function QuizModal() {
                 style={{
                   background: 'linear-gradient(145deg, rgba(245, 197, 109, 0.12) 0%, rgba(157, 107, 198, 0.12) 100%)',
                   border: '2px solid var(--yellow)',
+                  outline: '1px dashed rgba(245, 197, 109, 0.4)',
+                  outlineOffset: '-6px',
                   borderRadius: '1.2rem',
-                  padding: '1.4rem 1.1rem',
+                  padding: '1.5rem 1.1rem',
                   position: 'relative',
                   overflow: 'hidden',
                   marginBottom: '1rem',
+                  boxShadow: '0 8px 30px rgba(0, 0, 0, 0.4)',
                 }}
               >
                 <div
@@ -270,7 +273,7 @@ export default function QuizModal() {
                 </div>
 
                 <div style={{ fontSize: '0.72rem', letterSpacing: '0.12em', color: 'var(--yellow)', fontWeight: 800 }}>
-                  СЕРТИФИКАТ ГОТОВНОСТИ БИЗНЕС-ПРОЕКТА
+                  ПАМЯТНЫЙ СЕРТИФИКАТ ЗА ПРОХОЖДЕНИЕ КВИЗА*
                 </div>
 
                 <h2 style={{ fontSize: '1.4rem', margin: '0.4rem 0 0.2rem', color: '#fff', fontFamily: 'var(--display)' }}>
@@ -319,7 +322,7 @@ export default function QuizModal() {
                   textAlign: 'left',
                 }}
               >
-                <b>Дисклеймер:</b> Сертификат подтверждает прохождение обучающего теста в ZVERY Business Navigator и не гарантирует автоматическое предоставление государственной субсидии или гранта.
+                *Памятный сертификат носит информационно-поощрительный характер и не является документом государственного образца об образовании или квалификации (ст. 60 ФЗ №273). Не гарантирует автоматическое предоставление государственной субсидии или гранта.
               </div>
             )}
 
@@ -328,19 +331,21 @@ export default function QuizModal() {
                 <button
                   className="btn btn--primary btn--block"
                   onClick={() => {
-                    showToast('Ссылка на сертификат скопирована')
+                    triggerHaptic('medium')
+                    showToast('Генерация PDF (A4)...')
+                    window.print()
                   }}
                 >
-                  Поделиться сертификатом
+                  Скачать PDF (A4)
                 </button>
                 <button
                   className="btn btn--ghost btn--block"
                   onClick={() => {
-                    handleClose()
-                    nav('/grants')
+                    triggerHaptic('light')
+                    showToast('Сертификат отправлен в чат MAX')
                   }}
                 >
-                  Перейти к грантам
+                  Отправить в MAX
                 </button>
               </div>
             )}

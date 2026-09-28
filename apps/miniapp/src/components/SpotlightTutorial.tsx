@@ -162,17 +162,19 @@ export default function SpotlightTutorial({
         <button
           onClick={skip}
           style={{
-            background: 'rgba(255, 255, 255, 0.12)',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
+            background: 'rgba(255, 255, 255, 0.14)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
             color: '#ffffff',
             borderRadius: '50%',
-            width: '32px',
-            height: '32px',
+            width: '40px',
+            height: '40px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            fontSize: '14px',
+            fontSize: '15px',
+            fontWeight: 700,
+            flexShrink: 0,
           }}
           aria-label="Пропустить обучение"
         >

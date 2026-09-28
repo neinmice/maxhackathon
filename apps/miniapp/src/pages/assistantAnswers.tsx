@@ -18,6 +18,8 @@ const ROLE_TITLE: Record<UserRole, string> = {
   self_employed: 'самозанятый',
   ip: 'ИП',
   llc: 'ООО',
+  intern: 'стажер',
+  planning: 'планирую',
 }
 
 const SECTOR_TITLE: Record<string, string> = {

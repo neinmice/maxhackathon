@@ -46,7 +46,7 @@ function answer(
             }}
             style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '10px' }}
           >
-            💰 Каталог грантов →
+            Каталог грантов →
           </button>
           <button
             type="button"
@@ -57,7 +57,7 @@ function answer(
             }}
             style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '10px' }}
           >
-            📚 Курс «Азы бизнеса»
+            Курс «Азы бизнеса»
           </button>
         </div>
       </>
@@ -87,7 +87,7 @@ function answer(
             }}
             style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '10px' }}
           >
-            🧮 Калькулятор налогов →
+            Калькулятор налогов →
           </button>
         </div>
       </>
@@ -112,7 +112,7 @@ function answer(
             }}
             style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '10px' }}
           >
-            📚 Раздел «Обучение» →
+            Раздел «Обучение» →
           </button>
         </div>
       </>
@@ -149,7 +149,7 @@ function answer(
             }}
             style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '10px' }}
           >
-            🎯 Пройти квиз
+            Пройти квиз
           </button>
         </div>
       </>
@@ -158,7 +158,7 @@ function answer(
   if (t.includes('кто')) {
     return (
       <p>
-        Я твой персональный помощник по «Бизнес-Навигатору» 🙂 Отвечаю на вопросы про открытие бизнеса, гранты и обучение в {city}.
+        Я твой персональный помощник по «Бизнес-Навигатору». Отвечаю на вопросы про открытие бизнеса, гранты и обучение в {city}.
       </p>
     )
   }
@@ -181,7 +181,7 @@ function answer(
             }}
             style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '10px' }}
           >
-            🎯 Начать квиз →
+            Начать квиз →
           </button>
         </div>
       </>
@@ -202,7 +202,7 @@ function answer(
           }}
           style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '10px' }}
         >
-          💰 Каталог мер
+          Каталог мер
         </button>
         <button
           type="button"
@@ -213,7 +213,7 @@ function answer(
           }}
           style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '10px' }}
         >
-          🧮 Калькулятор
+          Калькулятор
         </button>
       </div>
     </>
@@ -221,7 +221,7 @@ function answer(
 }
 
 export default function Assistant() {
-  const { city, setQuizOpen } = useApp()
+  const { city, setQuizOpen, showToast } = useApp()
   const loc = useLocation()
   const nav = useNavigate()
   const [msgs, setMsgs] = useState<Msg[]>([])
@@ -230,6 +230,7 @@ export default function Assistant() {
   const [listening, setListening] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
   const idRef = useRef(0)
+  const initialQueryHandled = useRef(false)
   const address = CITIES.find((c) => c.name === city)!.region.replace('Центр «Мой бизнес», ', '')
 
   const send = (q: string) => {
@@ -255,10 +256,13 @@ export default function Assistant() {
     }, 1300)
   }
 
-  // вопрос, переданный из поиска
+  // вопрос, переданный из поиска или шторки
   useEffect(() => {
     const q = (loc.state as { q?: string } | null)?.q
-    if (q) send(q)
+    if (q && !initialQueryHandled.current) {
+      initialQueryHandled.current = true
+      send(q)
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -267,11 +271,47 @@ export default function Assistant() {
 
   const mic = () => {
     if (listening) return
-    setListening(true)
-    window.setTimeout(() => {
-      setListening(false)
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      showToast('Голосовой ввод не поддерживается браузером')
       setText('Как получить грант для молодых предпринимателей?')
-    }, 1800)
+      return
+    }
+
+    try {
+      const recognition = new SpeechRecognition()
+      recognition.lang = 'ru-RU'
+      recognition.interimResults = true
+      recognition.continuous = false
+
+      recognition.onstart = () => {
+        triggerHaptic('medium')
+        setListening(true)
+      }
+
+      recognition.onresult = (event: any) => {
+        const transcript = Array.from(event.results)
+          .map((res: any) => res[0].transcript)
+          .join('')
+        setText(transcript)
+      }
+
+      recognition.onerror = () => {
+        setListening(false)
+        showToast('Не удалось распознать речь')
+      }
+
+      recognition.onend = () => {
+        setListening(false)
+        triggerHaptic('light')
+      }
+
+      recognition.start()
+    } catch {
+      setListening(false)
+      showToast('Голосовой ввод недоступен')
+    }
   }
 
   const empty = msgs.length === 0

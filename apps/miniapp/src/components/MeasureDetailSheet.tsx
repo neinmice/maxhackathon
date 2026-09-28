@@ -46,8 +46,8 @@ export default function MeasureDetailSheet() {
 
   return (
     <Sheet open={!!measureDetail} onClose={() => setMeasureDetail(null)} title={title}>
-      <div className="sheet-body" style={{ maxHeight: '72vh', overflowY: 'auto', paddingRight: '0.2rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="sheet-body" style={{ maxHeight: '72vh', overflowY: 'auto', paddingRight: '0.2rem', paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 24px)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
           <div className="grant-sheet__amount">{amount}</div>
           <span
             style={{
@@ -58,6 +58,8 @@ export default function MeasureDetailSheet() {
               background: 'rgba(91, 143, 247, 0.15)',
               color: 'var(--blue, #5b8ff7)',
               letterSpacing: '0.04em',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
             }}
           >
             АКТУАЛЬНО · 2026

@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { apiClient } from './api/client'
 import type { City } from './data'
 
-export type UserRole = 'self_employed' | 'ip' | 'llc'
+export type UserRole = 'self_employed' | 'ip' | 'llc' | 'intern' | 'planning'
 export type UserTaxMode = 'npd' | 'usn6' | 'usn15' | 'ausn'
 export type UserGoal = 'start' | 'grants' | 'growth' | 'education'
 
@@ -43,8 +43,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [taxMode, setTaxMode] = useState<UserTaxMode>('usn6')
   const [goal, setGoal] = useState<UserGoal>('start')
 
-  // «Цифры» уже просмотрены — как на макете (серая рамка)
-  const [viewedStories, setViewed] = useState<Set<string>>(new Set(['numbers']))
+  // По умолчанию ни одна из историй не просмотрена (нет серой рамки)
+  const [viewedStories, setViewed] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem('zvery_viewed_stories')
+      return raw ? new Set(JSON.parse(raw)) : new Set<string>()
+    } catch {
+      return new Set<string>()
+    }
+  })
   const [savedMeasures, setSavedMeasures] = useState<Set<string>>(() => {
     try {
       const raw = localStorage.getItem('zvery_saved_measures')
@@ -91,7 +98,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const markViewed = (id: string) => setViewed((s) => new Set(s).add(id))
+  const markViewed = (id: string) =>
+    setViewed((s) => {
+      const next = new Set(s).add(id)
+      try {
+        localStorage.setItem('zvery_viewed_stories', JSON.stringify(Array.from(next)))
+      } catch {
+        // no-op
+      }
+      return next
+    })
 
   const showToast = (t: string) => {
     setToast(t)

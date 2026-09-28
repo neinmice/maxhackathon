@@ -134,7 +134,7 @@ export const SECTIONS: Section[] = [
     cards: [
       {
         id: 'where-to-start',
-        title: 'С чего начать',
+        title: 'С чего\nначать?',
         subtitle: 'Чек-лист ИП',
         tag: 'старт',
         body: [
@@ -147,7 +147,7 @@ export const SECTIONS: Section[] = [
       },
       {
         id: 'idea',
-        title: 'Грант 300к',
+        title: 'Грант',
         subtitle: 'Без возврата',
         tag: 'финансы',
         body: ['Опиши клиента и его боль.', 'Найди 3 конкурента и их слабые места.', 'Сделай MVP за неделю и получи первые продажи.'],

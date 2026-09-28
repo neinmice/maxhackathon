@@ -1,14 +1,9 @@
-/**
- * [ZVERY MVP] Задача Паши №12: Onboarding и подбор мер поддержки
- * Автор: Паша (в стилистике Стаса)
- * Назначение: выбор региона (Казань/Москва/СПб), формы бизнеса (НПД/ИП/ООО),
- * налогового режима и цели с последующей фильтрацией мер.
- */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CheckIcon, Rays, StartSticker } from './icons'
 import Sheet from './Sheet'
 import { useApp, type UserGoal, type UserRole, type UserTaxMode } from '../store'
 import type { City } from '../data'
+import { triggerHaptic, triggerSelectionChanged } from '../lib/maxBridge'
 
 export default function OnboardingSheet() {
   const {
@@ -25,136 +20,253 @@ export default function OnboardingSheet() {
     showToast,
   } = useApp()
 
+  const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
 
+  useEffect(() => {
+    if (onboardingOpen) setStep(0)
+  }, [onboardingOpen])
+
   const roles: { id: UserRole; title: string; desc: string }[] = [
-    { id: 'self_employed', title: 'Самозанятый', desc: 'НПД до 2.4 млн ₽, без отчётов' },
-    { id: 'ip', title: 'Индивидуальный предприниматель', desc: 'ИП на УСН/патенте' },
-    { id: 'llc', title: 'ООО (Юрлицо)', desc: 'Компания с соучредителями' },
+    { id: 'self_employed', title: 'Самозанятый (НПД)', desc: 'Налог 4–6%, доход до 2.4 млн ₽, без отчётов' },
+    { id: 'ip', title: 'Индивидуальный предприниматель', desc: 'ИП на УСН, патенте или АУСН' },
+    { id: 'llc', title: 'ООО (Юрлицо)', desc: 'Компания с соучредителями и сотрудниками' },
+    { id: 'planning', title: 'Пока только планирую', desc: 'Выбираю идею, изучаю стартовые субсидии' },
+    { id: 'intern', title: 'Стажер / Ищу практику', desc: 'Студент или начинающий специалист' },
   ]
 
   const cities: City[] = ['Казань', 'Москва', 'Санкт-Петербург']
 
-  const taxes: { id: UserTaxMode; title: string }[] = [
-    { id: 'npd', title: 'НПД (4–6%)' },
-    { id: 'usn6', title: 'УСН «Доходы» (6%)' },
-    { id: 'usn15', title: 'УСН «Доходы - расходы» (15%)' },
-    { id: 'ausn', title: 'АУСН (Автоматизированная)' },
+  const taxes: { id: UserTaxMode; title: string; desc: string }[] = [
+    { id: 'npd', title: 'НПД (4–6%)', desc: 'Для самозанятых без наёмных сотрудников' },
+    { id: 'usn6', title: 'УСН «Доходы» (6%)', desc: 'Базовый режим для сферы услуг' },
+    { id: 'usn15', title: 'УСН «Доходы - расходы» (15%)', desc: 'Для торговли и производства' },
+    { id: 'ausn', title: 'АУСН (Автоматизированная)', desc: 'Без отчетности, налог считает банк' },
   ]
 
-  const goals: { id: UserGoal; title: string }[] = [
-    { id: 'start', title: 'Стартовый капитал' },
-    { id: 'grants', title: 'Гранты и субсидии' },
-    { id: 'education', title: 'Обучение и менторство' },
-    { id: 'growth', title: 'Льготные кредиты' },
+  const goals: { id: UserGoal; title: string; desc: string }[] = [
+    { id: 'start', title: 'Стартовый капитал', desc: 'Субсидии на открытие дела' },
+    { id: 'grants', title: 'Гранты и субсидии', desc: 'Безвозмездное финансирование' },
+    { id: 'education', title: 'Обучение и менторство', desc: 'Курсы и акселерационные программы' },
+    { id: 'growth', title: 'Льготные кредиты', desc: 'Микрозаймы под низкий процент' },
   ]
+
+  const skipTaxStep = role === 'self_employed' || role === 'intern' || role === 'planning'
+
+  const goNext = () => {
+    triggerSelectionChanged()
+    if (step === 0) {
+      setStep(1)
+    } else if (step === 1) {
+      if (skipTaxStep) setStep(3)
+      else setStep(2)
+    } else if (step === 2) {
+      setStep(3)
+    } else {
+      handleApply()
+    }
+  }
+
+  const goBack = () => {
+    triggerHaptic('light')
+    if (step === 3 && skipTaxStep) {
+      setStep(1)
+    } else if (step > 0) {
+      setStep((s) => s - 1)
+    }
+  }
 
   const handleApply = () => {
     setLoading(true)
     setTimeout(() => {
       setLoading(false)
       setOnboardingOpen(false)
-      showToast(`Профиль обновлён: ${city}, ${role === 'ip' ? 'ИП' : role === 'self_employed' ? 'Самозанятый' : 'ООО'}`)
+      const roleLabel =
+        role === 'ip' ? 'ИП' : role === 'self_employed' ? 'Самозанятый' : role === 'llc' ? 'ООО' : role === 'intern' ? 'Стажер' : 'Планирую'
+      showToast(`Профиль настроен: ${city}, ${roleLabel}`)
     }, 350)
   }
 
+  const stepTitles = [
+    'Шаг 1 из 4 · Где ты открываешь дело?',
+    'Шаг 2 из 4 · Твой текущий статус',
+    'Шаг 3 из 4 · Система налогообложения',
+    'Шаг 4 из 4 · Главная цель',
+  ]
+
   return (
-    <Sheet open={onboardingOpen} onClose={() => setOnboardingOpen(false)} title="Подбор мер поддержки">
-      <div className="onboard-sheet" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingBottom: '2rem' }}>
-        <div style={{ background: 'var(--card-2)', padding: '0.75rem 0.85rem', borderRadius: '1rem', border: '1px solid var(--line)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.55rem' }}>
-            <span style={{ fontSize: '0.82rem', color: 'var(--muted-2)' }}>Твой регион</span>
-            <span style={{ fontWeight: 700, fontSize: '0.98rem', color: 'var(--yellow)' }}>{city}</span>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem' }}>
-            {cities.map((c) => (
-              <button
-                key={c}
-                className={`filter ${c === city ? 'is-active' : ''}`}
-                style={{ width: '100%', textAlign: 'center', padding: '0.4rem 0', fontSize: '0.82rem' }}
-                onClick={() => setCity(c)}
-              >
-                {c === 'Санкт-Петербург' ? 'СПб' : c}
-              </button>
-            ))}
-          </div>
+    <Sheet open={onboardingOpen} onClose={() => setOnboardingOpen(false)} title={stepTitles[step]}>
+      <div className="onboard-sheet" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingBottom: '1.5rem', maxHeight: '72vh', overflowY: 'auto' }}>
+        {/* Индикатор прогресса шагов */}
+        <div style={{ display: 'flex', gap: '6px', margin: '0.2rem 0' }}>
+          {[0, 1, 2, 3].map((s) => {
+            const isCompleted = s < step || (s === 2 && skipTaxStep && step === 3)
+            const isCurrent = s === step
+            return (
+              <div
+                key={s}
+                style={{
+                  flex: 1,
+                  height: '4px',
+                  borderRadius: '2px',
+                  background: isCurrent ? 'var(--yellow)' : isCompleted ? 'var(--purple-2)' : 'rgba(255, 255, 255, 0.12)',
+                  transition: 'background 0.2s',
+                }}
+              />
+            )
+          })}
         </div>
 
-        <div>
-          <h4 style={{ fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-2)' }}>Форма бизнеса</h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+        {/* ШАГ 0: РЕГИОН */}
+        {step === 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            <p className="muted" style={{ margin: 0, fontSize: '0.85rem' }}>
+              Выберите регион регистрации бизнеса. ZVERY подберет меры с учетом местных условий.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.3rem' }}>
+              {cities.map((c) => (
+                <button
+                  key={c}
+                  className={`menu__row ${c === city ? 'is-active' : ''}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.85rem 1rem',
+                    borderRadius: '0.9rem',
+                    background: c === city ? 'rgba(245, 197, 109, 0.1)' : 'var(--card-2)',
+                    border: `1.5px solid ${c === city ? 'var(--yellow)' : 'var(--line)'}`,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                  onClick={() => {
+                    triggerHaptic('light')
+                    setCity(c)
+                  }}
+                >
+                  <b style={{ fontSize: '0.95rem', color: c === city ? '#ffffff' : 'var(--text-sub)' }}>{c}</b>
+                  {c === city && <CheckIcon style={{ color: 'var(--yellow)' }} />}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ШАГ 1: ФОРМА БИЗНЕСА */}
+        {step === 1 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {roles.map((r) => (
               <button
                 key={r.id}
-                onClick={() => setRole(r.id)}
+                onClick={() => {
+                  triggerHaptic('light')
+                  setRole(r.id)
+                }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '0.75rem',
+                  padding: '0.75rem 0.9rem',
                   borderRadius: '0.85rem',
-                  background: role === r.id ? 'var(--card)' : 'var(--card-2)',
-                  border: `1px solid ${role === r.id ? 'var(--purple-2)' : 'var(--line)'}`,
+                  background: role === r.id ? 'rgba(132, 85, 246, 0.15)' : 'var(--card-2)',
+                  border: `1.5px solid ${role === r.id ? 'var(--purple-2)' : 'var(--line)'}`,
                   textAlign: 'left',
+                  cursor: 'pointer',
                 }}
               >
                 <div>
-                  <b style={{ display: 'block', fontSize: '0.92rem' }}>{r.title}</b>
+                  <b style={{ display: 'block', fontSize: '0.92rem', color: '#fff' }}>{r.title}</b>
                   <small style={{ color: 'var(--muted-2)', fontSize: '0.78rem' }}>{r.desc}</small>
                 </div>
                 {role === r.id && <CheckIcon style={{ color: 'var(--purple-3)', flexShrink: 0 }} />}
               </button>
             ))}
           </div>
-        </div>
+        )}
 
-        <div>
-          <h4 style={{ fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-2)' }}>Налоговый режим</h4>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+        {/* ШАГ 2: НАЛОГОВЫЙ РЕЖИМ */}
+        {step === 2 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {taxes.map((t) => (
               <button
                 key={t.id}
-                className={`filter ${taxMode === t.id ? 'is-active' : ''}`}
-                onClick={() => setTaxMode(t.id)}
-                style={{ fontSize: '0.82rem', padding: '0.45rem 0.8rem' }}
+                onClick={() => {
+                  triggerHaptic('light')
+                  setTaxMode(t.id)
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0.75rem 0.9rem',
+                  borderRadius: '0.85rem',
+                  background: taxMode === t.id ? 'rgba(132, 85, 246, 0.15)' : 'var(--card-2)',
+                  border: `1.5px solid ${taxMode === t.id ? 'var(--purple-2)' : 'var(--line)'}`,
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                }}
               >
-                {t.title}
+                <div>
+                  <b style={{ display: 'block', fontSize: '0.92rem', color: '#fff' }}>{t.title}</b>
+                  <small style={{ color: 'var(--muted-2)', fontSize: '0.78rem' }}>{t.desc}</small>
+                </div>
+                {taxMode === t.id && <CheckIcon style={{ color: 'var(--purple-3)', flexShrink: 0 }} />}
               </button>
             ))}
           </div>
-        </div>
+        )}
 
-        <div>
-          <h4 style={{ fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-2)' }}>Главная цель</h4>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+        {/* ШАГ 3: ГЛАВНАЯ ЦЕЛЬ */}
+        {step === 3 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {goals.map((g) => (
               <button
                 key={g.id}
-                className={`filter ${goal === g.id ? 'is-active' : ''}`}
-                onClick={() => setGoal(g.id)}
-                style={{ fontSize: '0.82rem', padding: '0.45rem 0.8rem' }}
+                onClick={() => {
+                  triggerHaptic('light')
+                  setGoal(g.id)
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0.75rem 0.9rem',
+                  borderRadius: '0.85rem',
+                  background: goal === g.id ? 'rgba(245, 197, 109, 0.12)' : 'var(--card-2)',
+                  border: `1.5px solid ${goal === g.id ? 'var(--yellow)' : 'var(--line)'}`,
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                }}
               >
-                {g.title}
+                <div>
+                  <b style={{ display: 'block', fontSize: '0.92rem', color: '#fff' }}>{g.title}</b>
+                  <small style={{ color: 'var(--muted-2)', fontSize: '0.78rem' }}>{g.desc}</small>
+                </div>
+                {goal === g.id && <CheckIcon style={{ color: 'var(--yellow)', flexShrink: 0 }} />}
               </button>
             ))}
           </div>
-        </div>
+        )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '0.5rem' }}>
+        {/* НАВИГАЦИОННЫЕ КНОПКИ */}
+        <div style={{ display: 'flex', gap: '8px', marginTop: '0.5rem' }}>
+          {step > 0 && (
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={goBack}
+              style={{ flex: 1, height: '44px', fontSize: '0.9rem' }}
+            >
+              Назад
+            </button>
+          )}
           <button
-            className="btn btn--primary btn--block"
+            className="btn btn--primary"
+            style={{ flex: step > 0 ? 1.6 : 1, height: '44px', fontSize: '0.92rem' }}
             disabled={loading}
-            onClick={handleApply}
+            onClick={goNext}
           >
-            {loading ? 'Подбираем меры...' : 'Подобрать меры поддержки'}
-          </button>
-          <button
-            type="button"
-            className="btn btn--ghost btn--block"
-            onClick={() => setOnboardingOpen(false)}
-            style={{ color: '#8d93a3', fontSize: '0.85rem' }}
-          >
-            Пропустить анкету
+            {loading ? 'Подбираем меры...' : step === 3 ? 'Подобрать меры' : 'Дальше'}
           </button>
         </div>
       </div>

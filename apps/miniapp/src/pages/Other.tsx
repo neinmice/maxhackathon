@@ -121,7 +121,7 @@ function GrantCard({ g, onOpen }: { g: Grant; onOpen: () => void }) {
         <span className="grant__deadline">
           <ClockIcon /> {g.deadline}
         </span>
-        <span className="grant__filled">заявок {g.filled}%</span>
+        <span className="grant__filled">приём открыт</span>
       </div>
       <span className="grant__bar">
         <i style={{ width: `${g.filled}%` }} />
@@ -346,13 +346,22 @@ export function Profile() {
   const { city, userName, role, savedMeasures, toggleSaveMeasure, setOnboardingOpen, setQuizOpen, showToast } = useApp()
   const [notif, setNotif] = useState(true)
 
-  const roleTitle = role === 'ip' ? 'Индивидуальный предприниматель' : role === 'self_employed' ? 'Самозанятый (НПД)' : 'Юрлицо (ООО)'
+  const roleTitle =
+    role === 'ip'
+      ? 'Индивидуальный предприниматель'
+      : role === 'self_employed'
+        ? 'Самозанятый (НПД)'
+        : role === 'llc'
+          ? 'Юрлицо (ООО)'
+          : role === 'intern'
+            ? 'Стажер / Ищу практику'
+            : 'Пока только планирую'
 
   const rows = [
     { t: 'Мои заявки', v: '1 активная', onClick: () => showToast('Заявка на рассмотрении') },
     { t: 'Избранные меры', v: `${savedMeasures.size} сохранено`, onClick: () => nav('/grants') },
     { t: 'Квиз и сертификат', v: 'Пройти тест', onClick: () => setQuizOpen(true) },
-    { t: 'Параметры подбора мер', v: `${city} · ${role === 'ip' ? 'ИП' : role === 'self_employed' ? 'НПД' : 'ООО'}`, onClick: () => setOnboardingOpen(true) },
+    { t: 'Параметры подбора мер', v: `${city} · ${role === 'ip' ? 'ИП' : role === 'self_employed' ? 'НПД' : role === 'llc' ? 'ООО' : role === 'intern' ? 'Стажер' : 'План'}`, onClick: () => setOnboardingOpen(true) },
     { t: 'Мой бизнес-план', v: '40%', onClick: () => showToast('Раздел бизнес-плана в разработке') },
   ]
   return (

@@ -15,7 +15,9 @@ export function SectionTitle({ s, onClick }: { s: Section; onClick?: () => void 
       {s.pre && <span>{s.pre} </span>}
       <span className={`hl hl--${s.hlColor}`}>{s.hl}</span>
       {s.post && <span> {s.post}</span>}
-      <span className="sec-title__gt">&gt;</span>
+      <svg className="sec-title__gt" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m9 18 6-6-6-6" />
+      </svg>
     </button>
   )
 }
@@ -23,10 +25,19 @@ export function SectionTitle({ s, onClick }: { s: Section; onClick?: () => void 
 function Stories() {
   const { viewedStories } = useApp()
   const [open, setOpen] = useState<number | null>(null)
+
+  // Пока человек не просмотрел, ни одна из историй не отображается серым.
+  // Просмотренные истории автоматически уходят вправо.
+  const sortedStories = [...STORIES].sort((a, b) => {
+    const aViewed = viewedStories.has(a.id) ? 1 : 0
+    const bViewed = viewedStories.has(b.id) ? 1 : 0
+    return aViewed - bViewed
+  })
+
   return (
     <>
       <div className="stories">
-        {STORIES.map((s, i) => (
+        {sortedStories.map((s, i) => (
           <button
             key={s.id}
             className={`story-tile ${viewedStories.has(s.id) ? 'is-viewed' : ''}`}
@@ -40,7 +51,7 @@ function Stories() {
           </button>
         ))}
       </div>
-      {open !== null && <StoryViewer stories={STORIES} startIndex={open} onClose={() => setOpen(null)} />}
+      {open !== null && <StoryViewer stories={sortedStories} startIndex={open} onClose={() => setOpen(null)} />}
     </>
   )
 }
@@ -87,7 +98,12 @@ function Facts() {
         tabIndex={0}
       >
         <span>{FACTS[i]}</span>
-        <span className="facts__cta">Пройти тест бизнеса &gt;</span>
+        <span className="facts__cta">
+          <span>Пройти тест бизнеса</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginLeft: '3px' }}>
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </span>
       </div>
       <button className="facts__arrow facts__arrow--right" onClick={() => go(1)} aria-label="Вперёд">
         <ZigArrow />
@@ -106,9 +122,9 @@ function SingleCard({ c, sId, index }: { c: Card; sId: string; index: number }) 
   }
 
   if (sId === 'finance') {
-    // Style A: Крупная цифра + золотой акцент 26px
+    // Style A: Крупная цифра + золотой акцент 28px
     const isPurpleTag = index % 2 === 1
-    const icon = index === 0 ? <TwinSparkle size={26} /> : index === 1 ? <ClayCoin size={26} /> : <SparkleClay size={26} />
+    const icon = index === 0 ? <TwinSparkle size={28} /> : index === 1 ? <ClayCoin size={28} /> : <SparkleClay size={28} />
     return (
       <button className="card card--style-a" onClick={handleClick}>
         <div className="card__top">
@@ -122,14 +138,15 @@ function SingleCard({ c, sId, index }: { c: Card; sId: string; index: number }) 
   }
 
   if (sId === 'start') {
-    // Style B: Секция «Начни свое дело» — увеличенный маскот 72px
+    // Style B: Секция «Начни свое дело» — увеличенный маскот + привязанная под углом иконка Старт
     const mascot = index % 3 === 0 ? mascotCoin : index % 3 === 1 ? mascotThink : mascotWave
     const isYellowTag = index % 2 === 1
     return (
       <button className="card card--style-b" onClick={handleClick}>
+        {index === 0 && <StartSticker className="card__start-sticker" />}
         <div className="card__content">
           <span className={`card__tag ${isYellowTag ? 'card__tag--yellow' : ''}`}>{c.tag || 'старт'}</span>
-          <div className="card__title">{c.title.replace('{city}', cityIn(city))}</div>
+          <div className="card__title" style={{ whiteSpace: 'pre-line' }}>{c.title.replace('{city}', cityIn(city))}</div>
           <div className="card__sub">{c.subtitle}</div>
         </div>
         <img className="card__mascot" src={mascot} alt="mascot" />
@@ -152,6 +169,7 @@ function SingleCard({ c, sId, index }: { c: Card; sId: string; index: number }) 
           fontSize: c.title.length > 12 ? '0.8rem' : '0.86rem',
           fontWeight: 700,
           letterSpacing: '-0.02em',
+          whiteSpace: 'pre-line',
         }}
       >
         {c.title.replace('{city}', cityIn(city))}
@@ -162,21 +180,8 @@ function SingleCard({ c, sId, index }: { c: Card; sId: string; index: number }) 
 }
 
 export function CardsRow({ s }: { s: Section }) {
-  const { setOnboardingOpen } = useApp()
   return (
     <div className="cards-wrap">
-      {s.deco === 'start' && (
-        <button
-          onClick={() => {
-            triggerHaptic('medium')
-            setOnboardingOpen(true)
-          }}
-          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-          aria-label="Подобрать меры поддержки"
-        >
-          <StartSticker className="deco-start" />
-        </button>
-      )}
       {s.deco === 'rays' && <Rays className="deco-rays" />}
       <div className="cards">
         {s.cards.map((c, idx) => (
@@ -199,7 +204,7 @@ const BOTTOM_SERVICES = [
     title: 'Налоги',
     to: '/card/forms',
     icon: (
-      <svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M8 18h.01M12 18h.01"/></svg>
+      <svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><rect x="7" y="5" width="10" height="3" rx="0.5"/><path d="M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/></svg>
     ),
   },
   {
@@ -277,7 +282,9 @@ export default function Home() {
             }}
           >
             <span className="hl hl--purple">Сервисы</span>
-            <span className="sec-title__gt">&gt;</span>
+            <svg className="sec-title__gt" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m9 18 6-6-6-6" />
+            </svg>
           </button>
         </div>
         <ServicesBottomRow />
