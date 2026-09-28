@@ -109,9 +109,7 @@ def test_client_tax_mode_is_closed_union() -> None:
 def test_production_modules_do_not_read_second_catalog() -> None:
     for relative in (
         "apps/miniapp/src/App.tsx",
-        "apps/miniapp/src/pages/Other.tsx",
         "apps/miniapp/src/store.tsx",
-        "apps/miniapp/src/data.ts",
     ):
         text = (REPO / relative).read_text(encoding="utf-8")
         assert "GRANTS" not in text

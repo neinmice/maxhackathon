@@ -1,8 +1,8 @@
 export type Region = 'kazan' | 'moscow' | 'spb';
 export type Role = 'ip' | 'self_employed' | 'llc';
-export type TaxMode = 'usn6' | 'usn15' | 'none' | 'osno' | string;
+export type TaxMode = 'npd' | 'usn6' | 'usn15' | 'ausn' | 'osno' | 'none';
 
-export type DataStatus = 'MODEL DATA' | 'CONFIRMED' | 'VERIFIED';
+export type DataStatus = 'MODEL DATA' | 'CONFIRMED';
 export type FreshnessStatus = 'fresh' | 'reviewed' | 'model';
 
 export interface MeasureRecord {
@@ -11,7 +11,7 @@ export interface MeasureRecord {
   operator: string;
   region: Region;
   roles: Role[];
-  tax_modes: string[];
+  tax_modes: TaxMode[];
   sector: string;
   goal: string;
   eligibility: string;
@@ -30,7 +30,7 @@ export interface MeasureRecord {
 export interface RecommendationRequest {
   region: Region;
   role: Role;
-  tax_mode: string;
+  tax_mode: TaxMode;
   sector?: string;
   goal?: string;
 }
@@ -51,8 +51,12 @@ export interface RecommendationResponse {
 export interface CatalogFiltersResponse {
   regions: Region[];
   roles: Role[];
-  tax_modes: string[];
+  tax_modes: TaxMode[];
   sectors: string[];
+  goals: string[];
+  accepted_tax_modes: TaxMode[];
+  content_gaps: string[];
+  catalog_version: string;
 }
 
 export interface ApiError {
@@ -66,7 +70,7 @@ export interface ApiError {
 export interface UserProfile {
   region: Region;
   role: Role;
-  tax_mode: string;
+  tax_mode: TaxMode;
   sector: string;
   goal: string;
   isOnboarded: boolean;

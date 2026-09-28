@@ -52,7 +52,7 @@ export class ApiClient {
       if (!res.ok) throw new Error(`Health check failed with ${res.status}`);
       return await res.json();
     } catch {
-      return { status: 'mock_ok', version: '0.1.0' };
+      return { status: 'demo_ok', version: '0.1.0' };
     }
   }
 
@@ -77,6 +77,10 @@ export class ApiClient {
         'Производство, креативные индустрии',
         'Электронная коммерция',
       ],
+      goals: ['support'],
+      accepted_tax_modes: ['npd', 'usn6', 'usn15', 'ausn', 'osno', 'none'],
+      content_gaps: [],
+      catalog_version: 'demo-2026-09-28',
     };
   }
 
@@ -208,7 +212,7 @@ export class ApiClient {
     const correct = Object.keys(keys).filter((k) => answers[k] === keys[k]).length;
     const score = Math.round((correct * 100) / Object.keys(keys).length);
     const passed = score >= 70;
-    const certId = passed ? `CERT-ZVERY-2026-${Math.random().toString(36).substring(2, 9).toUpperCase()}` : null;
+    const certId = passed ? `ZV-CERT-2026-${Math.random().toString(36).substring(2, 9).toUpperCase()}` : null;
 
     return {
       attempt_id: `local-attempt-${Date.now()}`,
@@ -217,7 +221,7 @@ export class ApiClient {
       certificate: certId
         ? {
             certificate_id: certId,
-            payload: `signed-proof.${btoa(JSON.stringify({ certId, date: new Date().toISOString() }))}`,
+            payload: `signed-cert.${btoa(JSON.stringify({ certId, date: new Date().toISOString() }))}`,
           }
         : null,
     };

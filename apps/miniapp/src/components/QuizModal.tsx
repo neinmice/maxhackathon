@@ -92,7 +92,7 @@ export default function QuizModal() {
         score: 100,
         passed: true,
         certificate: {
-          certificate_id: 'CERT-ZVERY-2026-A1B2C3D4',
+          certificate_id: 'ZV-CERT-2026-A1B2C3D4',
           payload: 'signed-demo-payload',
         },
       }
@@ -126,7 +126,7 @@ export default function QuizModal() {
           score: 100,
           passed: true,
           certificate: {
-            certificate_id: `CERT-ZVERY-2026-OK`,
+            certificate_id: `ZV-CERT-2026-OK`,
             payload: 'demo-signed-payload',
           },
         })

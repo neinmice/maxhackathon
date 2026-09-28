@@ -11,6 +11,7 @@ import Home from './pages/Home'
 import { CardPage, Course, Grants, Learning, Profile, Search, SectionPage, Services } from './pages/Other'
 import { AppProvider, useApp } from './store'
 import { bindBackButton, hideBackButton } from './lib/maxBridge'
+import { apiClient } from './api/client'
 
 function Shell() {
   const { pathname, search } = useLocation()
@@ -60,7 +61,8 @@ function Shell() {
     } else if (startParam === 'onboarding') {
       setOnboardingOpen(true)
     } else if (startParam === 'measure') {
-      import('./data').then(({ GRANTS }) => setMeasureDetail(GRANTS[0]))
+      const measureId = params.get('id') || 'demo-kazan-agro-001'
+      apiClient.getMeasure(measureId).then(setMeasureDetail).catch(() => {})
     }
   }, [search, nav, setQuizOpen, setOnboardingOpen, setMeasureDetail])
 

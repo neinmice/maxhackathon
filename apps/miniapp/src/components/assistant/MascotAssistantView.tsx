@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Mic, ArrowRight, Award, RotateCcw, Send } from 'lucide-react';
 import { triggerHaptic } from '../../lib/maxBridge';
 import { MascotDoorIllustration, MascotAvatarIcon } from '../illustrations/MascotProps';
-import { saveCertificate, loadCertificates, type StoredCertificate } from '../../lib/storage';
 
 interface MascotAssistantViewProps {
   userName: string;
@@ -38,7 +37,7 @@ export const MascotAssistantView: React.FC<MascotAssistantViewProps> = ({
   const [isRecording, setIsRecording] = useState(false);
   const [showQuiz, setShowQuiz] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
-  const [certificate, setCertificate] = useState<StoredCertificate | null>(null);
+  const [certificate, setCertificate] = useState<{ id: string } | null>(null);
 
   const handleChipClick = (chipText: string) => {
     triggerHaptic('medium');
@@ -58,7 +57,7 @@ export const MascotAssistantView: React.FC<MascotAssistantViewProps> = ({
     } else if (chipText.includes('Кто ты такой')) {
       replyText = `Я официальный виртуальный помощник Кот-Навигатор ZVERY! Помогаю молодым предпринимателям и самозанятым находить реальные гранты, субсидии и бесплатные программы в Казани, Москве и Санкт-Петербурге.`;
     } else if (chipText.includes('Что ты умеешь')) {
-      replyText = `Я умею:\n1. Подбирать гранты и субсидии под твой налоговый режим и регион\n2. Формировать чеклист сбора документов\n3. Направлять на бесплатные акселераторы в ИТ-парке\n4. Проводить квизы и выдавать памятный сертификат!`;
+      replyText = `Я умею:\n1. Подбирать гранты и субсидии под твой налоговый режим и регион\n2. Формировать чеклист сбора документов\n3. Направлять на бесплатные акселераторы в ИТ-парке\n4. Проводить квизы по господдержке!`;
     } else if (chipText.includes('обучение')) {
       replyText = `Бесплатное обучение для молодых предпринимателей доступно в центрах "Мой бизнес" (курс "Азбука предпринимателя") и в образовательных треках ИТ-парка им. Башира Рамеева.\n\nЗагляни в раздел "обучение", чтобы увидеть открытые наборы!`;
     } else {

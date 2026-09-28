@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserCheck, MapPin, Percent, Target, ArrowRight, Check, X } from 'lucide-react';
-import type { UserProfile, Region, Role } from '../../types/api';
+import type { UserProfile, Region, Role, TaxMode } from '../../types/api';
 import { triggerHaptic } from '../../lib/maxBridge';
 
 interface OnboardingModalProps {
@@ -29,7 +29,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
     setProfile((prev) => ({ ...prev, region }));
   };
 
-  const handleTaxSelect = (tax_mode: string) => {
+  const handleTaxSelect = (tax_mode: TaxMode) => {
     triggerHaptic('light');
     setProfile((prev) => ({ ...prev, tax_mode }));
   };
@@ -198,10 +198,10 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {[
-                { mode: 'usn6', title: 'УСН «Доходы» (6%)', desc: 'Самый частый выбор для IT, сервисов и консультаций' },
-                { mode: 'usn15', title: 'УСН «Доходы минус Расходы» (15%)', desc: 'Выгодно при подтверждённых регулярных расходах (торговля, производство)' },
-                { mode: 'none', title: 'НПД (Налог на профессиональный доход)', desc: 'Ставка 4% с физлиц, 6% с юрлиц. Без страховых взносов' },
-                { mode: 'osno', title: 'ОСНО (Общая система)', desc: 'Крупный бизнес с НДС' },
+                { mode: 'usn6' as TaxMode, title: 'УСН «Доходы» (6%)', desc: 'Самый частый выбор для IT, сервисов и консультаций' },
+                { mode: 'usn15' as TaxMode, title: 'УСН «Доходы минус Расходы» (15%)', desc: 'Выгодно при подтверждённых регулярных расходах (торговля, производство)' },
+                { mode: 'none' as TaxMode, title: 'НПД (Налог на профессиональный доход)', desc: 'Ставка 4% с физлиц, 6% с юрлиц. Без страховых взносов' },
+                { mode: 'osno' as TaxMode, title: 'ОСНО (Общая система)', desc: 'Крупный бизнес с НДС' },
               ].map((item) => (
                 <div
                   key={item.mode}

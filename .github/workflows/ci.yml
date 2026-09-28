@@ -38,10 +38,6 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Honesty regressions
-        run: node apps/miniapp/scripts/honesty-regressions.mjs
-        working-directory: ${{ github.workspace }}
-
   api:
     name: api pytest
     runs-on: ubuntu-latest

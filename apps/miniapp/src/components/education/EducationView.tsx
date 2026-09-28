@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Award, BookOpen, CheckCircle2, CheckSquare, ExternalLink, ShieldAlert, Sparkles, Square } from 'lucide-react';
 import { triggerHaptic } from '../../lib/maxBridge';
-import { saveCertificate, loadCertificates, type StoredCertificate } from '../../lib/storage';
 import type { MeasureRecord } from '../../types/api';
 
 interface EducationViewProps {
@@ -68,10 +67,7 @@ export const EducationView: React.FC<EducationViewProps> = ({
   const [quizStep, setQuizStep] = useState(0);
   const [quizScore, setQuizScore] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
-  const [certificate, setCertificate] = useState<StoredCertificate | null>(() => {
-    const certs = loadCertificates();
-    return certs.length > 0 ? certs[0] : null;
-  });
+  const [certificate, setCertificate] = useState<{ id: string } | null>(null);
 
   const handleQuizAnswer = (idx: number) => {
     triggerHaptic('medium');
@@ -83,15 +79,6 @@ export const EducationView: React.FC<EducationViewProps> = ({
       setQuizStep((s) => s + 1);
     } else {
       setQuizFinished(true);
-      const newCert: StoredCertificate = {
-        id: `ZVERY-NAV-${Math.floor(100000 + Math.random() * 900000)}`,
-        userName: userName || 'Предприниматель MAX',
-        date: new Date().toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' }),
-        score: `${nextScore} из ${QUIZ_QUESTIONS.length}`,
-        title: 'Успешное прохождение квиза «Навигатор господдержки МСП»',
-      };
-      saveCertificate(newCert);
-      setCertificate(newCert);
     }
   };
 
@@ -225,70 +212,12 @@ export const EducationView: React.FC<EducationViewProps> = ({
               <div style={{ textAlign: 'center', marginBottom: 16 }}>
                 <Award size={36} color="#FFD21E" style={{ margin: '0 auto 8px auto' }} />
                 <h3 style={{ fontSize: 18, fontWeight: 800, color: '#FFFFFF' }}>
-                  Тест сдан: {quizScore} из {QUIZ_QUESTIONS.length}!
+                  Сертификат не выдан
                 </h3>
+                <p style={{ fontSize: 12, color: '#A295C5', marginTop: 8 }}>
+                  Серверная проверка квиза доступна через основной раздел сервисов.
+                </p>
               </div>
-
-              {certificate && (
-                <div style={{
-                  border: '2px solid rgba(255, 210, 30, 0.6)',
-                  borderRadius: 18,
-                  padding: '20px 16px',
-                  background: 'linear-gradient(145deg, rgba(44, 27, 77, 0.9) 0%, rgba(18, 13, 29, 0.98) 100%)',
-                  boxShadow: '0 12px 36px rgba(0, 0, 0, 0.6)',
-                  marginBottom: 16,
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: '#FFD21E', letterSpacing: '0.08em' }}>
-                      MAX MINI APP · ZVERY
-                    </span>
-                    <span style={{ fontSize: 10, color: '#A295C5' }}>
-                      № {certificate.id}
-                    </span>
-                  </div>
-
-                  <h4 style={{
-                    fontSize: 15,
-                    fontWeight: 800,
-                    color: '#FFFFFF',
-                    textAlign: 'center',
-                    marginBottom: 12,
-                    lineHeight: 1.3,
-                  }}>
-                    ПАМЯТНЫЙ СЕРТИФИКАТ ЗА ПРОХОЖДЕНИЕ КВИЗА*
-                  </h4>
-
-                  <p style={{ fontSize: 12, color: '#E2DCF3', textAlign: 'center', marginBottom: 4 }}>
-                    Выдан предпринимателю
-                  </p>
-                  <p style={{ fontSize: 17, fontWeight: 800, color: '#FFD21E', textAlign: 'center', marginBottom: 12 }}>
-                    {certificate.userName}
-                  </p>
-
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: 11,
-                    color: '#E2DCF3',
-                    borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-                    paddingTop: 10,
-                  }}>
-                    <span>Дата: {certificate.date}</span>
-                    <span>Балл: {certificate.score}</span>
-                  </div>
-
-                  <p style={{
-                    fontSize: 9,
-                    color: '#8B80A6',
-                    marginTop: 12,
-                    lineHeight: 1.35,
-                    borderTop: '1px dashed rgba(255, 255, 255, 0.1)',
-                    paddingTop: 8,
-                  }}>
-                    *Сертификат носит исключительно информационно-поощрительный характер за прохождение игрового теста в Mini App и не является документом государственного образца об образовании или квалификации.
-                  </p>
-                </div>
-              )}
 
               <button
                 type="button"
