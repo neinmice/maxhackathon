@@ -409,6 +409,48 @@ export const DeadlineSticker = ({ className, style }: P) => (
   </svg>
 )
 
+/** Pixel 3D "ПРОЙТИ КВИЗ" sticker (Cyber Gold) */
+export const QuizSticker = ({ className, style }: P) => (
+  <svg className={className} style={style} width="120" height="30" viewBox="0 0 120 30" fill="none" shapeRendering="crispEdges">
+    <path d="M6 4h108l3 3v14l-3 3v3H8l-3-3V8l1-1V4Z" fill="#7a35d8" />
+    <path d="M6 2h108l3 3v14l-3 3H6l-3-3V5l3-3Z" fill="#d49b38" />
+    <path d="M7 4h106l2 2v12l-2 2H7l-2-2V6l2-2Z" fill="#f5c06a" />
+    <text
+      x="60"
+      y="15.5"
+      textAnchor="middle"
+      fontFamily="'VK Sans Display Expanded', monospace"
+      fontSize="10"
+      fontWeight="900"
+      letterSpacing="0.04em"
+      fill="#1f1a2e"
+    >
+      ПРОЙТИ КВИЗ
+    </text>
+  </svg>
+)
+
+/** Pixel 3D "ПРОЙТИ КВИЗ" sticker (Neon Purple) */
+export const QuizStickerPurple = ({ className, style }: P) => (
+  <svg className={className} style={style} width="120" height="30" viewBox="0 0 120 30" fill="none" shapeRendering="crispEdges">
+    <path d="M6 4h108l3 3v14l-3 3v3H8l-3-3V8l1-1V4Z" fill="#2d1354" />
+    <path d="M6 2h108l3 3v14l-3 3H6l-3-3V5l3-3Z" fill="#6029b5" />
+    <path d="M7 4h106l2 2v12l-2 2H7l-2-2V6l2-2Z" fill="#c499f3" />
+    <text
+      x="60"
+      y="15.5"
+      textAnchor="middle"
+      fontFamily="'VK Sans Display Expanded', monospace"
+      fontSize="10"
+      fontWeight="900"
+      letterSpacing="0.04em"
+      fill="#120d1d"
+    >
+      ПРОЙТИ КВИЗ
+    </text>
+  </svg>
+)
+
 /** Golden twin sparkle */
 export const TwinSparkle = ({ className, style, size = 26 }: P & { size?: number }) => (
   <svg className={className} style={style} width={size} height={size * 0.8} viewBox="0 0 50 40" fill="none">

@@ -8,6 +8,7 @@ import QuizModal from './components/QuizModal'
 import SpotlightTutorial from './components/SpotlightTutorial'
 import Assistant from './pages/Assistant'
 import Home from './pages/Home'
+import QuizPage from './pages/QuizPage'
 import { CardPage, Course, Grants, Learning, Profile, Search, SectionPage, Services } from './pages/Other'
 import { AppProvider, useApp } from './store'
 import { bindBackButton, hideBackButton } from './lib/maxBridge'
@@ -29,6 +30,7 @@ function Shell() {
       pathname.startsWith('/card/') ||
       pathname.startsWith('/section/') ||
       pathname.startsWith('/learning/') ||
+      pathname.startsWith('/quiz') ||
       pathname.startsWith('/profile') ||
       pathname.startsWith('/search')
 
@@ -79,6 +81,7 @@ function Shell() {
           <Route path="/grants" element={<Grants />} />
           <Route path="/learning" element={<Learning />} />
           <Route path="/learning/:id" element={<Course />} />
+          <Route path="/quiz" element={<QuizPage />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/search" element={<Search />} />
           <Route path="*" element={<Home />} />

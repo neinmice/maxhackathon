@@ -1996,6 +1996,100 @@ p {
   height: 1.1rem;
 }
 
+/* Quiz Banner in Learning */
+.quiz-banner {
+  background: linear-gradient(135deg, #25202e 0%, #1e1b26 100%);
+  border: 1px solid #3d354d;
+  border-radius: 18px;
+  padding: 16px 16px 14px;
+  position: relative;
+  overflow: visible;
+  margin-top: 6px;
+  margin-bottom: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  text-align: left;
+}
+
+.quiz-banner:active {
+  transform: scale(0.98);
+  border-color: #8455f6;
+}
+
+.quiz-banner__sticker {
+  position: absolute;
+  top: -12px;
+  right: -6px;
+  z-index: 3;
+  transform: rotate(8deg);
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.6));
+  pointer-events: none;
+}
+
+.quiz-banner__content {
+  flex: 1;
+  max-width: 68%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.quiz-banner__tag {
+  font-family: var(--ui);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #c499f3;
+  background: rgba(132, 85, 246, 0.2);
+  padding: 0.18rem 0.55rem;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.quiz-banner__title {
+  font-family: 'VK Sans Display Expanded', var(--display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.quiz-banner__sub {
+  font-family: var(--body);
+  font-size: 0.7rem;
+  color: #8d93a3;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.quiz-banner__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #f5c06a;
+  font-family: var(--ui);
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.quiz-banner__mascot {
+  position: absolute;
+  right: 4px;
+  bottom: 0;
+  height: 96px;
+  object-fit: contain;
+  z-index: 1;
+  pointer-events: none;
+}
+
 /* learning */
 
 .continue {

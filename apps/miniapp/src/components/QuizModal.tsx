@@ -13,14 +13,14 @@ import { useApp } from '../store'
 import { apiClient, type QuizSubmitResult } from '../api/client'
 import { triggerHaptic, triggerNotification, triggerSelectionChanged } from '../lib/maxBridge'
 
-type Question = {
+export type Question = {
   id: string
   text: string
   options: { key: string; label: string }[]
   hint: string
 }
 
-const QUESTIONS: Question[] = [
+export const QUESTIONS: Question[] = [
   {
     id: 'q1',
     text: 'Какая ставка налога действует для самозанятых (НПД) при доходах от физических лиц?',

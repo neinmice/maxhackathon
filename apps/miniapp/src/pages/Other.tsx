@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import mascotWave from '../assets/mascot/mascot-wave.png'
+import mascotCoin from '../assets/mascot/mascot-coin.png'
 import { apiClient } from '../api/client'
 import { Avatar } from '../components/Header'
 import EmptyState from '../components/ui/EmptyState'
@@ -12,6 +13,7 @@ import {
   ClockIcon,
   LockIcon,
   PlayIcon,
+  QuizSticker,
   Rays,
   Scribble,
   SearchIcon,
@@ -22,6 +24,7 @@ import {
 import Sheet from '../components/Sheet'
 import { COURSES, GRANT_FILTERS, GRANTS, LESSONS, SECTIONS, SERVICES, allCards, type Grant } from '../data'
 import { cityIn, useApp } from '../store'
+import { triggerHaptic } from '../lib/maxBridge'
 import { SectionTitle } from './Home'
 
 /* ---------- shared ---------- */
@@ -177,6 +180,34 @@ export function Learning() {
   return (
     <div className="page">
       <PageTitle pre="Твое" hl="обучение" color="yellow" />
+
+      {/* Выделенный блок квиза с кастомным 3D SVG-пином */}
+      <div
+        className="quiz-banner"
+        onClick={() => {
+          triggerHaptic('medium')
+          nav('/quiz')
+        }}
+        role="button"
+        tabIndex={0}
+      >
+        <QuizSticker className="quiz-banner__sticker" />
+        <div className="quiz-banner__content">
+          <span className="quiz-banner__tag">5 ВОПРОСОВ · СЕРТИФИКАТ</span>
+          <h3 className="quiz-banner__title">Тест готовности бизнеса</h3>
+          <p className="quiz-banner__sub">
+            Проверь знания по налогам и субсидиям и получи официальный сертификат
+          </p>
+          <div className="quiz-banner__btn">
+            <span>Пройти тестирование</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </div>
+        </div>
+        <img src={mascotCoin} alt="Маскот" className="quiz-banner__mascot" />
+      </div>
+
       <button className="continue" onClick={() => nav(`/learning/${current.id}`)}>
         <div className="continue__text">
           <span className="continue__label">Продолжить</span>
