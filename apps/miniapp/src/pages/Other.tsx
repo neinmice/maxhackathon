@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import mascotWave from '../assets/mascot/mascot-wave.png'
-import mascotCoin from '../assets/mascot/mascot-coin.png'
+import mascotWave from '../assets/mascot/mascot-wave.webp'
+import mascotCoin from '../assets/mascot/mascot-coin.webp'
 import { apiClient } from '../api/client'
 import { Avatar } from '../components/Header'
 import EmptyState from '../components/ui/EmptyState'
@@ -22,27 +22,60 @@ import {
   ZigArrow,
 } from '../components/icons'
 import Sheet from '../components/Sheet'
+import InDevelopmentCard from '../components/InDevelopmentCard'
 import { COURSES, GRANT_FILTERS, GRANTS, LESSONS, SECTIONS, SERVICES, allCards, type Grant } from '../data'
 import { cityIn, useApp } from '../store'
 import { triggerHaptic } from '../lib/maxBridge'
-import { SectionTitle } from './Home'
+import { SectionTitle, SingleCard } from './Home'
+import WhereToStartPage from './cards/WhereToStartPage'
+import CityEventsPage from './cards/CityEventsPage'
+import OnlineEventsPage from './cards/OnlineEventsPage'
 
 /* ---------- shared ---------- */
 
-export function PageTitle({ pre, hl, post, color = 'yellow', back }: { pre?: string; hl: string; post?: string; color?: 'yellow' | 'purple'; back?: boolean }) {
+export function PageTitle({
+  pre,
+  hl,
+  post,
+  color = 'yellow',
+  back,
+  rightSlot,
+}: {
+  pre?: string
+  hl: string
+  post?: string
+  color?: 'yellow' | 'purple' | 'white'
+  back?: boolean
+  rightSlot?: React.ReactNode
+}) {
   const nav = useNavigate()
   return (
-    <div className="page-title">
-      {back && (
-        <button className="icon-btn page-title__back" onClick={() => nav(-1)} aria-label="Назад">
-          <BackIcon />
-        </button>
+    <div
+      className="page-title"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: rightSlot ? 'space-between' : 'flex-start',
+        width: '100%',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', minWidth: 0 }}>
+        {back && (
+          <button className="icon-btn page-title__back" onClick={() => nav(-1)} aria-label="Назад">
+            <BackIcon />
+          </button>
+        )}
+        <h1>
+          {pre && <>{pre} </>}
+          <span className={`hl hl--${color}`}>{hl}</span>
+          {post && <> {post}</>}
+        </h1>
+      </div>
+      {rightSlot && (
+        <div style={{ flexShrink: 0, marginLeft: 'auto' }}>
+          {rightSlot}
+        </div>
       )}
-      <h1>
-        {pre && <>{pre} </>}
-        <span className={`hl hl--${color}`}>{hl}</span>
-        {post && <> {post}</>}
-      </h1>
     </div>
   )
 }
@@ -50,16 +83,17 @@ export function PageTitle({ pre, hl, post, color = 'yellow', back }: { pre?: str
 /* ---------- services ---------- */
 
 export function Services() {
+  const nav = useNavigate()
   const { showToast } = useApp()
   const [open, setOpen] = useState<(typeof SERVICES)[number] | null>(null)
   return (
     <div className="page">
-      <PageTitle pre="Все" hl="сервисы" post="для бизнеса" color="purple" />
+      <PageTitle pre="Все" hl="сервисы" post="для бизнеса" color="white" />
       <div className="promo">
         <div className="promo__text">
           <b>Открой ИП онлайн</b>
           <span>за 3 дня без визита в налоговую</span>
-          <button className="btn btn--primary btn--sm" onClick={() => setOpen(SERVICES[0])}>
+          <button className="btn btn--primary btn--sm" onClick={() => nav('/services/registration')}>
             Начать
           </button>
         </div>
@@ -68,36 +102,37 @@ export function Services() {
       </div>
       <div className="svc-grid">
         {SERVICES.map((s) => (
-          <button key={s.id} className="svc" onClick={() => setOpen(s)}>
+          <button
+            key={s.id}
+            className="svc"
+            onClick={() => {
+              triggerHaptic('light')
+              if (s.id === 'register') return nav('/services/registration')
+              if (s.id === 'calc') return nav('/services/taxes')
+              if (s.id === 'docs') return nav('/services/documents')
+              setOpen(s)
+            }}
+          >
             <span className="svc__icon">
               <ServiceGlyph name={s.icon} />
             </span>
             <b>{s.title}</b>
             <small>{s.sub}</small>
-            {s.badge && <em className="svc__badge">{s.badge}</em>}
+            {s.badge && <em className={`svc__badge ${s.badge === 'скоро' ? 'svc__badge--soon' : ''}`}>{s.badge}</em>}
           </button>
         ))}
       </div>
-      <Sheet open={!!open} onClose={() => setOpen(null)} title={open?.title}>
+      <Sheet open={!!open} onClose={() => setOpen(null)}>
         {open && (
-          <div className="sheet-body">
-            <div className="svc svc--hero">
-              <span className="svc__icon">
-                <ServiceGlyph name={open.icon} />
-              </span>
-              <small>{open.sub}</small>
-            </div>
-            <p className="muted">Сервис скоро будет доступен прямо в приложении. Оставь заявку, и специалист центра «Мой бизнес» свяжется с тобой.</p>
-            <button
-              className="btn btn--primary btn--block"
-              onClick={() => {
-                setOpen(null)
-                showToast('Заявка отправлена')
-              }}
-            >
-              Оставить заявку
-            </button>
-          </div>
+          <InDevelopmentCard
+            title={open.title}
+            desc={open.sub ? `${open.sub}. Сервис готовится к запуску в MAX.` : undefined}
+            serviceId={open.id}
+            storageKey={`zvery_notify_${open.id}`}
+            onClose={() => setOpen(null)}
+            closeLabel="Закрыть"
+            embedded
+          />
         )}
       </Sheet>
     </div>
@@ -176,37 +211,21 @@ export function Grants() {
 
 export function Learning() {
   const nav = useNavigate()
+  const { showToast } = useApp()
+
   const current = COURSES[0]
+
+  // Разделение курсов:
+  // «Мои курсы» — курсы в процессе прохождения (c.done > 0)
+  // «Все курсы» — оставшиеся курсы (c.done === 0)
+  const myCourses = COURSES.filter((c) => c.done > 0)
+  const otherCourses = COURSES.filter((c) => c.done === 0)
+
+  const quizCompleted = typeof window !== 'undefined' && localStorage.getItem('quiz_completed') === 'true'
+
   return (
     <div className="page">
       <PageTitle pre="Твое" hl="обучение" color="yellow" />
-
-      {/* Выделенный блок квиза с кастомным 3D SVG-пином */}
-      <div
-        className="quiz-banner"
-        onClick={() => {
-          triggerHaptic('medium')
-          nav('/quiz')
-        }}
-        role="button"
-        tabIndex={0}
-      >
-        <QuizSticker className="quiz-banner__sticker" />
-        <div className="quiz-banner__content">
-          <span className="quiz-banner__tag">5 ВОПРОСОВ · СЕРТИФИКАТ</span>
-          <h3 className="quiz-banner__title">Тест готовности бизнеса</h3>
-          <p className="quiz-banner__sub">
-            Проверь знания по налогам и субсидиям и получи официальный сертификат
-          </p>
-          <div className="quiz-banner__btn">
-            <span>Пройти тестирование</span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m9 18 6-6-6-6" />
-            </svg>
-          </div>
-        </div>
-        <img src={mascotCoin} alt="Маскот" className="quiz-banner__mascot" />
-      </div>
 
       <button className="continue" onClick={() => nav(`/learning/${current.id}`)}>
         <div className="continue__text">
@@ -225,29 +244,159 @@ export function Learning() {
         <Scribble className="continue__scribble" />
       </button>
 
-      <h2 className="sub-h">Курсы</h2>
-      <div className="course-list">
-        {COURSES.map((c) => (
-          <button key={c.id} className={`course course--${c.color}`} onClick={() => !c.locked && nav(`/learning/${c.id}`)} disabled={c.locked}>
-            <span className="course__cover">
-              {c.color === 'purple' && <Rays />}
-              {c.color === 'yellow' && <ZigArrow dir="left" />}
-              {c.color === 'blue' && <ZigArrow color="#5b8ff7" shade="#2f5cc0" />}
+      {/* Раздел: Тесты */}
+      <div style={{ marginBottom: '1.25rem' }}>
+        <h2 className="sub-h" style={{ margin: '0 0 0.75rem' }}>
+          Тесты
+        </h2>
+
+        {/* Карточка теста — визуал точно по референсу скриншота 1 */}
+        <button
+          type="button"
+          className="grant"
+          style={{
+            width: '100%',
+            textAlign: 'left',
+            cursor: 'pointer',
+          }}
+          onClick={() => {
+            triggerHaptic('medium')
+            nav('/quiz')
+          }}
+        >
+          <div className="grant__top">
+            <span
+              className="grant__amount"
+              style={{
+                fontFamily: "'VK Sans Display Expanded', var(--display)",
+                fontWeight: 700,
+                fontSize: '1.14rem',
+                lineHeight: 1.25,
+                color: '#ffffff',
+              }}
+            >
+              Тест на знание основ бизнеса
             </span>
-            <span className="course__body">
-              <b>{c.title}</b>
-              <small>
-                {c.lessons} уроков · {c.duration} · {c.level}
-              </small>
-              {c.done > 0 && (
-                <span className="progress progress--sm">
-                  <i style={{ width: `${(c.done / c.lessons) * 100}%` }} />
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.62rem',
+                fontWeight: 700,
+                fontFamily: 'var(--ui)',
+                textTransform: 'uppercase',
+                lineHeight: 1,
+                padding: '0.18rem 0.55rem',
+                borderRadius: '6px',
+                background: quizCompleted ? 'rgba(52, 199, 89, 0.15)' : 'rgba(245, 192, 106, 0.15)',
+                color: quizCompleted ? '#34c759' : 'var(--yellow)',
+                border: `1px solid ${quizCompleted ? 'rgba(52, 199, 89, 0.3)' : 'rgba(245, 192, 106, 0.35)'}`,
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                letterSpacing: '0.04em',
+              }}
+            >
+              {quizCompleted ? '5/5' : '0/5'}
+            </span>
+          </div>
+          <div className="grant__tags">
+            <span>5 вопросов</span>
+            <span>Сертификат</span>
+            <span>Налоги и гранты</span>
+          </div>
+          <div className="grant__bottom">
+            <span className="grant__deadline">
+              <ClockIcon /> 3–5 минут
+            </span>
+          </div>
+        </button>
+      </div>
+
+      {/* Раздел: Мои курсы (курсы в процессе прохождения) */}
+      {myCourses.length > 0 && (
+        <div style={{ marginBottom: '1.25rem' }}>
+          <h2 className="sub-h" style={{ margin: '0 0 0.75rem' }}>
+            Мои курсы
+          </h2>
+          <div className="course-list">
+            {myCourses.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className={`course course--${c.color}`}
+                onClick={() => {
+                  if (c.locked) {
+                    triggerHaptic('medium')
+                    showToast('Курс в разработке и скоро будет доступен')
+                  } else {
+                    triggerHaptic('light')
+                    nav(`/learning/${c.id}`)
+                  }
+                }}
+              >
+                <span className="course__cover">
+                  {c.color === 'purple' && <Rays />}
+                  {c.color === 'yellow' && <ZigArrow dir="left" />}
+                  {c.color === 'blue' && <ZigArrow color="#5b8ff7" shade="#2f5cc0" />}
                 </span>
-              )}
-            </span>
-            {c.locked ? <LockIcon className="course__lock" /> : <ChevronIcon className="course__chev" />}
-          </button>
-        ))}
+                <span className="course__body">
+                  <b>{c.title}</b>
+                  <small>
+                    {c.done} из {c.lessons} уроков · {c.duration}
+                  </small>
+                  <span className="progress progress--sm">
+                    <i style={{ width: `${(c.done / c.lessons) * 100}%` }} />
+                  </span>
+                </span>
+                {c.locked ? <LockIcon className="course__lock" /> : <ChevronIcon className="course__chev" />}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Раздел: Все курсы (оставшиеся доступные курсы) */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <h2 className="sub-h" style={{ margin: '0 0 0.75rem' }}>
+          Все курсы
+        </h2>
+        <div className="course-list">
+          {otherCourses.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              className={`course course--${c.color}`}
+              onClick={() => {
+                if (c.locked) {
+                  triggerHaptic('medium')
+                  showToast('Курс в разработке и скоро будет доступен')
+                } else {
+                  triggerHaptic('light')
+                  nav(`/learning/${c.id}`)
+                }
+              }}
+            >
+              <span className="course__cover">
+                {c.color === 'purple' && <Rays />}
+                {c.color === 'yellow' && <ZigArrow dir="left" />}
+                {c.color === 'blue' && <ZigArrow color="#5b8ff7" shade="#2f5cc0" />}
+              </span>
+              <span className="course__body">
+                <b>{c.title}</b>
+                <small>
+                  {c.lessons} уроков · {c.duration} · {c.level}
+                </small>
+                {c.done > 0 && (
+                  <span className="progress progress--sm">
+                    <i style={{ width: `${(c.done / c.lessons) * 100}%` }} />
+                  </span>
+                )}
+              </span>
+              {c.locked ? <LockIcon className="course__lock" /> : <ChevronIcon className="course__chev" />}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -257,6 +406,8 @@ export function Course() {
   const { id } = useParams()
   const { showToast } = useApp()
   const c = COURSES.find((x) => x.id === id) ?? COURSES[0]
+  const courseLessons = c.items || LESSONS
+
   return (
     <div className="page">
       <PageTitle hl={c.title} back color="yellow" />
@@ -268,15 +419,22 @@ export function Course() {
           </b>
           <span>уроков пройдено</span>
           <span className="progress">
-            <i style={{ width: `${(c.done / c.lessons) * 100}%` }} />
+            <i style={{ width: `${c.lessons > 0 ? (c.done / c.lessons) * 100 : 0}%` }} />
           </span>
         </div>
       </div>
       <div className="lessons">
-        {LESSONS.map((l, i) => {
-          const isNext = !l.done && (i === 0 || LESSONS[i - 1].done)
+        {courseLessons.map((l, i, arr) => {
+          const isNext = !l.done && (i === 0 || arr[i - 1].done)
           return (
-            <button key={l.t} className={`lesson ${l.done ? 'is-done' : ''} ${isNext ? 'is-next' : ''}`} onClick={() => showToast(l.done ? 'Урок уже пройден' : 'Урок запущен')}>
+            <button
+              key={l.t}
+              className={`lesson ${l.done ? 'is-done' : ''} ${isNext ? 'is-next' : ''}`}
+              onClick={() => {
+                triggerHaptic('medium')
+                showToast('Материалы урока находятся в разработке')
+              }}
+            >
               <span className="lesson__n">{l.done ? <CheckIcon /> : i + 1}</span>
               <span className="lesson__t">
                 <b>{l.t}</b>
@@ -302,7 +460,6 @@ export function Course() {
 export function SectionPage() {
   const { id } = useParams()
   const nav = useNavigate()
-  const { city } = useApp()
   const s = SECTIONS.find((x) => x.id === id) ?? SECTIONS[0]
   return (
     <div className="page">
@@ -313,12 +470,8 @@ export function SectionPage() {
         <SectionTitle s={s} />
       </div>
       <div className="card-grid">
-        {s.cards.map((c) => (
-          <button key={c.id} className="card card--full" onClick={() => nav(`/card/${c.id}`)}>
-            {c.tag && <em className="card__tag">{c.tag}</em>}
-            <span>{c.title.replace('{city}', cityIn(city))}</span>
-            <small>{c.subtitle}</small>
-          </button>
+        {s.cards.map((c, idx) => (
+          <SingleCard key={c.id} c={c} sId={s.id} index={idx} />
         ))}
       </div>
     </div>
@@ -327,10 +480,18 @@ export function SectionPage() {
 
 export function CardPage() {
   const { id } = useParams()
+  if (id === 'where-to-start') return <WhereToStartPage />
+  if (id === 'events-city') return <CityEventsPage />
+  if (id === 'events-online') return <OnlineEventsPage />
+
   const nav = useNavigate()
   const { city, toggleSaveMeasure, savedMeasures } = useApp()
   const c = allCards().find((x) => x.id === id) ?? allCards()[0]
   const isSaved = savedMeasures.has(c.id)
+
+  const section = (c as any).section || SECTIONS.find((sec) => sec.cards.some((card) => card.id === c.id)) || SECTIONS[0]
+  const index = section.cards.findIndex((card: any) => card.id === c.id)
+
   return (
     <div className="page">
       <div className="page-title">
@@ -338,12 +499,7 @@ export function CardPage() {
           <BackIcon />
         </button>
       </div>
-      <div className="detail-hero">
-        {c.tag && <em className="card__tag">{c.tag}</em>}
-        <h1>{c.title.replace('{city}', cityIn(city))}</h1>
-        <p>{c.subtitle}</p>
-        <Rays className="detail-hero__rays" />
-      </div>
+      <SingleCard c={c} sId={section.id} index={index >= 0 ? index : 0} isHero />
       <ol className="steps">
         {c.body.map((b, i) => (
           <li key={b}>
@@ -469,16 +625,55 @@ export function Profile() {
       {savedMeasures.size > 0 && (
         <div style={{ marginTop: '1.25rem' }}>
           <h2 className="sub-h" style={{ marginBottom: '0.6rem' }}>Сохранённые меры</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          <div className="menu">
             {[...savedMeasures].map((id) => {
-              const item = GRANTS.find((g) => g.id === id) || allCards().find((c) => c.id === id) || { id, title: `Мера поддержки #${id}` }
+              const grantItem = GRANTS.find((g) => g.id === id)
+              const cardItem = allCards().find((c) => c.id === id)
+              const itemTitle = (grantItem?.title || cardItem?.title || `Мера поддержки #${id}`).replace('{city}', cityIn(city))
+              const badgeText = grantItem?.amount || cardItem?.tag || 'МСП'
+
               return (
-                <div key={id} className="menu__row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.86rem', fontWeight: 600 }}>{item.title}</span>
+                <div
+                  key={id}
+                  className="menu__row"
+                  style={{ justifyContent: 'space-between', alignItems: 'center', cursor: 'default' }}
+                >
+                  <div
+                    style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0, flex: 1, marginRight: '0.6rem', cursor: 'pointer' }}
+                    onClick={() => {
+                      if (grantItem) nav('/grants')
+                      else if (cardItem) nav(`/card/${cardItem.id}`)
+                    }}
+                  >
+                    <span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {itemTitle}
+                    </span>
+                    <span
+                      style={{
+                        alignSelf: 'flex-start',
+                        fontSize: '0.58rem',
+                        fontWeight: 700,
+                        fontFamily: 'var(--ui)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                        color: 'var(--yellow)',
+                        background: 'rgba(245, 192, 106, 0.15)',
+                        padding: '0.15rem 0.45rem',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(245, 192, 106, 0.3)',
+                      }}
+                    >
+                      {badgeText}
+                    </span>
+                  </div>
                   <button
                     className="btn btn--sm btn--ghost"
-                    style={{ padding: '0.2rem 0.6rem', fontSize: '0.75rem', height: 'auto' }}
-                    onClick={() => toggleSaveMeasure(id)}
+                    style={{ padding: '0.3rem 0.65rem', fontSize: '0.72rem', height: 'auto', flexShrink: 0, borderRadius: '8px' }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      triggerHaptic('light')
+                      toggleSaveMeasure(id)
+                    }}
                   >
                     Удалить
                   </button>

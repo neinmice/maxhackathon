@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FACTS, SECTIONS, STORIES, type Card, type Section } from '../data'
+import { FACTS, GRANTS, SECTIONS, STORIES, type Card, type Section } from '../data'
 import { cityIn, useApp } from '../store'
-import { ClayCoin, DeadlineSticker, SparkleClay, StartSticker, TwinSparkle, ZeroPercentSticker, ZigArrow } from '../components/icons'
+import { ClayCoin, DeadlineSticker, SparkleClay, StartSticker, QuizPinSticker, TwinSparkle, ZeroPercentSticker, ZigArrow, ServiceGlyph } from '../components/icons'
 import StoryViewer from '../components/StoryViewer'
 import { triggerHaptic, triggerSelectionChanged } from '../lib/maxBridge'
-import mascotCoin from '../assets/mascot/mascot-coin.png'
-import mascotThink from '../assets/mascot/mascot-think.png'
-import mascotWave from '../assets/mascot/mascot-wave.png'
+import mascotCoin from '../assets/mascot/mascot-coin.webp'
+import mascotThink from '../assets/mascot/mascot-think.webp'
+import mascotWave from '../assets/mascot/mascot-wave.webp'
+import Sheet from '../components/Sheet'
+import InDevelopmentCard from '../components/InDevelopmentCard'
 
 export function SectionTitle({ s, onClick }: { s: Section; onClick?: () => void }) {
   return (
@@ -96,12 +98,39 @@ function Stories() {
   )
 }
 
+function renderFactLine(raw: string) {
+  if (!raw) return null
+  const regex = /\{(y|p):([^}]+)\}/g
+  const parts: React.ReactNode[] = []
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+
+  while ((match = regex.exec(raw)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(raw.substring(lastIndex, match.index).replace(/ /g, '\u00A0'))
+    }
+    const isYellow = match[1] === 'y'
+    parts.push(
+      <span key={match.index} className={`hl ${isYellow ? 'hl--yellow' : 'hl--purple'}`}>
+        {match[2].replace(/ /g, '\u00A0')}
+      </span>,
+    )
+    lastIndex = regex.lastIndex
+  }
+
+  if (lastIndex < raw.length) {
+    parts.push(raw.substring(lastIndex).replace(/ /g, '\u00A0'))
+  }
+
+  return parts.length > 0 ? parts : raw
+}
+
 function Facts() {
+  const nav = useNavigate()
   const [i, setI] = useState(0)
   const [dir, setDir] = useState<1 | -1>(1)
   const timer = useRef<number>(0)
   const touchX = useRef<number | null>(null)
-  const { setQuizOpen } = useApp()
 
   const go = (d: 1 | -1) => {
     triggerSelectionChanged()
@@ -110,9 +139,14 @@ function Facts() {
   }
 
   useEffect(() => {
-    timer.current = window.setTimeout(() => go(1), 5000)
+    timer.current = window.setTimeout(() => go(1), 10000)
     return () => window.clearTimeout(timer.current)
   }, [i])
+
+  const item = FACTS[i]
+  const text = typeof item === 'string' ? item : item.text
+  const hasQuiz = typeof item === 'object' ? Boolean(item.hasQuiz) : false
+  const lines = text.split('\n')
 
   return (
     <div
@@ -129,20 +163,37 @@ function Facts() {
         <ZigArrow dir="left" />
       </button>
       <div
+        key={i}
         className={`facts__text ${dir === 1 ? 'from-right' : 'from-left'}`}
         onClick={() => {
-          triggerHaptic('medium')
-          setQuizOpen(true)
+          if (hasQuiz) {
+            triggerHaptic('medium')
+            nav('/quiz')
+          }
         }}
-        role="button"
-        tabIndex={0}
+        role={hasQuiz ? 'button' : undefined}
+        tabIndex={hasQuiz ? 0 : undefined}
       >
-        <span>{FACTS[i]}</span>
-        <span className="facts__cta">
-          <span>Пройти тест бизнеса</span>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginLeft: '3px' }}>
-            <path d="m9 18 6-6-6-6" />
-          </svg>
+        <span className="facts__message">
+          <span className="facts__line facts__line--1">{renderFactLine(lines[0])}</span>
+          <span className="facts__line facts__line--2">
+            <span>{renderFactLine(lines[1] || '')}</span>
+            {hasQuiz && (
+              <span
+                className="facts__quiz-pin"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  triggerHaptic('medium')
+                  nav('/quiz')
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label="Пройти тест"
+              >
+                <QuizPinSticker />
+              </span>
+            )}
+          </span>
         </span>
       </div>
       <button className="facts__arrow facts__arrow--right" onClick={() => go(1)} aria-label="Вперёд">
@@ -152,12 +203,46 @@ function Facts() {
   )
 }
 
-function SingleCard({ c, sId, index }: { c: Card; sId: string; index: number }) {
+export function SingleCard({
+  c,
+  sId,
+  index,
+  isHero = false,
+}: {
+  c: Card
+  sId: string
+  index: number
+  isHero?: boolean
+}) {
   const nav = useNavigate()
-  const { city } = useApp()
+  const { city, setMeasureDetail } = useApp()
 
   const handleClick = () => {
+    if (isHero) return
     triggerHaptic('light')
+
+    // Финансовая поддержка: 300.000 ₽, 0% ставка, субсидия, лизинг -> открывает карточку с мерой из grants
+    if (sId === 'finance') {
+      const grantMap: Record<string, string> = {
+        'grant-300': 'g1',
+        'credit': 'g2',
+        'subsidy': 'g4',
+        'leasing': 'g5',
+      }
+      const gId = grantMap[c.id]
+      const found = GRANTS.find((g) => g.id === gId)
+      if (found) {
+        setMeasureDetail(found)
+        return
+      }
+    }
+
+    // Блок «Начни свое дело»: карточка «Грант» -> просто открывает категорию с грантами
+    if (sId === 'start' && c.id === 'idea') {
+      nav('/grants')
+      return
+    }
+
     nav(`/card/${c.id}`)
   }
 
@@ -188,18 +273,27 @@ function SingleCard({ c, sId, index }: { c: Card; sId: string; index: number }) 
     decoIcon = <SparkleClay size={32} />
   }
 
-  // Форматирование заголовка — гарантируем перенос в 2 строки без вылетов
+  // Форматирование заголовка — для широкого формата убираем принудительный перенос, для узкого переносим
   let title = c.title.replace('{city}', cityIn(city))
-  if (c.id === 'subsidy' || title === 'Субсидия 50%') title = 'Субсидия\n50%'
-  if (c.id === 'leasing' || title === 'Льготный лизинг') title = 'Льготный\nлизинг'
-  if (c.id === 'events-city') title = `Встречи в\n${cityIn(city)}`
-  if (c.id === 'events-online') title = 'Онлайн-\nэфиры'
-  if (c.id === 'where-to-start') title = 'С чего\nначать?'
-  if (c.id === 'forms') title = 'ИП или\nООО'
-  if (c.id === 'guide') title = 'Гайд для\nстарта'
+  if (isHero) {
+    title = title.replace('\n', ' ')
+  } else {
+    if (c.id === 'subsidy' || title === 'Субсидия 50%') title = 'Субсидия\n50%'
+    if (c.id === 'leasing' || title === 'Льготный лизинг') title = 'Льготный\nлизинг'
+    if (c.id === 'events-city') title = `Встречи в\n${cityIn(city)}`
+    if (c.id === 'events-online') title = 'Онлайн-\nэфиры'
+    if (c.id === 'where-to-start') title = 'С чего\nначать?'
+    if (c.id === 'forms') title = 'ИП или\nООО'
+    if (c.id === 'guide') title = 'Гайд для\nстарта'
+  }
+
+  const Comp = isHero ? 'div' : 'button'
 
   return (
-    <button className={`card card--${sId}`} onClick={handleClick}>
+    <Comp
+      className={`card card--${sId} ${isHero ? 'card--hero' : ''}`}
+      onClick={isHero ? undefined : handleClick}
+    >
       {sticker}
       <div className="card__top">
         <span className={`card__tag ${isPurpleTag ? 'card__tag--purple' : isYellowTag ? 'card__tag--yellow' : ''}`}>
@@ -207,12 +301,10 @@ function SingleCard({ c, sId, index }: { c: Card; sId: string; index: number }) 
         </span>
       </div>
       {decoIcon && <div className="card__icon">{decoIcon}</div>}
-      <div className="card__body">
-        <div className="card__title">{title}</div>
-        <div className="card__sub">{c.subtitle}</div>
-      </div>
+      <div className="card__title">{title}</div>
+      <div className="card__sub">{c.subtitle}</div>
       {mascot && <img className="card__mascot" src={mascot} alt="mascot" />}
-    </button>
+    </Comp>
   )
 }
 
@@ -231,77 +323,70 @@ export function CardsRow({ s }: { s: Section }) {
 const BOTTOM_SERVICES = [
   {
     title: 'Регистрация',
-    to: '/card/guide',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="#8455f6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-        <polyline points="14 2 14 8 20 8" />
-        <line x1="16" y1="13" x2="8" y2="13" />
-        <line x1="16" y1="17" x2="8" y2="17" />
-        <polyline points="10 9 9 9 8 9" />
-      </svg>
-    ),
+    to: '/services/registration',
+    glyph: 'register',
+    variant: 'purple',
   },
   {
     title: 'Налоги',
-    to: '/card/forms',
-    icon: (
-      <svg viewBox="0 0 24 24" stroke="#8455f6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none">
-        <rect className="calc-frame" x="4" y="2" width="16" height="20" rx="3" stroke="#8455f6" strokeWidth="1.8" fill="none" />
-        <rect className="calc-screen" x="7" y="5" width="10" height="3.5" rx="1" fill="#f5c06a" fillOpacity="0.3" stroke="#f5c06a" strokeWidth="1.2" />
-        <rect className="calc-btn" x="7" y="11" width="2.2" height="2.2" rx="0.5" fill="#f5c06a" stroke="none" />
-        <rect className="calc-btn" x="11" y="11" width="2.2" height="2.2" rx="0.5" fill="#f5c06a" stroke="none" />
-        <rect className="calc-btn" x="15" y="11" width="2.2" height="2.2" rx="0.5" fill="#f5c06a" stroke="none" />
-        <rect className="calc-btn" x="7" y="14.5" width="2.2" height="2.2" rx="0.5" fill="#f5c06a" stroke="none" />
-        <rect className="calc-btn" x="11" y="14.5" width="2.2" height="2.2" rx="0.5" fill="#f5c06a" stroke="none" />
-        <rect className="calc-btn" x="15" y="14.5" width="2.2" height="2.2" rx="0.5" fill="#f5c06a" stroke="none" />
-        <rect className="calc-btn" x="7" y="18" width="6.2" height="2" rx="0.5" fill="#f5c06a" stroke="none" />
-        <rect className="calc-btn" x="15" y="18" width="2.2" height="2.2" rx="0.5" fill="#f5c06a" stroke="none" />
-      </svg>
-    ),
+    to: '/services/taxes',
+    glyph: 'calc',
+    variant: 'yellow',
   },
   {
     title: 'Документы',
-    to: '/services',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="#8455f6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
-        <line x1="12" y1="11" x2="12" y2="17" />
-        <line x1="9" y1="14" x2="15" y2="14" />
-      </svg>
-    ),
+    to: '/services/documents',
+    glyph: 'docs',
+    variant: 'yellow',
   },
   {
-    title: 'Обучение',
-    to: '/learning',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="#8455f6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="m4 6 8-4 8 4-8 4-8-4Z" />
-        <path d="m18 10 4 2v6" />
-        <path d="M6 10v6c0 2.5 2.7 4 6 4s6-1.5 6-4v-6" />
-      </svg>
-    ),
+    title: 'Стажировка',
+    to: '/services/internship',
+    glyph: 'internship',
+    variant: 'purple',
   },
 ]
 
 function ServicesBottomRow() {
   const nav = useNavigate()
+  const [internshipOpen, setInternshipOpen] = useState(false)
+
   return (
-    <div className="services-bottom-grid">
-      {BOTTOM_SERVICES.map((s) => (
-        <button
-          key={s.title}
-          className="services-bottom-tile"
-          onClick={() => {
-            triggerHaptic('light')
-            nav(s.to)
-          }}
-        >
-          {s.icon}
-          <span>{s.title}</span>
-        </button>
-      ))}
-    </div>
+    <>
+      <div className="services-bottom-grid">
+        {BOTTOM_SERVICES.map((s) => (
+          <button
+            key={s.title}
+            className="services-bottom-tile"
+            onClick={() => {
+              triggerHaptic('light')
+              if (s.glyph === 'internship') {
+                setInternshipOpen(true)
+                return
+              }
+              nav(s.to)
+            }}
+          >
+            <div className={`services-bottom-tile__icon services-bottom-tile__icon--${s.variant}`}>
+              <ServiceGlyph name={s.glyph} />
+            </div>
+            <span className="services-bottom-tile__label">{s.title}</span>
+          </button>
+        ))}
+      </div>
+
+      <Sheet open={internshipOpen} onClose={() => setInternshipOpen(false)}>
+        <InDevelopmentCard
+          title="Витрина стажировок"
+          desc="Единая платформа поиска молодых специалистов и оплачиваемой практики для бизнеса через MAX."
+          serviceId="internship"
+          storageKey="zvery_internship_notify"
+          onClose={() => setInternshipOpen(false)}
+          closeLabel="Закрыть"
+          embedded
+        />
+      </Sheet>
+    </>
   )
 }
 
@@ -341,7 +426,7 @@ export default function Home() {
               nav('/services')
             }}
           >
-            <span className="hl hl--purple">Сервисы</span>
+            <span>Сервисы</span>
             <svg className="sec-title__gt" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="m9 18 6-6-6-6" />
             </svg>

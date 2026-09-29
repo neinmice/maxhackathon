@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import mascot from '../assets/mascot-door.png'
+import mascot from '../assets/mascot-door.webp'
 import { CITIES } from '../data'
 import { useApp } from '../store'
 import { CheckIcon, PinIcon, Scribble, SearchIcon } from './icons'

@@ -199,7 +199,7 @@ export const ClockIcon = ({ className, style }: P) => (
 
 export const PlayIcon = ({ className, style }: P) => (
   <svg className={className} style={style} width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <path d="M7 4.8v14.4a1 1 0 0 0 1.5.9l11.4-7.2a1 1 0 0 0 0-1.8L8.5 3.9A1 1 0 0 0 7 4.8Z" fill="currentColor" />
+    <path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" fill="currentColor" />
   </svg>
 )
 
@@ -214,7 +214,7 @@ export const LockIcon = ({ className, style }: P) => (
 
 const g = { stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
 
-export const ServiceGlyph = ({ name, className }: { name: string; className?: string }) => {
+export const ServiceGlyph = ({ name, className, style }: { name: string; className?: string; style?: CSSProperties }) => {
   const paths: Record<string, React.ReactNode> = {
     register: (
       <>
@@ -290,9 +290,16 @@ export const ServiceGlyph = ({ name, className }: { name: string; className?: st
         <path d="M11 15l2.5 2.5L18 13" {...g} />
       </>
     ),
+    internship: (
+      <>
+        <circle cx="14" cy="8.5" r="4" {...g} />
+        <path d="M5.5 23.5v-1.5a5 5 0 0 1 5-5h7a5 5 0 0 1 5 5v1.5" {...g} />
+        <path d="M12 17l2 3 2-3" {...g} />
+      </>
+    ),
   }
   return (
-    <svg className={className} width="28" height="28" viewBox="0 0 28 28" fill="none">
+    <svg className={className} style={style} width="28" height="28" viewBox="0 0 28 28" fill="none">
       {paths[name]}
     </svg>
   )
@@ -353,7 +360,7 @@ export const Rays = ({ className, style, color = '#7b5cf0', shade = '#4f38b0' }:
   </svg>
 )
 
-/** Pixel "START" sticker */
+/** Pixel "СТАРТ" sticker */
 export const StartSticker = ({ className, style }: P) => (
   <svg className={className} style={style} width="64" height="30" viewBox="0 0 64 30" fill="none" shapeRendering="crispEdges">
     <path d="M6 4h52l3 3v14l-3 3v3H8l-3-3V8l1-1V4Z" fill="#6b3fb3" />
@@ -364,11 +371,34 @@ export const StartSticker = ({ className, style }: P) => (
       y="15.5"
       textAnchor="middle"
       fontFamily="'VK Sans Display Expanded', monospace"
-      fontSize="11"
+      fontSize="10"
       fontWeight="900"
+      letterSpacing="0.02em"
       fill="#1f1a2e"
     >
-      START
+      СТАРТ
+    </text>
+  </svg>
+)
+
+/** Pixel 3D "ТЕСТ" sticker (brand yellow + StartSticker purple frame) */
+export const QuizPinSticker = ({ className, style }: P) => (
+  <svg className={className} style={style} width="58" height="26" viewBox="0 0 58 26" fill="none" shapeRendering="crispEdges">
+    <path d="M6 4h46l3 3v11l-3 3v3H7l-3-3V7l1-1V4Z" fill="#6b3fb3" />
+    <path d="M6 2h46l3 3v11l-3 3H6l-3-3V5l3-3Z" fill="#be88e3" />
+    <path d="M7 4h44l2 2v9l-2 2H7l-2-2V6l2-2Z" fill="#f5c06a" />
+    <text
+      x="29"
+      y="10.5"
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontFamily="'VK Sans Display Expanded', monospace"
+      fontSize="9.5"
+      fontWeight="900"
+      letterSpacing="0.04em"
+      fill="#1f1a2e"
+    >
+      ТЕСТ
     </text>
   </svg>
 )

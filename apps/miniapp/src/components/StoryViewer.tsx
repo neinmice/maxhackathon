@@ -27,18 +27,16 @@ export default function StoryViewer({ story, onClose }: { story: Story; onClose:
   const next = useCallback(() => {
     setProgress(0)
     if (slide < story.slides.length - 1) {
-      setSlide(slide + 1)
+      setSlide((s) => s + 1)
     } else {
       onClose()
     }
   }, [slide, story.slides.length, onClose])
 
-  const prev = () => {
+  const prev = useCallback(() => {
     setProgress(0)
-    if (slide > 0) {
-      setSlide(slide - 1)
-    }
-  }
+    setSlide((s) => Math.max(0, s - 1))
+  }, [])
 
   useEffect(() => {
     if (paused) return
@@ -61,37 +59,79 @@ export default function StoryViewer({ story, onClose }: { story: Story; onClose:
     if (progress >= 1) next()
   }, [progress, next])
 
-  const onStart = (e: React.TouchEvent | React.MouseEvent) => {
-    const p = 'touches' in e ? e.touches[0] : e
-    touch.current = { x: p.clientX, y: p.clientY, t: Date.now() }
+  const pointerState = useRef<{
+    id: number
+    x: number
+    y: number
+    t: number
+    isDrag: boolean
+  } | null>(null)
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return
+    pointerState.current = {
+      id: e.pointerId,
+      x: e.clientX,
+      y: e.clientY,
+      t: Date.now(),
+      isDrag: false,
+    }
     setPaused(true)
   }
-  const onMove = (e: React.TouchEvent | React.MouseEvent) => {
-    if (!touch.current) return
-    const p = 'touches' in e ? e.touches[0] : e
-    const dy = p.clientY - touch.current.y
-    if (dy > 0) setDragY(dy)
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    const st = pointerState.current
+    if (!st || st.id !== e.pointerId) return
+    const dy = e.clientY - st.y
+    const dx = e.clientX - st.x
+
+    if (dy > 15 && dy > Math.abs(dx)) {
+      st.isDrag = true
+      setDragY(dy)
+    }
   }
-  const onEnd = (e: React.TouchEvent | React.MouseEvent) => {
-    const st = touch.current
-    touch.current = null
+
+  const onPointerUp = (e: React.PointerEvent) => {
+    const st = pointerState.current
+    if (!st || st.id !== e.pointerId) return
+    pointerState.current = null
     setPaused(false)
-    if (!st) return
-    const p = 'changedTouches' in e ? e.changedTouches[0] : e
-    const dx = p.clientX - st.x
-    const dy = p.clientY - st.y
     setDragY(0)
-    if (dy > 110) return onClose()
-    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+
+    const dx = e.clientX - st.x
+    const dy = e.clientY - st.y
+    const dt = Date.now() - st.t
+
+    // 1. Swipe down to dismiss
+    if (dy > 90 && dy > Math.abs(dx) * 1.3) {
+      onClose()
+      return
+    }
+
+    // 2. Horizontal swipe
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
       if (dx < 0) next()
       else prev()
       return
     }
-    if (Date.now() - st.t < 250 && Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+
+    // 3. Tap (no significant drag and press duration under 700ms)
+    if (!st.isDrag && dt < 700 && Math.abs(dx) < 35 && Math.abs(dy) < 35) {
       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-      if (p.clientX - rect.left < rect.width / 3) prev()
-      else next()
+      const left = rect ? rect.left : 0
+      const width = rect ? rect.width : window.innerWidth
+      if (e.clientX - left < width * 0.35) {
+        prev()
+      } else {
+        next()
+      }
     }
+  }
+
+  const onPointerCancel = () => {
+    pointerState.current = null
+    setPaused(false)
+    setDragY(0)
   }
 
   const key = `${story.id}-${slide}`
@@ -101,7 +141,6 @@ export default function StoryViewer({ story, onClose }: { story: Story; onClose:
       <div className="story__bg" style={{ background: s.bg }} key={key}>
         <ZigArrow className="story__deco story__deco--a" dir="left" />
         <Rays className="story__deco story__deco--b" />
-        <ZigArrow className="story__deco story__deco--c" />
       </div>
 
       <div className="story__bars">
@@ -120,14 +159,17 @@ export default function StoryViewer({ story, onClose }: { story: Story; onClose:
 
       <div
         className="story__tap"
-        onTouchStart={onStart}
-        onTouchMove={onMove}
-        onTouchEnd={onEnd}
-        onMouseDown={onStart}
-        onMouseMove={(e) => e.buttons && onMove(e)}
-        onMouseUp={onEnd}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerCancel}
       >
         <div className="story__content" key={key}>
+          {s.mascot && (
+            <div className="story__mascot-wrap">
+              <img src={s.mascot} alt="Маскот" className="story__mascot" draggable={false} />
+            </div>
+          )}
           {s.big && <div className="story__big">{s.big}</div>}
           {s.accent && <div className="story__accent">{s.accent}</div>}
           <h2 className="story__title">{s.title}</h2>

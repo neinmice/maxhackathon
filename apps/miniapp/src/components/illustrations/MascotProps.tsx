@@ -143,7 +143,7 @@ export const StartSticker: React.FC = () => (
     textShadow: '0 0 6px #00F5FF',
     userSelect: 'none',
   }}>
-    START
+    СТАРТ
   </div>
 );
 

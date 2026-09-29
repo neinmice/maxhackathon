@@ -6,7 +6,7 @@
  */
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import mascotShrug from '../assets/mascot/mascot-shrug.png'
+import mascotShrug from '../assets/mascot/mascot-shrug.webp'
 import { CheckIcon, Rays, Scribble, StartSticker } from './icons'
 import Sheet from './Sheet'
 import { useApp } from '../store'
@@ -185,11 +185,11 @@ export default function QuizModal() {
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       padding: '0.8rem 0.9rem',
-                      borderRadius: '0.85rem',
-                      background: selected ? 'var(--card)' : 'var(--card-2)',
-                      border: `1.5px solid ${selected ? 'var(--yellow)' : 'var(--line)'}`,
+                      borderRadius: 'var(--radius-card, 16px)',
+                      background: selected ? 'rgba(132, 85, 246, 0.15)' : '#2a2a2b',
+                      border: `1px solid ${selected ? '#8455f6' : '#363638'}`,
                       textAlign: 'left',
-                      color: selected ? 'var(--yellow)' : 'var(--text)',
+                      color: '#ffffff',
                       fontSize: '0.88rem',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease',
@@ -219,7 +219,7 @@ export default function QuizModal() {
                   border: '2px solid var(--yellow)',
                   outline: '1px dashed rgba(245, 197, 109, 0.4)',
                   outlineOffset: '-6px',
-                  borderRadius: '1.2rem',
+                  borderRadius: 'var(--radius-card, 16px)',
                   padding: '1.5rem 1.1rem',
                   position: 'relative',
                   overflow: 'hidden',

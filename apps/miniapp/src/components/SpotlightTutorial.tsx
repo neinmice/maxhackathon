@@ -1,15 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { triggerHaptic, triggerNotification, triggerSelectionChanged } from '../lib/maxBridge'
 import { CloseIcon } from './icons'
-import mascotWave from '../assets/mascot/mascot-wave.png'
-import mascotThink from '../assets/mascot/mascot-think.png'
+import mascotDoor from '../assets/mascot-door.webp'
 
 type SpotlightStep = {
   title: string
   desc: string
   selector?: string
-  badge?: string
+  fallbackSelector?: string
+  badge: string
+  radius?: number
+  pad?: number
 }
 
 const STEPS: SpotlightStep[] = [
@@ -18,23 +20,33 @@ const STEPS: SpotlightStep[] = [
     desc: 'Смотри актуальные новости, гранты до 300 000 ₽ и дедлайны региона в формате коротких сторис.',
     selector: '.stories',
     badge: 'Истории',
+    radius: 18,
+    pad: 4,
   },
   {
     title: 'Программы поддержки',
-    desc: 'Подбирай проверенные субсидии, льготные кредиты и бесплатные программы под свой бизнес.',
-    selector: '.cards-wrap',
+    desc: 'Подбирай субсидии, льготные кредиты и бесплатные программы под свой бизнес и регион.',
+    selector: '.home-sec--start',
+    fallbackSelector: '.cards-wrap',
     badge: 'Каталог мер',
+    radius: 20,
+    pad: 6,
   },
   {
     title: 'Умный помощник',
     desc: 'Задавай любые вопросы боту: налоги 2026/2027, документы и регистрация без очередей.',
-    selector: '.tab--mascot',
-    badge: 'AI Бот',
+    selector: '.tab__mascot',
+    fallbackSelector: '.tab--mascot',
+    badge: 'AI Помощник',
+    radius: 9999,
+    pad: 4,
   },
   {
-    title: 'Демонстрационная версия (MVP)',
-    desc: 'Приложение создано в рамках хакатона. Представлены синтетические примерочные данные для показа сценариев.',
+    title: 'Демонстрационная версия',
+    desc: 'Приложение создано для хакатона ZVERY. Представлены синтетические примерочные данные для показа сценариев.',
     badge: 'О проекте',
+    radius: 0,
+    pad: 0,
   },
 ]
 
@@ -45,35 +57,76 @@ export default function SpotlightTutorial({
 }) {
   const [step, setStep] = useState(0)
   const [rect, setRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null)
+  const [containerSize, setContainerSize] = useState({ width: 390, height: 800 })
+  const contentRef = useRef<HTMLDivElement>(null)
+  const [contentHeight, setContentHeight] = useState(210)
 
   const current = STEPS[step]
   const isLast = step === STEPS.length - 1
 
   useEffect(() => {
-    if (!current.selector) {
-      setRect(null)
-      return
+    if (contentRef.current) {
+      setContentHeight(contentRef.current.offsetHeight)
     }
+  }, [step, current])
 
+  useEffect(() => {
     const updateRect = () => {
-      const el = document.querySelector(current.selector!)
-      if (el) {
-        const r = el.getBoundingClientRect()
+      const appEl = document.querySelector('.app')
+      if (appEl) {
+        setContainerSize({
+          width: appEl.clientWidth,
+          height: appEl.clientHeight,
+        })
+      }
+
+      if (!current.selector) {
+        setRect(null)
+        return
+      }
+
+      const sel = current.selector
+      const fallback = current.fallbackSelector
+      const target = (sel ? document.querySelector(sel) : null) || (fallback ? document.querySelector(fallback) : null)
+
+      if (target && appEl) {
+        const appRect = appEl.getBoundingClientRect()
+        const r = target.getBoundingClientRect()
         setRect({
-          top: r.top - 6,
-          left: r.left - 6,
-          width: r.width + 12,
-          height: r.height + 12,
+          top: r.top - appRect.top,
+          left: r.left - appRect.left,
+          width: r.width,
+          height: r.height,
         })
       } else {
         setRect(null)
       }
     }
 
+    if (current.selector) {
+      const sel = current.selector
+      const fallback = current.fallbackSelector
+      const target = (sel ? document.querySelector(sel) : null) || (fallback ? document.querySelector(fallback) : null)
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }
+    }
+
     updateRect()
+    const timer1 = setTimeout(updateRect, 80)
+    const timer2 = setTimeout(updateRect, 320)
+
     window.addEventListener('resize', updateRect)
-    return () => window.removeEventListener('resize', updateRect)
-  }, [step, current.selector])
+    const mainEl = document.querySelector('.main')
+    mainEl?.addEventListener('scroll', updateRect)
+
+    return () => {
+      clearTimeout(timer1)
+      clearTimeout(timer2)
+      window.removeEventListener('resize', updateRect)
+      mainEl?.removeEventListener('scroll', updateRect)
+    }
+  }, [step, current.selector, current.fallbackSelector])
 
   const finish = () => {
     triggerNotification('success')
@@ -99,221 +152,156 @@ export default function SpotlightTutorial({
     finish()
   }
 
+  const pad = current.pad ?? 4
+  const radius = current.radius ?? 18
+
+  const getTargetY = (): number => {
+    if (!rect) {
+      return Math.max(24, Math.round((containerSize.height - contentHeight) / 2))
+    }
+
+    const elementBottom = rect.top + rect.height + pad
+    const spaceBelow = containerSize.height - elementBottom
+
+    if (spaceBelow >= contentHeight + 20) {
+      return elementBottom + 20
+    }
+
+    const elementTop = rect.top - pad
+    return Math.max(24, elementTop - contentHeight - 20)
+  }
+
+  const targetY = getTargetY()
+
+  const cutTop = rect ? Math.max(0, rect.top - pad) : 0
+  const cutBottom = rect ? rect.top + rect.height + pad : 0
+  const cutLeft = rect ? Math.max(0, rect.left - pad) : 0
+  const cutRight = rect ? rect.left + rect.width + pad : 0
+
+  const appEl = typeof document !== 'undefined' ? document.querySelector('.app') : null
+
   return createPortal(
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 9999,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: rect && rect.top > 350 ? 'flex-start' : 'flex-end',
-        padding: '24px 16px 28px',
-        animation: 'fadeIn 0.25s ease',
-        boxSizing: 'border-box',
-      }}
-    >
-      {/* SVG маска с вырезом под целевой элемент */}
-      <svg width="0" height="0" style={{ position: 'absolute' }}>
-        <defs>
-          <mask id="spotlight-mask" maskUnits="userSpaceOnUse">
-            <rect x="0" y="0" width="100%" height="100%" fill="white" />
-            {rect && (
-              <rect
-                x={rect.left - 4}
-                y={rect.top - 4}
-                width={rect.width + 8}
-                height={rect.height + 8}
-                rx="20"
-                fill="black"
-              />
-            )}
-          </mask>
-        </defs>
-      </svg>
-
-      {/* Затемненный фон с размытием вокруг элемента (с вырезом под сам элемент) */}
-      <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(18, 13, 29, 0.88)',
-          backdropFilter: 'blur(4px)',
-          WebkitBackdropFilter: 'blur(4px)',
-          mask: rect ? 'url(#spotlight-mask)' : undefined,
-          WebkitMask: rect ? 'url(#spotlight-mask)' : undefined,
-          zIndex: 9999,
-          pointerEvents: 'none',
-        }}
-      />
-
-      {/* Круглая кнопка закрытия как в Stories */}
-      <button
-        onClick={skip}
-        style={{
-          position: 'fixed',
-          top: '16px',
-          right: '16px',
-          zIndex: 10002,
-          width: '36px',
-          height: '36px',
-          borderRadius: '50%',
-          background: 'rgba(255, 255, 255, 0.15)',
-          border: 'none',
-          color: '#ffffff',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          backdropFilter: 'blur(8px)',
-        }}
-        aria-label="Закрыть обучение"
-      >
-        <CloseIcon />
-      </button>
-
-      {/* Подсветка целевого элемента (Spotlight) с ярким неоновым фиолетовым свечением */}
-      {rect && (
+    <div className="spotlight-overlay" style={{ pointerEvents: 'none' }}>
+      {/* Затемняющие панели с реальным аппаратным backdrop-filter: blur(16px) */}
+      {rect ? (
+        <>
+          {/* Сверху от выреза */}
+          <div
+            className="spotlight-panel"
+            style={{
+              top: 0,
+              left: 0,
+              right: 0,
+              height: `${cutTop}px`,
+            }}
+          />
+          {/* Снизу от выреза */}
+          <div
+            className="spotlight-panel"
+            style={{
+              top: `${cutBottom}px`,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
+          />
+          {/* Слева от выреза */}
+          <div
+            className="spotlight-panel"
+            style={{
+              top: `${cutTop}px`,
+              left: 0,
+              width: `${cutLeft}px`,
+              height: `${Math.max(0, cutBottom - cutTop)}px`,
+            }}
+          />
+          {/* Справа от выреза */}
+          <div
+            className="spotlight-panel"
+            style={{
+              top: `${cutTop}px`,
+              left: `${cutRight}px`,
+              right: 0,
+              height: `${Math.max(0, cutBottom - cutTop)}px`,
+            }}
+          />
+        </>
+      ) : (
         <div
+          className="spotlight-panel"
           style={{
-            position: 'fixed',
-            top: rect.top - 4,
-            left: rect.left - 4,
-            width: rect.width + 8,
-            height: rect.height + 8,
-            borderRadius: '20px',
-            border: '2.5px solid #8455f6',
-            boxShadow:
-              '0 0 25px rgba(132, 85, 246, 0.9), 0 0 50px rgba(132, 85, 246, 0.45), inset 0 0 16px rgba(132, 85, 246, 0.3)',
-            pointerEvents: 'none',
-            transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-            zIndex: 10001,
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
           }}
         />
       )}
 
-      {/* Карточка подсказки от маскота */}
+      {/* Кнопка закрытия обучения (крестик) */}
+      <button className="spotlight-close" onClick={skip} aria-label="Закрыть обучение">
+        <CloseIcon />
+      </button>
+
+      {/* Подсветка целевого элемента: неон, тонкая фиолетовая рамка и радиус */}
+      {rect && (
+        <div
+          className="spotlight-cutout"
+          style={{
+            top: `${rect.top - pad}px`,
+            left: `${rect.left - pad}px`,
+            width: `${rect.width + pad * 2}px`,
+            height: `${rect.height + pad * 2}px`,
+            borderRadius: radius === 9999 ? '50%' : `${radius}px`,
+          }}
+        />
+      )}
+
+      {/* Плавающий текст с плавной анимацией скольжения по экрану между этапами */}
       <div
+        ref={contentRef}
+        className={`spotlight-floating ${!rect ? 'spotlight-floating--center' : ''}`}
         style={{
-          position: 'relative',
-          background: '#212122',
-          border: '1px solid #363638',
-          borderRadius: '20px',
-          padding: '20px 18px 16px',
-          boxShadow: '0 16px 40px rgba(0, 0, 0, 0.6)',
-          zIndex: 10001,
-          marginTop: rect && rect.top > 350 ? '70px' : '0',
-          marginBottom: rect && rect.top <= 350 ? '24px' : '0',
+          transform: `translate3d(0, ${targetY}px, 0)`,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <span
-                style={{
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  color: '#c499f3',
-                  background: 'rgba(132, 85, 246, 0.2)',
-                  padding: '2px 8px',
-                  borderRadius: '6px',
-                }}
-              >
-                {current.badge}
-              </span>
-              <span style={{ fontSize: '11px', color: '#8d93a3' }}>Шаг {step + 1} из 4</span>
-            </div>
+        <div key={step} className="spotlight-text-anim">
+          {!rect && (
+            <img
+              src={mascotDoor}
+              alt="ZVERY"
+              style={{ width: '84px', height: '84px', objectFit: 'contain', marginBottom: '1.25rem' }}
+            />
+          )}
 
-            <h3
-              style={{
-                fontFamily: "'VK Sans Display Expanded', sans-serif",
-                fontSize: '16px',
-                fontWeight: 700,
-                color: '#ffffff',
-                marginBottom: '6px',
-                lineHeight: 1.25,
-              }}
-            >
-              {current.title}
-            </h3>
-
-            <p
-              style={{
-                fontFamily: "'VK Sans Text', sans-serif",
-                fontSize: '13px',
-                lineHeight: 1.4,
-                color: 'rgba(255, 255, 255, 0.85)',
-                marginBottom: '16px',
-              }}
-            >
-              {current.desc}
-            </p>
+          <div className="spotlight-meta">
+            <span className="spotlight-badge">{current.badge}</span>
+            <span className="spotlight-counter">Шаг {step + 1} из {STEPS.length}</span>
           </div>
 
-          <img
-            src={step % 2 === 0 ? mascotWave : mascotThink}
-            alt=""
-            style={{ width: '64px', height: '64px', objectFit: 'contain', flexShrink: 0 }}
-          />
+          <h2 className="spotlight-title">{current.title}</h2>
+          <p className="spotlight-desc">{current.desc}</p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button
-            onClick={skip}
-            style={{
-              flex: 1,
-              height: '42px',
-              borderRadius: '12px',
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              color: '#8d93a3',
-              fontFamily: "'VK Sans Display', sans-serif",
-              fontSize: '13px',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
+        <div className="spotlight-actions">
+          <button className="spotlight-btn-skip" onClick={skip}>
             Пропустить
           </button>
-          <button
-            className="spotlight-btn--next"
-            onClick={next}
-            style={{
-              flex: 1.4,
-              height: '42px',
-              borderRadius: '12px',
-              background: '#8455f6',
-              border: 'none',
-              color: '#ffffff',
-              fontFamily: "'VK Sans Display', sans-serif",
-              fontSize: '13px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(132, 85, 246, 0.4)',
-            }}
-          >
-            {isLast ? 'Готово' : 'Дальше'}
+          <button className="spotlight-btn-next" onClick={next}>
+            {isLast ? 'Подобрать меры' : 'Дальше'}
           </button>
         </div>
 
-        {/* Индикатор шагов — внизу по центру */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '14px' }}>
+        <div className="spotlight-dots">
           {STEPS.map((_, idx) => (
-            <div
+            <span
               key={idx}
-              style={{
-                width: idx === step ? '24px' : '6px',
-                height: '4px',
-                borderRadius: '2px',
-                background: idx === step ? '#8455f6' : idx < step ? '#c499f3' : 'rgba(255, 255, 255, 0.2)',
-                transition: 'all 0.25s',
-              }}
+              className={`spotlight-dot ${idx === step ? 'is-active' : idx < step ? 'is-done' : ''}`}
             />
           ))}
         </div>
       </div>
     </div>,
-    document.body,
+    appEl || document.body,
   )
 }

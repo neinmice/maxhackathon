@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import mascotShrug from '../assets/mascot/mascot-shrug.png'
-import { CheckIcon, Rays, StartSticker } from '../components/icons'
+import mascotShrug from '../assets/mascot/mascot-shrug.webp'
+import { CheckIcon, ClockIcon, Rays, StartSticker } from '../components/icons'
 import { QUESTIONS } from '../components/QuizModal'
 import { useApp } from '../store'
 import { apiClient, type QuizSubmitResult } from '../api/client'
@@ -46,8 +46,12 @@ export default function QuizPage() {
       try {
         const res = await apiClient.submitQuiz('v1', answers)
         setResult(res)
-        if (res.passed) triggerNotification('success')
-        else triggerNotification('warning')
+        if (res.passed) {
+          try { localStorage.setItem('quiz_completed', 'true') } catch {}
+          triggerNotification('success')
+        } else {
+          triggerNotification('warning')
+        }
       } catch {
         setResult({
           attempt_id: `offline-${Date.now()}`,
@@ -58,6 +62,7 @@ export default function QuizPage() {
             payload: 'demo-signed-payload',
           },
         })
+        try { localStorage.setItem('quiz_completed', 'true') } catch {}
         triggerNotification('success')
       } finally {
         setSubmitting(false)
@@ -66,6 +71,7 @@ export default function QuizPage() {
   }
 
   const handleRestart = () => {
+    try { localStorage.removeItem('quiz_completed') } catch {}
     setAnswers({})
     setStep(0)
     setResult(null)
@@ -73,7 +79,37 @@ export default function QuizPage() {
 
   return (
     <div className="page quiz-page" style={{ paddingBottom: '80px' }}>
-      <PageTitle pre="Тест" hl="бизнеса" color="yellow" back />
+      <PageTitle
+        pre="Основы"
+        hl="бизнеса"
+        color="yellow"
+        back
+        rightSlot={
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '0.68rem',
+              fontWeight: 700,
+              fontFamily: 'var(--ui)',
+              textTransform: 'uppercase',
+              lineHeight: 1,
+              padding: '0.22rem 0.55rem',
+              borderRadius: '6px',
+              background: 'rgba(245, 192, 106, 0.15)',
+              color: 'var(--yellow)',
+              border: '1px solid rgba(245, 192, 106, 0.35)',
+              whiteSpace: 'nowrap',
+              letterSpacing: '0.04em',
+            }}
+          >
+            {!result
+              ? `${step + 1}/${QUESTIONS.length}`
+              : `${Math.round(((result.score || 100) / 100) * QUESTIONS.length)}/${QUESTIONS.length}`}
+          </span>
+        }
+      />
 
       {!result ? (
         <div style={{ marginTop: '10px' }}>
@@ -93,7 +129,7 @@ export default function QuizPage() {
             ))}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
             <span
               style={{
                 fontSize: '11px',
@@ -103,11 +139,14 @@ export default function QuizPage() {
                 background: 'rgba(132, 85, 246, 0.2)',
                 padding: '3px 8px',
                 borderRadius: '6px',
+                letterSpacing: '0.04em',
               }}
             >
-              Вопрос {step + 1} из {QUESTIONS.length}
+              Экспресс-тест
             </span>
-            <span style={{ fontSize: '12px', color: '#8d93a3' }}>5 минут</span>
+            <span style={{ fontSize: '12px', color: '#8d93a3', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <ClockIcon style={{ width: 13, height: 13 }} /> 3–5 минут
+            </span>
           </div>
 
           <h3
@@ -135,9 +174,9 @@ export default function QuizPage() {
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: '14px 16px',
-                    borderRadius: '14px',
-                    background: selected ? 'rgba(132, 85, 246, 0.15)' : '#212122',
-                    border: `1.5px solid ${selected ? '#8455f6' : '#363638'}`,
+                    borderRadius: '16px',
+                    background: selected ? 'rgba(132, 85, 246, 0.15)' : '#2a2a2b',
+                    border: `1px solid ${selected ? '#8455f6' : '#363638'}`,
                     textAlign: 'left',
                     color: selected ? '#ffffff' : 'rgba(255, 255, 255, 0.9)',
                     fontFamily: "'VK Sans Text', sans-serif",

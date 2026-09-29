@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { CloseIcon } from './icons'
 
 export const appRoot = () => document.querySelector('.app') ?? document.body
 
@@ -29,7 +30,9 @@ export default function Sheet({
     <div className={`sheet ${open ? 'is-open' : ''}`}>
       <div className="sheet__backdrop" onClick={onClose} />
       <div className="sheet__panel" role="dialog" aria-modal="true">
-        <div className="sheet__grip" />
+        <button className="sheet__close" onClick={onClose} aria-label="Закрыть">
+          <CloseIcon />
+        </button>
         {title && <h3 className="sheet__title">{title}</h3>}
         {children}
       </div>

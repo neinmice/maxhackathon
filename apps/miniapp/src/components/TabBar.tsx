@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import mascot from '../assets/mascot-door.png'
+import mascot from '../assets/mascot/mascot-door-tab.webp'
 import {
   DocFilledIcon,
   DocIcon,

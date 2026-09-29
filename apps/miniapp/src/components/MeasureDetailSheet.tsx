@@ -46,17 +46,19 @@ export default function MeasureDetailSheet() {
 
   return (
     <Sheet open={!!measureDetail} onClose={() => setMeasureDetail(null)} title={title}>
-      <div className="sheet-body" style={{ maxHeight: '72vh', overflowY: 'auto', paddingRight: '0.2rem', paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 24px)' }}>
+      <div className="sheet-body" style={{ maxHeight: '72vh', overflowY: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 24px)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
           <div className="grant-sheet__amount">{amount}</div>
           <span
             style={{
-              fontSize: '0.72rem',
+              fontSize: '0.62rem',
               fontWeight: 700,
-              padding: '0.25rem 0.6rem',
-              borderRadius: '2rem',
-              background: 'rgba(91, 143, 247, 0.15)',
-              color: 'var(--blue, #5b8ff7)',
+              fontFamily: 'var(--ui)',
+              textTransform: 'uppercase',
+              padding: '0.18rem 0.55rem',
+              borderRadius: '6px',
+              background: 'rgba(132, 85, 246, 0.18)',
+              color: 'var(--purple-3, #c499f3)',
               letterSpacing: '0.04em',
               whiteSpace: 'nowrap',
               flexShrink: 0,
@@ -82,7 +84,7 @@ export default function MeasureDetailSheet() {
           </ul>
         </div>
 
-        <div style={{ background: 'var(--card-2)', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid var(--line)' }}>
+        <div style={{ background: '#2a2a2b', padding: '0.85rem', borderRadius: 'var(--radius-card, 16px)', border: '1px solid #363638' }}>
           <h4 className="sheet-sub" style={{ marginBottom: '0.5rem' }}>Чеклист документов</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
             {docs.map((doc, idx) => {
@@ -156,7 +158,7 @@ export default function MeasureDetailSheet() {
               nav('/assistant', { state: { q: `Расскажи подробнее про меру: ${title}` } })
             }}
           >
-            Спросить ассистента о мере
+            Спросить ассистента
           </button>
         </div>
       </div>

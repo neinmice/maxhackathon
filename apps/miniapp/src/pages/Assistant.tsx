@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import mascot from '../assets/mascot/mascot-door.png'
+import mascot from '../assets/mascot/mascot-door-tight.webp'
 import { Avatar } from '../components/Header'
 import { MicIcon, Rays, Scribble, SendIcon } from '../components/icons'
 import { CITIES, QUICK_QUESTIONS, quickText } from '../data'
@@ -320,28 +320,32 @@ export default function Assistant() {
     <div className={`page assistant ${empty ? 'is-empty' : 'has-msgs'}`}>
       <div className="assistant__scroll" ref={listRef}>
         <div className="a-banner">
-          <img className="a-banner__mascot" src={mascot} alt="" draggable={false} />
-          <Rays className="a-banner__rays" color="#f5c56d" shade="#b98a33" />
-          <div className="a-banner__title">
-            <Scribble className="a-banner__scribble" />
-            <span>
-              Я твой помощник по
-              <br />
-              “Бизнес-Навигатору”
-            </span>
+          <div className="a-banner__inner">
+            <div className="a-banner__mascot-wrap">
+              <img className="a-banner__mascot" src={mascot} alt="" draggable={false} />
+              <Rays className="a-banner__rays" color="#f5c56d" shade="#b98a33" />
+            </div>
+            <div className="a-banner__title">
+              <Scribble className="a-banner__scribble" />
+              <span>
+                Я твой помощник по
+                <br />
+                “Бизнес-Навигатору”
+              </span>
+            </div>
           </div>
         </div>
 
         {empty && (
           <div className="chips">
             <button className="chip" onClick={() => setQuizOpen(true)}>
-              <u>Пройти квиз</u> для бизнеса
+              <u>Пройти квиз</u> {'для бизнеса'}
             </button>
             {QUICK_QUESTIONS.map((q) => (
               <button key={q.hl} className="chip" onClick={() => send(quickText(q))}>
-                {q.pre && <>{q.pre} </>}
+                {q.pre ? `${q.pre} ` : ''}
                 <u>{q.hl}</u>
-                {q.post && <> {q.post}</>}
+                {q.post ? (/^[?!.,]/.test(q.post) ? q.post : ` ${q.post}`) : ''}
               </button>
             ))}
           </div>

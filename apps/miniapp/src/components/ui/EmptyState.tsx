@@ -1,5 +1,5 @@
 import React from 'react'
-import mascotShrug from '../../assets/mascot/mascot-shrug.png'
+import mascotShrug from '../../assets/mascot/mascot-shrug.webp'
 import { triggerHaptic } from '../../lib/maxBridge'
 
 interface EmptyStateProps {
