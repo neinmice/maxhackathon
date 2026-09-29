@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FACTS, SECTIONS, STORIES, type Card, type Section } from '../data'
 import { cityIn, useApp } from '../store'
-import { ClayCoin, DeadlineSticker, HotSticker, SparkleClay, StartSticker, TwinSparkle, ZeroPercentSticker, ZigArrow } from '../components/icons'
+import { ClayCoin, DeadlineSticker, SparkleClay, StartSticker, TwinSparkle, ZeroPercentSticker, ZigArrow } from '../components/icons'
 import StoryViewer from '../components/StoryViewer'
 import { triggerHaptic, triggerSelectionChanged } from '../lib/maxBridge'
 import mascotCoin from '../assets/mascot/mascot-coin.png'
@@ -165,10 +165,8 @@ function SingleCard({ c, sId, index }: { c: Card; sId: string; index: number }) 
   let sticker = null
   if (sId === 'start') {
     if (index === 0) sticker = <StartSticker className="card__sticker" />
-    else if (index === 1) sticker = <HotSticker className="card__sticker" />
   } else if (sId === 'finance') {
-    if (index === 0) sticker = <HotSticker className="card__sticker" />
-    else if (index === 1) sticker = <ZeroPercentSticker className="card__sticker" />
+    if (index === 1) sticker = <ZeroPercentSticker className="card__sticker" />
   } else if (sId === 'free') {
     if (index === 0) sticker = <StartSticker className="card__sticker" />
     else if (index === 2) sticker = <DeadlineSticker className="card__sticker" />
@@ -207,8 +205,8 @@ function SingleCard({ c, sId, index }: { c: Card; sId: string; index: number }) 
         <span className={`card__tag ${isPurpleTag ? 'card__tag--purple' : isYellowTag ? 'card__tag--yellow' : ''}`}>
           {c.tag || 'старт'}
         </span>
-        {decoIcon && <div className="card__icon">{decoIcon}</div>}
       </div>
+      {decoIcon && <div className="card__icon">{decoIcon}</div>}
       <div className="card__body">
         <div className="card__title">{title}</div>
         <div className="card__sub">{c.subtitle}</div>

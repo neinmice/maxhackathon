@@ -11,7 +11,7 @@ export default function Sheet({
 }: {
   open: boolean
   onClose: () => void
-  title?: string
+  title?: ReactNode
   children: ReactNode
 }) {
   const [mounted, setMounted] = useState(open)

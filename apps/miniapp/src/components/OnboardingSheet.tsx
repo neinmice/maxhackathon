@@ -88,10 +88,22 @@ export default function OnboardingSheet() {
   }
 
   const stepTitles = [
-    'Шаг 1 из 4 · Где ты открываешь дело?',
-    'Шаг 2 из 4 · Твой текущий статус',
-    'Шаг 3 из 4 · Система налогообложения',
-    'Шаг 4 из 4 · Главная цель',
+    <>
+      <span style={{ fontSize: '0.85rem', color: '#8d93a3', display: 'block', fontWeight: 600, marginBottom: '4px' }}>Шаг 1 из 4</span>
+      <span>Где ты открываешь дело?</span>
+    </>,
+    <>
+      <span style={{ fontSize: '0.85rem', color: '#8d93a3', display: 'block', fontWeight: 600, marginBottom: '4px' }}>Шаг 2 из 4</span>
+      <span>Твой текущий статус</span>
+    </>,
+    <>
+      <span style={{ fontSize: '0.85rem', color: '#8d93a3', display: 'block', fontWeight: 600, marginBottom: '4px' }}>Шаг 3 из 4</span>
+      <span>Система налогообложения</span>
+    </>,
+    <>
+      <span style={{ fontSize: '0.85rem', color: '#8d93a3', display: 'block', fontWeight: 600, marginBottom: '4px' }}>Шаг 4 из 4</span>
+      <span>Главная цель</span>
+    </>,
   ]
 
   return (
@@ -121,7 +133,7 @@ export default function OnboardingSheet() {
         {step === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
             <p className="muted" style={{ margin: 0, fontSize: '0.85rem' }}>
-              Выберите регион регистрации бизнеса. ZVERY подберет меры с учетом местных условий.
+              Выберите регион регистрации бизнеса. Бизнес-навигатор подберет меры с учетом местных условий.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.3rem' }}>
               {cities.map((c) => (
@@ -266,7 +278,7 @@ export default function OnboardingSheet() {
             disabled={loading}
             onClick={goNext}
           >
-            {loading ? 'Подбираем меры...' : step === 3 ? 'Подобрать меры' : 'Дальше'}
+            {loading ? 'Сохраняем...' : step === 3 ? 'Готово' : 'Дальше'}
           </button>
         </div>
       </div>

@@ -653,14 +653,16 @@ p {
 }
 
 .card__icon {
+  position: absolute;
+  right: 10px;
+  top: 24px;
   width: 32px;
   height: 32px;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  flex-shrink: 0;
-  margin-right: -2px;
-  margin-top: -2px;
+  justify-content: center;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .card__body {
@@ -675,6 +677,11 @@ p {
 
 .card--start .card__body {
   width: 60%;
+}
+
+.card--finance .card__body,
+.card--free .card__body {
+  width: 75%;
 }
 
 .card__title {

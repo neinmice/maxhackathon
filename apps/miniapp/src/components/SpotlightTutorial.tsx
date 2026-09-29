@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { triggerHaptic, triggerNotification, triggerSelectionChanged } from '../lib/maxBridge'
-import { ZigArrow } from './icons'
+import { CloseIcon } from './icons'
+import mascotWave from '../assets/mascot/mascot-wave.png'
+import mascotThink from '../assets/mascot/mascot-think.png'
 
 type SpotlightStep = {
   title: string
@@ -103,146 +105,158 @@ export default function SpotlightTutorial({
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
-        background: 'rgba(18, 13, 29, 0.92)',
-        backdropFilter: 'blur(4px)',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: rect && rect.top > 350 ? 'flex-start' : 'flex-end',
-        padding: '24px 16px 36px',
+        padding: '24px 16px 28px',
         animation: 'fadeIn 0.25s ease',
         boxSizing: 'border-box',
       }}
     >
-      {/* Подсветка целевого элемента (Spotlight) */}
+      {/* SVG маска с вырезом под целевой элемент */}
+      <svg width="0" height="0" style={{ position: 'absolute' }}>
+        <defs>
+          <mask id="spotlight-mask" maskUnits="userSpaceOnUse">
+            <rect x="0" y="0" width="100%" height="100%" fill="white" />
+            {rect && (
+              <rect
+                x={rect.left - 4}
+                y={rect.top - 4}
+                width={rect.width + 8}
+                height={rect.height + 8}
+                rx="20"
+                fill="black"
+              />
+            )}
+          </mask>
+        </defs>
+      </svg>
+
+      {/* Затемненный фон с размытием вокруг элемента (с вырезом под сам элемент) */}
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(18, 13, 29, 0.88)',
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
+          mask: rect ? 'url(#spotlight-mask)' : undefined,
+          WebkitMask: rect ? 'url(#spotlight-mask)' : undefined,
+          zIndex: 9999,
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* Круглая кнопка закрытия как в Stories */}
+      <button
+        onClick={skip}
+        style={{
+          position: 'fixed',
+          top: '16px',
+          right: '16px',
+          zIndex: 10002,
+          width: '36px',
+          height: '36px',
+          borderRadius: '50%',
+          background: 'rgba(255, 255, 255, 0.15)',
+          border: 'none',
+          color: '#ffffff',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          backdropFilter: 'blur(8px)',
+        }}
+        aria-label="Закрыть обучение"
+      >
+        <CloseIcon />
+      </button>
+
+      {/* Подсветка целевого элемента (Spotlight) с ярким неоновым фиолетовым свечением */}
       {rect && (
         <div
           style={{
             position: 'fixed',
-            top: rect.top,
-            left: rect.left,
-            width: rect.width,
-            height: rect.height,
+            top: rect.top - 4,
+            left: rect.left - 4,
+            width: rect.width + 8,
+            height: rect.height + 8,
             borderRadius: '20px',
-            border: '2px solid #f5c06a',
-            boxShadow: '0 0 25px rgba(245, 192, 106, 0.6), inset 0 0 15px rgba(245, 192, 106, 0.2)',
+            border: '2.5px solid #8455f6',
+            boxShadow:
+              '0 0 25px rgba(132, 85, 246, 0.9), 0 0 50px rgba(132, 85, 246, 0.45), inset 0 0 16px rgba(132, 85, 246, 0.3)',
             pointerEvents: 'none',
             transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-            zIndex: 10000,
+            zIndex: 10001,
           }}
         />
       )}
 
-      {/* Верхняя панель со счётом шагов и кнопкой закрытия */}
-      <div
-        style={{
-          position: 'fixed',
-          top: '16px',
-          left: '16px',
-          right: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          zIndex: 10001,
-        }}
-      >
-        <div style={{ display: 'flex', gap: '6px' }}>
-          {STEPS.map((_, idx) => (
-            <div
-              key={idx}
-              style={{
-                width: '32px',
-                height: '4px',
-                borderRadius: '2px',
-                background: idx <= step ? '#f5c06a' : 'rgba(255, 255, 255, 0.2)',
-                transition: 'background 0.2s',
-              }}
-            />
-          ))}
-        </div>
-        <button
-          onClick={skip}
-          style={{
-            background: 'rgba(255, 255, 255, 0.14)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            color: '#ffffff',
-            borderRadius: '50%',
-            width: '40px',
-            height: '40px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            fontSize: '15px',
-            fontWeight: 700,
-            flexShrink: 0,
-          }}
-          aria-label="Пропустить обучение"
-        >
-          ✕
-        </button>
-      </div>
-
-      {/* Карточка подсказки */}
+      {/* Карточка подсказки от маскота */}
       <div
         style={{
           position: 'relative',
           background: '#212122',
           border: '1px solid #363638',
           borderRadius: '20px',
-          padding: '20px 18px 18px',
+          padding: '20px 18px 16px',
           boxShadow: '0 16px 40px rgba(0, 0, 0, 0.6)',
           zIndex: 10001,
           marginTop: rect && rect.top > 350 ? '70px' : '0',
-          marginBottom: rect && rect.top <= 350 ? '30px' : '0',
+          marginBottom: rect && rect.top <= 350 ? '24px' : '0',
         }}
       >
-        {rect && rect.top <= 350 && (
-          <div style={{ position: 'absolute', top: '-24px', left: '30px' }}>
-            <ZigArrow dir="left" color="#f5c06a" shade="#b98524" style={{ width: '45px', height: '20px', transform: 'rotate(90deg)' }} />
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  color: '#c499f3',
+                  background: 'rgba(132, 85, 246, 0.2)',
+                  padding: '2px 8px',
+                  borderRadius: '6px',
+                }}
+              >
+                {current.badge}
+              </span>
+              <span style={{ fontSize: '11px', color: '#8d93a3' }}>Шаг {step + 1} из 4</span>
+            </div>
+
+            <h3
+              style={{
+                fontFamily: "'VK Sans Display Expanded', sans-serif",
+                fontSize: '16px',
+                fontWeight: 700,
+                color: '#ffffff',
+                marginBottom: '6px',
+                lineHeight: 1.25,
+              }}
+            >
+              {current.title}
+            </h3>
+
+            <p
+              style={{
+                fontFamily: "'VK Sans Text', sans-serif",
+                fontSize: '13px',
+                lineHeight: 1.4,
+                color: 'rgba(255, 255, 255, 0.85)',
+                marginBottom: '16px',
+              }}
+            >
+              {current.desc}
+            </p>
           </div>
-        )}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-          <span
-            style={{
-              fontSize: '10px',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              color: '#f5c06a',
-              background: 'rgba(245, 192, 106, 0.15)',
-              padding: '2px 8px',
-              borderRadius: '6px',
-            }}
-          >
-            {current.badge}
-          </span>
-          <span style={{ fontSize: '11px', color: '#8d93a3' }}>Шаг {step + 1} из 4</span>
+          <img
+            src={step % 2 === 0 ? mascotWave : mascotThink}
+            alt=""
+            style={{ width: '64px', height: '64px', objectFit: 'contain', flexShrink: 0 }}
+          />
         </div>
-
-        <h3
-          style={{
-            fontFamily: "'VK Sans Display Expanded', sans-serif",
-            fontSize: '17px',
-            fontWeight: 700,
-            color: '#ffffff',
-            marginBottom: '8px',
-            lineHeight: 1.25,
-          }}
-        >
-          {current.title}
-        </h3>
-
-        <p
-          style={{
-            fontFamily: "'VK Sans Text', sans-serif",
-            fontSize: '13px',
-            lineHeight: 1.4,
-            color: 'rgba(255, 255, 255, 0.85)',
-            marginBottom: '18px',
-          }}
-        >
-          {current.desc}
-        </p>
 
         <div style={{ display: 'flex', gap: '10px' }}>
           <button
@@ -263,23 +277,40 @@ export default function SpotlightTutorial({
             Пропустить
           </button>
           <button
+            className="spotlight-btn--next"
             onClick={next}
             style={{
               flex: 1.4,
               height: '42px',
               borderRadius: '12px',
-              background: '#7a35d8',
+              background: '#8455f6',
               border: 'none',
               color: '#ffffff',
               fontFamily: "'VK Sans Display', sans-serif",
               fontSize: '13px',
               fontWeight: 700,
               cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(122, 53, 216, 0.4)',
+              boxShadow: '0 4px 14px rgba(132, 85, 246, 0.4)',
             }}
           >
-            {isLast ? 'Подобрать меры' : 'Дальше'}
+            {isLast ? 'Готово' : 'Дальше'}
           </button>
+        </div>
+
+        {/* Индикатор шагов — внизу по центру */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '14px' }}>
+          {STEPS.map((_, idx) => (
+            <div
+              key={idx}
+              style={{
+                width: idx === step ? '24px' : '6px',
+                height: '4px',
+                borderRadius: '2px',
+                background: idx === step ? '#8455f6' : idx < step ? '#c499f3' : 'rgba(255, 255, 255, 0.2)',
+                transition: 'all 0.25s',
+              }}
+            />
+          ))}
         </div>
       </div>
     </div>,
