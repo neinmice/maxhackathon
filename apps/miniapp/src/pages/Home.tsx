@@ -392,7 +392,6 @@ function ServicesBottomRow() {
 
 export default function Home() {
   const nav = useNavigate()
-  const { setOnboardingOpen } = useApp()
   return (
     <div className="page home">
       <Stories />
@@ -404,11 +403,7 @@ export default function Home() {
               s={s}
               onClick={() => {
                 triggerHaptic('light')
-                if (s.id === 'start') {
-                  setOnboardingOpen(true)
-                } else {
-                  nav(`/section/${s.id}`)
-                }
+                nav(`/section/${s.id}`)
               }}
             />
           </div>

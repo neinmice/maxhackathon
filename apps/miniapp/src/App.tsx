@@ -9,6 +9,7 @@ import SpotlightTutorial from './components/SpotlightTutorial'
 import Assistant from './pages/Assistant'
 import Home from './pages/Home'
 import QuizPage from './pages/QuizPage'
+import CertificatesPage from './pages/CertificatesPage'
 import { CardPage, Course, Grants, Learning, Profile, Search, SectionPage, Services } from './pages/Other'
 import {
   RegistrationService,
@@ -25,7 +26,7 @@ function Shell() {
   const nav = useNavigate()
   const { toast, setQuizOpen, setOnboardingOpen, setMeasureDetail, introOpen, dismissIntro } = useApp()
   const main = useRef<HTMLElement>(null)
-  const bare = pathname.startsWith('/search') || pathname.startsWith('/profile')
+  const bare = pathname.startsWith('/search') || pathname.startsWith('/profile') || pathname.startsWith('/certificates')
 
   useEffect(() => {
     main.current?.scrollTo(0, 0)
@@ -39,6 +40,7 @@ function Shell() {
       pathname.startsWith('/services/') ||
       pathname.startsWith('/quiz') ||
       pathname.startsWith('/profile') ||
+      pathname.startsWith('/certificates') ||
       pathname.startsWith('/search')
 
     if (isSubroute) {
@@ -93,6 +95,7 @@ function Shell() {
           <Route path="/learning" element={<Learning />} />
           <Route path="/learning/:id" element={<Course />} />
           <Route path="/quiz" element={<QuizPage />} />
+          <Route path="/certificates" element={<CertificatesPage />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/search" element={<Search />} />
           <Route path="*" element={<Home />} />

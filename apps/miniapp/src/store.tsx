@@ -58,9 +58,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [savedMeasures, setSavedMeasures] = useState<Set<string>>(() => {
     try {
       const raw = localStorage.getItem('zvery_saved_measures')
-      return raw ? new Set(JSON.parse(raw)) : new Set(['young', 'micro'])
+      if (raw) {
+        const parsed: string[] = JSON.parse(raw)
+        // Миграция старых фиктивных id 'young' и 'micro' на реальные гранты 'g1' и 'g2'
+        const migrated = parsed.map((id) => (id === 'young' ? 'g1' : id === 'micro' ? 'g2' : id))
+        return new Set(migrated)
+      }
+      return new Set(['g1', 'g2'])
     } catch {
-      return new Set(['young', 'micro'])
+      return new Set(['g1', 'g2'])
     }
   })
   const [toast, setToast] = useState<string | null>(null)

@@ -26,7 +26,8 @@ import InDevelopmentCard from '../components/InDevelopmentCard'
 import { COURSES, GRANT_FILTERS, GRANTS, LESSONS, SECTIONS, SERVICES, allCards, type Grant } from '../data'
 import { cityIn, useApp } from '../store'
 import { triggerHaptic } from '../lib/maxBridge'
-import { SectionTitle, SingleCard } from './Home'
+import { loadCertificates } from '../lib/storage'
+import { SingleCard } from './Home'
 import WhereToStartPage from './cards/WhereToStartPage'
 import CityEventsPage from './cards/CityEventsPage'
 import OnlineEventsPage from './cards/OnlineEventsPage'
@@ -459,16 +460,16 @@ export function Course() {
 
 export function SectionPage() {
   const { id } = useParams()
-  const nav = useNavigate()
   const s = SECTIONS.find((x) => x.id === id) ?? SECTIONS[0]
   return (
     <div className="page">
-      <div className="page-title">
-        <button className="icon-btn page-title__back" onClick={() => nav(-1)} aria-label="Назад">
-          <BackIcon />
-        </button>
-        <SectionTitle s={s} />
-      </div>
+      <PageTitle
+        pre={s.pre}
+        hl={s.hl}
+        post={s.post}
+        color={s.hlColor as any}
+        back
+      />
       <div className="card-grid">
         {s.cards.map((c, idx) => (
           <SingleCard key={c.id} c={c} sId={s.id} index={idx} />
@@ -544,12 +545,39 @@ export function Profile() {
             ? 'Стажер / Ищу практику'
             : 'Пока только планирую'
 
+  const certsCount = typeof window !== 'undefined' ? loadCertificates().length : 0
+
   const rows = [
-    { t: 'Мои заявки', v: '1 активная', onClick: () => showToast('Заявка на рассмотрении') },
-    { t: 'Избранные меры', v: `${savedMeasures.size} сохранено`, onClick: () => nav('/grants') },
-    { t: 'Квиз и сертификат', v: 'Пройти тест', onClick: () => setQuizOpen(true) },
-    { t: 'Параметры подбора мер', v: `${city} · ${role === 'ip' ? 'ИП' : role === 'self_employed' ? 'НПД' : role === 'llc' ? 'ООО' : role === 'intern' ? 'Стажер' : 'План'}`, onClick: () => setOnboardingOpen(true) },
-    { t: 'Мой бизнес-план', v: '40%', onClick: () => showToast('Раздел бизнес-плана в разработке') },
+    {
+      t: 'Избранное',
+      v: `${savedMeasures.size} сохранено`,
+      onClick: () => {
+        triggerHaptic('light')
+        if (savedMeasures.size > 0) {
+          const el = document.getElementById('saved-measures-section')
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth' })
+          } else {
+            showToast(`Сохранено: ${savedMeasures.size} мер`)
+          }
+        } else {
+          showToast('В избранном пока нет сохранённых мер')
+        }
+      },
+    },
+    {
+      t: 'Мои сертификаты',
+      v: certsCount > 0 ? `${certsCount} получено` : 'Пройти тест',
+      onClick: () => {
+        triggerHaptic('light')
+        nav('/certificates')
+      },
+    },
+    {
+      t: 'Параметры подбора мер',
+      v: `${city} · ${role === 'ip' ? 'ИП' : role === 'self_employed' ? 'НПД' : role === 'llc' ? 'ООО' : role === 'intern' ? 'Стажер' : 'План'}`,
+      onClick: () => setOnboardingOpen(true),
+    },
   ]
   return (
     <div className="page">
@@ -578,20 +606,6 @@ export function Profile() {
         <div>
           <b>3</b>
           <small>события</small>
-        </div>
-      </div>
-      <div className="app-status">
-        <div className="app-status__head">
-          <b>Грант 300.000 ₽</b>
-          <em>на проверке</em>
-        </div>
-        <div className="app-status__steps">
-          {['Заявка', 'Обучение', 'Защита', 'Решение'].map((s, i) => (
-            <span key={s} className={i < 2 ? 'is-done' : ''}>
-              <i />
-              {s}
-            </span>
-          ))}
         </div>
       </div>
       <div className="menu">
@@ -623,14 +637,19 @@ export function Profile() {
       </div>
 
       {savedMeasures.size > 0 && (
-        <div style={{ marginTop: '1.25rem' }}>
+        <div id="saved-measures-section" style={{ marginTop: '1.25rem' }}>
           <h2 className="sub-h" style={{ marginBottom: '0.6rem' }}>Сохранённые меры</h2>
           <div className="menu">
             {[...savedMeasures].map((id) => {
-              const grantItem = GRANTS.find((g) => g.id === id)
+              const grantItem = GRANTS.find((g) => g.id === id || (id === 'young' && g.id === 'g1') || (id === 'micro' && g.id === 'g2'))
               const cardItem = allCards().find((c) => c.id === id)
-              const itemTitle = (grantItem?.title || cardItem?.title || `Мера поддержки #${id}`).replace('{city}', cityIn(city))
-              const badgeText = grantItem?.amount || cardItem?.tag || 'МСП'
+              const itemTitle = (
+                grantItem?.title ||
+                cardItem?.title ||
+                (id === 'young' ? 'Грант молодому предпринимателю' :
+                 id === 'micro' ? 'Микрозаём под 0%' :
+                 'Мера государственной поддержки')
+              ).replace('{city}', cityIn(city))
 
               return (
                 <div
@@ -639,31 +658,14 @@ export function Profile() {
                   style={{ justifyContent: 'space-between', alignItems: 'center', cursor: 'default' }}
                 >
                   <div
-                    style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0, flex: 1, marginRight: '0.6rem', cursor: 'pointer' }}
+                    style={{ minWidth: 0, flex: 1, marginRight: '0.6rem', cursor: 'pointer' }}
                     onClick={() => {
                       if (grantItem) nav('/grants')
                       else if (cardItem) nav(`/card/${cardItem.id}`)
                     }}
                   >
-                    <span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
                       {itemTitle}
-                    </span>
-                    <span
-                      style={{
-                        alignSelf: 'flex-start',
-                        fontSize: '0.58rem',
-                        fontWeight: 700,
-                        fontFamily: 'var(--ui)',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.04em',
-                        color: 'var(--yellow)',
-                        background: 'rgba(245, 192, 106, 0.15)',
-                        padding: '0.15rem 0.45rem',
-                        borderRadius: '6px',
-                        border: '1px solid rgba(245, 192, 106, 0.3)',
-                      }}
-                    >
-                      {badgeText}
                     </span>
                   </div>
                   <button

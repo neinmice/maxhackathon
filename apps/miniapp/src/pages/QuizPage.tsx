@@ -6,6 +6,7 @@ import { QUESTIONS } from '../components/QuizModal'
 import { useApp } from '../store'
 import { apiClient, type QuizSubmitResult } from '../api/client'
 import { triggerHaptic, triggerNotification, triggerSelectionChanged } from '../lib/maxBridge'
+import { saveCertificate } from '../lib/storage'
 import { PageTitle } from './Other'
 
 export default function QuizPage() {
@@ -48,21 +49,36 @@ export default function QuizPage() {
         setResult(res)
         if (res.passed) {
           try { localStorage.setItem('quiz_completed', 'true') } catch {}
+          saveCertificate({
+            id: res.certificate?.certificate_id || `ZV-CERT-${Date.now().toString(36).toUpperCase()}`,
+            userName: userName || 'Предприниматель',
+            date: new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }),
+            score: `${res.score}%`,
+            title: 'Сертификат готовности бизнеса',
+          })
           triggerNotification('success')
         } else {
           triggerNotification('warning')
         }
       } catch {
+        const certId = `ZV-CERT-${Date.now().toString(36).toUpperCase()}`
         setResult({
           attempt_id: `offline-${Date.now()}`,
           score: 100,
           passed: true,
           certificate: {
-            certificate_id: `ZV-CERT-2026-OK`,
+            certificate_id: certId,
             payload: 'demo-signed-payload',
           },
         })
         try { localStorage.setItem('quiz_completed', 'true') } catch {}
+        saveCertificate({
+          id: certId,
+          userName: userName || 'Предприниматель',
+          date: new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }),
+          score: '100%',
+          title: 'Сертификат готовности бизнеса',
+        })
         triggerNotification('success')
       } finally {
         setSubmitting(false)
