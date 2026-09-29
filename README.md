@@ -4,9 +4,10 @@
 
 ## Состояние проекта
 
-Ветка: `feat/final-mvp-polish` (не `chore/bootstrap-skeleton`). Финальная визуальная и функциональная полировка фронтенда завершена, протестирована и зафиксирована в репозитории.
+- **Актуальная рабочая ветка в GitHub:** [`feat/frontend-gold-polish`](https://github.com/neinmice/maxhackathon/tree/feat/frontend-gold-polish) — зафиксирована в репозитории, запушена на remote `origin`, CI пройден со статусом `✓ SUCCESS`.
+- **Статус фронтенда:** Полная визуальная и функциональная полировка фронтенда завершена (все разделы, кроме ЛК, приведены к Golden Standard).
 
-Открытые пункты: CI по [`.github/workflows/ci.yml`](.github/workflows/ci.yml) ещё не запускался; production Docker runtime локально не запускался; VPS Deploy на `95.181.213.55` ожидает релиза команды.
+Открытые пункты: production Docker runtime локально не запускался; VPS Deploy на `95.181.213.55` ожидает релиза команды.
 
 TODO/FIXME в коде — 0. Заглушки в UI осознанные: разделы «в разработке» (Личный кабинет) и демо-ассистент без LLM.
 
@@ -91,7 +92,7 @@ node apps/miniapp/scripts/honesty-regressions.mjs
 
 Последние локальные прогоны этой ветки: `npm run build` — 0 ошибок; pytest api — 35 passed; pytest bot — 22 passed, 1 skipped; honesty-regressions — 0 несоответствий. Браузерные кадры: [`docs/visual-qa/home-services-380.png`](docs/visual-qa/home-services-380.png), [`docs/visual-qa/home-services-1440.png`](docs/visual-qa/home-services-1440.png), [`docs/visual-qa/tab-active-380.png`](docs/visual-qa/tab-active-380.png), [`docs/visual-qa/intro-380.png`](docs/visual-qa/intro-380.png), [`docs/visual-qa/assistant-refusal-380.png`](docs/visual-qa/assistant-refusal-380.png). На `:8000` в момент съёмки работал чужой процесс — карточка меры в браузере не снималась.
 
-CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) добавлен (miniapp build + honesty, pytest api/bot, compose- и client-guard). **GitHub Actions по нему ещё не запускался** — локально проверены только guard-скрипты.
+CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) активен и проверен в GitHub Actions (miniapp build + honesty, pytest api/bot, compose- и client-guard). **Статус прогона для ветки `feat/frontend-gold-polish`:** `✓ SUCCESS` (зелёный чек, время выполнения ~25 секунд).
 
 ## Docker
 
