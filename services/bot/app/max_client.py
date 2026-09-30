@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
+import ssl
 from typing import Any
 
 import httpx
@@ -9,10 +11,32 @@ from .config import Settings
 
 logger = logging.getLogger(__name__)
 
+_CERTS_DIR = Path(__file__).resolve().parent / "certs"
+
+
+def _build_ssl_context(custom_ca_path: str | None = None) -> ssl.SSLContext | bool | str:
+    if custom_ca_path:
+        return custom_ca_path
+
+    try:
+        ctx = ssl.create_default_context()
+        loaded = False
+        for cert_name in ("russian_trusted_root_ca.pem", "russian_trusted_sub_ca.pem"):
+            cert_file = _CERTS_DIR / cert_name
+            if cert_file.is_file():
+                ctx.load_verify_locations(cafile=str(cert_file))
+                loaded = True
+        if loaded:
+            return ctx
+    except Exception as exc:
+        logger.warning("Failed to initialize bundled Russian CA certificates: %s", exc)
+    return True
+
 
 class MaxApiClient:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
+        self._ssl_context = _build_ssl_context(self.settings.max_ca_bundle_path)
 
     @property
     def configured(self) -> bool:
@@ -36,7 +60,7 @@ class MaxApiClient:
         if attachments:
             body["attachments"] = attachments
         headers = {"Authorization": self.settings.max_bot_token}
-        verify: bool | str = self.settings.max_ca_bundle_path or True
+        verify: Any = self._ssl_context
         async with httpx.AsyncClient(base_url=self.settings.max_api_base_url, verify=verify, timeout=10) as client:
             response = await client.post(
                 "/messages",
@@ -52,7 +76,7 @@ class MaxApiClient:
         if not self.settings.max_webhook_secret:
             raise RuntimeError("MAX_WEBHOOK_SECRET is required")
 
-        verify: bool | str = self.settings.max_ca_bundle_path or True
+        verify: Any = self._ssl_context
         async with httpx.AsyncClient(base_url=self.settings.max_api_base_url, verify=verify, timeout=15) as client:
             response = await client.post(
                 "/subscriptions",
@@ -65,3 +89,4 @@ class MaxApiClient:
             )
             response.raise_for_status()
             return response.json()
+

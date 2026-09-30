@@ -55,9 +55,20 @@ globalThis.localStorage = {
 };
 
 const storageModule = load('lib/storage.ts');
-const { saveCertificate, loadCertificates } = storageModule;
+const { saveCertificateResult, loadCertificates, loadCertificateViews } = storageModule;
 const { ApiClient, ApiErrorResponse } = load('api/client.ts');
 const client = new ApiClient('http://bot.local');
+
+const LEGACY_KEY = 'zvery_certificates_v1';
+const V2_KEY = 'zvery_certificates_v2';
+const LEGACY_BYTES = JSON.stringify([
+  { id: 'demo-cert-1', userName: 'Demo', date: '1 января 2026 г.', score: '100%', title: 'Demo legacy cert' },
+  { id: 'cert-true', userName: 'X', date: '2 января 2026 г.', score: '80%', title: 'Boolean era cert' },
+]);
+storage.set(LEGACY_KEY, LEGACY_BYTES);
+assert.deepEqual(loadCertificates(), [], 'legacy v1 records must not appear as server history');
+assert.equal(storage.get(LEGACY_KEY), LEGACY_BYTES, 'legacy key must stay byte-for-byte');
+assert.equal(storage.has(V2_KEY), false, 'no v2 key before any valid save');
 
 // 1..4: failure modes — все дают typed rejection без сертификата
 const failureModes = [
@@ -169,30 +180,72 @@ installFetch(() => jsonResponse(200, {
     payload: 'base64urlbody.hmacsignature',
   },
 }));
+// failure-режимы выше очищают storage — legacy-ключ возвращается для byte-stability проверки
+storage.set(LEGACY_KEY, LEGACY_BYTES);
 const passed = await client.submitQuiz('v1', { q1: 'a', q2: 'b', q3: 'c', q4: 'a', q5: 'b' });
 assert.equal(passed.passed, true);
 assert.equal(passed.certificate.certificate_id, 'srv-cert-0001');
-saveCertificate({
-  id: passed.certificate.certificate_id,
-  userName: 'Тест',
-  date: '1 октября 2026 г.',
-  score: `${passed.score}%`,
-  title: passed.certificate.title,
-});
+saveCertificateResult(passed, 'Тест');
+assert.equal(storage.get(LEGACY_KEY), LEGACY_BYTES, 'legacy key must stay byte-for-byte after save');
+
+// exact v2 roundtrip: сохранены точные серверные поля, presentation-only помечены
 const stored = loadCertificates();
 assert.equal(stored.length, 1);
-assert.equal(stored[0].id, 'srv-cert-0001');
-assert.equal(stored[0].title, 'Памятный сертификат за прохождение квиза*');
-assert.equal(stored[0].score, '100%');
+assert.equal(stored[0].schema_version, 2);
+assert.equal(stored[0].attempt_id, 'srv-pass');
+assert.equal(stored[0].score, 100);
+assert.equal(stored[0].passed, true);
+assert.equal(stored[0].pass_score, 70);
+assert.deepEqual(stored[0].certificate, passed.certificate);
+assert.equal(typeof stored[0].cached_at === 'string' && !Number.isNaN(Date.parse(stored[0].cached_at)), true);
+assert.equal(stored[0].display_name, 'Тест');
+const views = loadCertificateViews();
+assert.equal(views.length, 1);
+assert.equal(views[0].id, 'srv-cert-0001');
+assert.equal(views[0].score, '100%');
+assert.equal(views[0].title, 'Памятный сертификат за прохождение квиза*');
 for (const entry of storage.values()) {
   for (const marker of ['offline-', 'local-attempt-', 'demo-signed-payload', 'signed-cert.', 'ZV-CERT-2026-A1B2C3D4', 'signed-demo-payload']) {
     assert.equal(entry.includes(marker), false, `fake marker leaked into storage: ${marker}`);
   }
 }
 
-// 7: повреждённый persisted payload — игнорируется, честное пустое состояние
-storage.set('zvery_certificates_v1', '{not-json');
+// dedup: повторный успех с тем же certificate_id замещает запись, а не дублирует
+saveCertificateResult(passed, 'Тест');
+assert.equal(loadCertificates().length, 1, 'duplicate certificate_id must not create a second entry');
+
+// schema_version drift / malformed entry / damaged JSON — пропускаются без перезаписи
+const goodV2 = storage.get(V2_KEY);
+storage.set(V2_KEY, JSON.stringify([{ ...JSON.parse(goodV2)[0], schema_version: 3 }]));
+assert.deepEqual(loadCertificates(), [], 'schema_version drift must be skipped');
+storage.set(V2_KEY, JSON.stringify([{ schema_version: 2, attempt_id: 'x' }]));
+assert.deepEqual(loadCertificates(), [], 'malformed v2 entry must be skipped');
+storage.set(V2_KEY, goodV2);
+assert.equal(loadCertificates().length, 1);
+storage.set(V2_KEY, '{broken');
+assert.deepEqual(loadCertificates(), [], 'corrupted v2 JSON must yield empty list');
+assert.equal(storage.get(V2_KEY), '{broken', 'corrupted v2 JSON must not be rewritten');
+storage.set(V2_KEY, goodV2);
+assert.equal(storage.get(LEGACY_KEY), LEGACY_BYTES, 'legacy key must stay byte-for-byte at the end');
+
+// оба consumers используют новый save path; MAX sendData certificate-сценарий живёт в QuizModal
+for (const rel of ['pages/QuizPage.tsx', 'components/QuizModal.tsx']) {
+  const source = readFileSync(join(srcRoot, rel), 'utf8');
+  assert.equal(source.includes('saveCertificateResult('), true, `${rel}: must persist via saveCertificateResult`);
+  assert.equal(source.includes('saveCertificate({'), false, `${rel}: legacy save path removed`);
+}
+const modalSource = readFileSync(join(srcRoot, 'components/QuizModal.tsx'), 'utf8');
+assert.equal(modalSource.includes('sendDataToChat'), true, 'QuizModal: MAX sendData call preserved');
+assert.equal(modalSource.includes("action: 'certificate'"), true, 'QuizModal: MAX certificate payload scenario preserved');
+assert.equal(modalSource.includes('result.certificate?.certificate_id'), true, 'QuizModal: real server certificate_id sent to MAX');
+assert.equal(modalSource.includes('result.certificate?.title'), true, 'QuizModal: real server title sent to MAX');
+
+// 7: повреждённый persisted payload v2 — игнорируется, честное пустое состояние, без перезаписи
+storage.set(V2_KEY, '{not-json');
 assert.deepEqual(loadCertificates(), []);
+assert.equal(storage.get(V2_KEY), '{not-json');
+storage.delete(V2_KEY);
+storage.delete(LEGACY_KEY);
 
 // 8: query/deeplink invariants — synthetic result и quiz_completed-доступы удалены
 for (const [rel, forbidden] of [

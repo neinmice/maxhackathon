@@ -4,7 +4,7 @@ import { Download, Award, CheckCircle2, ArrowRight, RotateCcw } from 'lucide-rea
 import mascotShrug from '../assets/mascot/mascot-shrug.webp'
 import { PageTitle } from './Other'
 import { useApp } from '../store'
-import { loadCertificates, type StoredCertificate } from '../lib/storage'
+import { loadCertificateViews, type StoredCertificate } from '../lib/storage'
 import { triggerHaptic } from '../lib/maxBridge'
 
 /**
@@ -164,9 +164,9 @@ export default function CertificatesPage() {
   const { userName, showToast } = useApp()
   const [certs, setCerts] = useState<StoredCertificate[]>([])
 
-  // Только сертификаты, выданные сервером и сохранённые после успешного submit
+  // Только v2-кэш валидированных серверных результатов; legacy v1 не отображается
   useEffect(() => {
-    setCerts(loadCertificates())
+    setCerts(loadCertificateViews())
   }, [userName])
 
   const handleDownload = (cert: StoredCertificate) => {

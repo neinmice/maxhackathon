@@ -1,6 +1,9 @@
 import { defineConfig, type ProxyOptions } from 'vite';
 import react from '@vitejs/plugin-react';
 
+import fs from 'node:fs';
+import path from 'node:path';
+
 const apiTarget = 'http://127.0.0.1:8000';
 const botTarget = 'http://127.0.0.1:8001';
 
@@ -8,7 +11,25 @@ const apiProxy: ProxyOptions = { target: apiTarget, changeOrigin: true };
 const botProxy: ProxyOptions = { target: botTarget, changeOrigin: true };
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'dev-catalog-fallback',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          if (req.method === 'GET' && req.url === '/api/v1/measures') {
+            const catalogPath = path.resolve(import.meta.dirname, '../../data/catalog/measures.json');
+            if (fs.existsSync(catalogPath)) {
+              res.setHeader('Content-Type', 'application/json; charset=utf-8');
+              res.end(fs.readFileSync(catalogPath, 'utf8'));
+              return;
+            }
+          }
+          next();
+        });
+      },
+    },
+  ],
   server: {
     host: '127.0.0.1',
     port: 3000,

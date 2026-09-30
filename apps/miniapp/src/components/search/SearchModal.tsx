@@ -88,7 +88,21 @@ export const SearchModal: React.FC<SearchModalProps> = ({
         {/* Results */}
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
           <span style={{ fontSize: 12, color: '#a295c5', marginBottom: 4 }}>
-            Найдено: {filtered.length} программ
+            Найдено:{' '}
+            {(() => {
+              const count = filtered.length;
+              const rem10 = count % 10;
+              const rem100 = count % 100;
+              const word =
+                rem100 >= 11 && rem100 <= 19
+                  ? 'программ'
+                  : rem10 === 1
+                  ? 'программа'
+                  : rem10 >= 2 && rem10 <= 4
+                  ? 'программы'
+                  : 'программ';
+              return `${count} ${word}`;
+            })()}
           </span>
 
           {filtered.map((measure) => (

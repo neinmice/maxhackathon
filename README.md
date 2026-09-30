@@ -100,6 +100,82 @@ Git-граница (read-only проверка 2026-09-30, cwd репозито�
 
 **Rollback:** blanket-откат файлов или merge-коммитов запрещён — риск уничтожения baseline и изменений других пакетов; только точечный revert отдельных изменений после отдельного согласования и проверки diff; сейчас ничего не откатывается.
 
+### Независимая приёмка: частичное соответствие (2026-09-30)
+
+Verdict независимого debug-review: **health ACCEPT; catalog/deep-link PARTIAL; quiz/storage PARTIAL.** Пакеты 3–4 считать полностью принятыми нельзя; исторические записи выше сохраняются без изменений.
+
+Evidence проверяющего (отчёт независимого debug-review, не новые прогоны этой задачи; cwd [`apps/miniapp`](apps/miniapp), все exit 0): `node scripts/health-contract.mjs`, `node scripts/catalog-contract.mjs`, `node scripts/quiz-contract.mjs`, `node scripts/honesty-regressions.mjs`, `npm run build`. Индивидуальные memo-ID прогонам инструментом не выданы; `memo-2406505f` относится только к grep/чтению и прогонам не присваивается. Lint-скрипт не объявлен — линт-гейт в evidence отсутствует.
+
+Подтверждённые пробелы (post-read сверка 2026-09-30):
+
+- **Deep-link:** [`App.tsx`](apps/miniapp/src/App.tsx:83) — по review принимает legacy `startapp=measure&id=...`; канонический `measure_<id>` не единственный путь. [`catalog-contract.mjs`](apps/miniapp/scripts/catalog-contract.mjs:1) не исполняет реальную связку App/bridge — зелёный тест не доказывает integration.
+- **Лимиты ID:** [`maxBridge.ts`](apps/miniapp/src/lib/maxBridge.ts:164) допускает длинные ID (текущий код — payload до 512 символов, строка 165). Проверяющий сопоставил 200 символов с прежним клиентским лимитом 128, тогда как ранее в контрактах обсуждался лимит payload 512. Противоречие лимитов (128 vs 512) вынесено на сверку с каноническим контрактом MAX; **200 символов не фиксируется как дефект**.
+- **Storage:** [`storage.ts`](apps/miniapp/src/lib/storage.ts:99), [`saveCertificate`](apps/miniapp/src/lib/storage.ts:109) — runtime-воспроизведение: структурно валидные legacy `demo-cert-1`/`cert-true` принимаются и отображаются как обычные сертификаты; corrupted JSON тест этого не ловит. Origin marker сам по себе — не криптографическая проверка. Требуются политика legacy/provenance и targeted regression.
+- **`getDeepLinkPayload`** не используется App; источники payload дублируются. Не удалять как dead code без графа потребителей.
+- **Retry** сохраняет ответы и не генерирует результат локально (по проверке кода); visual PASS не доказан.
+
+Git-граница review: начало HEAD `610a2458`, конец `0b17152`; `styles.css` оставался dirty; авторство не установлено — результаты не считать привязанными к неизменному snapshot.
+
+Не проверялось: Python/API/bot/visual/network/MAX. Следующий технический gate — закрыть реальные deep-link/storage пробелы и перепроверить на стабильном snapshot перед Пакетом 5. Общий PASS и blanket rollback не заявляются.
+
+### Контракт корректирующего пакета — deep-link подпакет реализован, независимая приёмка ожидается (спецификация 2026-09-30)
+
+Спецификация закрытия пробелов Пакетов 3–4 (verdict PARTIAL выше). **Статус: Deep-link — корректировка реализована (по отчёту исполнителя), независимая приёмка ожидается.** Пункт 1 (deep link) реализован: новый production-модуль [`apps/miniapp/src/lib/deepLink.ts`](apps/miniapp/src/lib/deepLink.ts:33) (`classifyStartParam`/`resolveLaunchParam`/`applyLaunchParam` — канонический `measure_<id>`, payload ≤ 512 / ID ≤ 504, lowercase-сегменты ID; первый непустой источник bridge → query → hash, невалидный приоритетный не проваливается вниз); [`App.tsx`](apps/miniapp/src/App.tsx:63) подключает resolver/orchestration и реальный `getMeasure` через `apiClient`; новый harness [`scripts/deep-link-contract.mjs`](apps/miniapp/scripts/deep-link-contract.mjs:1) импортирует production-модули; одна structural assertion [`scripts/honesty-regressions.mjs`](apps/miniapp/scripts/honesty-regressions.mjs:463) обновлена. Пункт 2 (storage v2) **не реализован** — всё ниже в части storage остаётся спецификацией.
+
+Заявленные прогоны исполнителя (cwd `apps/miniapp`, не прогоны приёмщика): `deep-link-contract`/`catalog-contract`/`health-contract`/`quiz-contract` и `npm run build` — exit 0; [`honesty-regressions.mjs`](apps/miniapp/scripts/honesty-regressions.mjs:1) на рабочем дереве — **exit 1** на onboarding assertion (строка 467); изолированная реконструкция с HEAD-версией onboarding дала exit 0 — это **не PASS рабочего дерева**. Наличие UI goal IDs `start`/`grants`/`growth`/`education` само по себе не доказывает phantom saved IDs: записан только конфликт assertion/изменившегося onboarding; семантика требует H5 review. Авторство правок не устанавливалось и никому не приписывается.
+
+Git-граница перепроверена read-only 2026-09-30 приёмщиком (memo_exec, exit 0): ветка `feat/frontend-gold-polish`, HEAD `0b17152` неизменен, но сторонние рабочие файлы менялись в ходе сессий — **стабильный snapshot всего проекта не доказан**. Текущий tracked dirty: `README.md`, `honesty-regressions.mjs`, `App.tsx`, `OnboardingSheet.tsx`, `SpotlightTutorial.tsx`, `SearchModal.tsx`, `Assistant.tsx`, `Other.tsx`, `assistantAnswers.tsx`, `TaxesService.tsx`, `styles.css`, `vite.config.ts`, `data/catalog/measures.json`; untracked: `scripts/deep-link-contract.mjs`, `src/lib/deepLink.ts`. Чужие hunks сохранены, ничего не откатывается. Новому коду нужна независимая приёмка; новых независимых PASS не заявляется.
+
+**1) Deep link — канонический payload `measure_<id>`:**
+- Полный payload ≤ 512 символов ⇒ ID ≤ 504 (`measure_` = 8). Алфавит ID: lowercase `a-z`, цифры, дефисы между непустыми сегментами.
+- Legacy `startapp=measure&id=...` исключается — реализовано в [`deepLink.ts`](apps/miniapp/src/lib/deepLink.ts:33) (`classifyStartParam`); App больше не читает `params.get('id')` (guard [`honesty-regressions.mjs`](apps/miniapp/scripts/honesty-regressions.mjs:465)). Прежняя пометка «сейчас принимается в App.tsx — пробел» описывала pre-implementation состояние и устарела.
+- Один production resolver используется App и тестируется импортом реального модуля. Приоритет источников: `WebApp.initDataUnsafe.start_param` → query `startapp`/`tgWebAppStartParam`/`start_param` → hash, в том же порядке; первый непустой invalid источник не замещается менее приоритетным. Дублирующий [`getDeepLinkPayload()`](apps/miniapp/src/lib/maxBridge.ts:139) не удалять без графа потребителей.
+- Unknown ID / network / mismatch response карточку не открывают. Обычные маршруты, quiz launch, MAX init/back/sendData guards сохраняются.
+- Raw launch param и [`initBridge`](apps/miniapp/src/lib/maxBridge.ts:1) сами по себе identity не удостоверяют; [`start_app_payload()`](services/bot/app/handlers.py:114) в bot handlers — **парсер/валидатор** start payload (формат + реестр ID), не доказательство HMAC-аутентификации. Проверка подлинности launch data должна происходить на сервере; конкретный механизм подписи называется только после чтения реального кода — здесь не выдумывается. Серверный regex `A-Za-z0-9_-` ([`handlers.py`](services/bot/app/handlers.py:110)) шире lowercase-парсера фронтенда — drift для отдельной проверки, весь backend согласованным не заявляется.
+
+**2) Versioned certificate cache v2:**
+- Старый фактический ключ [`zvery_certificates_v1`](apps/miniapp/src/lib/storage.ts:7) остаётся байт-в-байт, не мигрируется и не показывается автоматически как server history. Имя `zvery_certificates_v2` коллизий в кодовой базе не имеет (проверено поиском 2026-09-30) — перепроверить перед реализацией.
+- Сохраняются точные поля валидного server submit response: `attempt_id`, `score`, `passed=true`, `pass_score`, `certificate {certificate_id, title, disclaimer, payload}`; локальные `cached_at`/`display_name` явно помечаются как не-серверные. Текущий shape — [`StoredCertificate`](apps/miniapp/src/lib/storage.ts:91) без версии/origin.
+- Запись только после успешного submit ([`saveCertificate()`](apps/miniapp/src/lib/storage.ts:109)); read валидирует версию/shape, malformed игнорирует, corrupted JSON даёт пустой список без перезаписи ([`loadCertificates()`](apps/miniapp/src/lib/storage.ts:99)).
+- Version/origin marker и shape validation НЕ доказывают HMAC-подлинность: v2 — локальный кэш ответа, не криптографически верифицированная история. Revalidation endpoint по архитектурному чтению не обнаружен — не выдумывать.
+- Нужны тесты реальных storage/client (не mock-only): legacy records, malformed, offline/no-write, valid response. База — [`catalog-contract.mjs`](apps/miniapp/scripts/catalog-contract.mjs:1).
+
+Следующий этап: независимая приёмка реализованного deep-link подпакета (реализация storage v2 остаётся открытой) на стабильной границе до Пакета 5. Удаление/откат чужих файлов и blanket revert запрещены.
+
+### Storage v2 реализован; приёмка и честность UI-формулировок остаются открытыми (2026-09-30)
+
+Пункт 2 спецификации выше реализован по **отчёту code** (не прогоны приёмщика); независимая приёмка ожидается. Изменено **пять** файлов (фраза исполнителя про «откат четырёх» ошибочна):
+
+- [`apps/miniapp/src/lib/storage.ts`](apps/miniapp/src/lib/storage.ts:11) — cache `zvery_certificates_v2`; [`StoredCertificateV2`](apps/miniapp/src/lib/storage.ts:98) с `schema_version: 2` хранит точные поля server quiz result (`attempt_id`, `score`, `passed: true`, `pass_score`, `certificate {certificate_id, title, disclaimer, payload}`) плюс явно локальные `cached_at`/`display_name`; runtime-валидация [`isValidV2Entry()`](apps/miniapp/src/lib/storage.ts:131), dedup по `certificate_id` ([строка 215](apps/miniapp/src/lib/storage.ts:215)), presentation-адаптер [`loadCertificateViews()`](apps/miniapp/src/lib/storage.ts:231).
+- [`QuizPage.tsx`](apps/miniapp/src/pages/QuizPage.tsx:41) и [`QuizModal.tsx`](apps/miniapp/src/components/QuizModal.tsx:134) — [`saveCertificateResult()`](apps/miniapp/src/lib/storage.ts:177) после успешного submit; [`CertificatesPage.tsx`](apps/miniapp/src/pages/CertificatesPage.tsx:169) — чтение через адаптер; Other badge получает v2 через `loadCertificates`, сам файл в подпакете не менялся.
+- Legacy `zvery_certificates_v1` ([строка 10](apps/miniapp/src/lib/storage.ts:10)) байт-в-байт не читается, не переписывается, не мигрируется и не показывается автоматически.
+- [`scripts/quiz-contract.mjs`](apps/miniapp/scripts/quiz-contract.mjs:65) расширен: legacy byte-stability (65–70, 189, 229), точный v2 roundtrip (191), malformed/damaged JSON без перезаписи (217–222), no-write guard (235).
+
+Заявленные прогоны исполнителя (cwd `apps/miniapp`): RED legacy exit 1 → GREEN exit 0; quiz/catalog/health/deep-link harness и `npm run build` — exit 0; honesty-regressions — **exit 1** на H5 onboarding assertion. Дополнительный temp-прогон с отключённой assertion — диагностический эксперимент, **не** доказательство PASS полного honesty и не основание закрывать H5. Memo: `memo-4c3ed3b8` — hashes; `memo-70198910`/`memo-3b6c87fc` — diff, не логи тестов; индивидуальные ID прогонам не присваивались. Git-граница на старте документирования (read-only, memo_exec exit 0): ветка `feat/frontend-gold-polish`, HEAD `0b17152` не изменился; tracked dirty расширился, в том числе `storage.ts`, `QuizPage.tsx`, `QuizModal.tsx`, `CertificatesPage.tsx`, `quiz-contract.mjs`, плюс внешние удаления ассетов — чужие hunks сохранены, стабильный snapshot не доказан.
+
+**Не доказано / не заявлять:** version/shape не доказывают HMAC или подлинность localStorage; старые записи сохранены, но не считаются серверной историей. [`CertificatesPage.tsx`](apps/miniapp/src/pages/CertificatesPage.tsx:146) сохраняет вводящие в заблуждение формулировки — «Криптографическая верификация: SHA-256 Validated · ст. 60 ФЗ №273» (строка 146), «верифицированный именной сертификат» ([211](apps/miniapp/src/pages/CertificatesPage.tsx:211)), «Верифицирован» ([294](apps/miniapp/src/pages/CertificatesPage.tsx:294)): нужен отдельный designer-пакет, общий H4 PASS не пишется. MAX sendData сохранён по отчёту; вызов bridge — не evidence доставки, live MAX не проверялся. Deep-link independent gate, H5/CI/Python/API/bot/visual/network/MAX открыты. Rollback только точечный после согласования, blanket запрещён.
+
+### Финальный итог автоматизации (2026-09-30): verify-агрегатор принят; общая приёмка частичная, работы приостановлены
+
+Завершён последний разрешённый пакет: автоматические frontend-проверки собраны в одну команду. Запуск: `cd apps/miniapp && npm run verify`. Изменено:
+
+- [`apps/miniapp/package.json`](apps/miniapp/package.json:9) — новый script `verify`;
+- [`apps/miniapp/scripts/verify-frontend.js`](apps/miniapp/scripts/verify-frontend.js:1) — агрегатор health/catalog/quiz/deep-link/honesty/build: продолжает сбор результатов и возвращает exit 1 при любом провале;
+- [`.github/workflows/ci.yml`](.github/workflows/ci.yml:38) — frontend-job переключён на `npm run verify`; обычный build сохранён, API/bot/guards jobs и Python 3.12/npm ci не менялись.
+
+| Шаг | Статус |
+|---|---|
+| health / catalog / quiz / deep-link harness (4) | PASS |
+| `npm run build` | PASS |
+| honesty-regressions | **FAIL** — [`honesty-regressions.mjs`](apps/miniapp/scripts/honesty-regressions.mjs:467), actual `true` / expected `false`: assertion запрещает UI goal IDs `start`/`grants`/`growth`/`education` в OnboardingSheet — отдельное от saved IDs пространство; по диагностике DevOps — test drift, фантомные сохранения не доказаны; тест не отключали и не исправляли, H5 не принят |
+| pytest api/bot | NOT RUN / BLOCKED — нет `python3.12` (системный 3.14.7), pytest/fastapi-окружение не готово; ничего не устанавливалось |
+| lint | NOT RUN — script отсутствует |
+| visual / network / MAX | NOT RUN |
+
+Memo evidence: финальный прогон [`verify`](apps/miniapp/scripts/verify-frontend.js:1) — `memo-cebbba2c` (exit 1, failed_steps=1); baseline — `memo-fb50e440` (exit 1); diff/hashes/`git diff --check` — `memo-c164781d` (exit 0). Relevant runtime/test hashes в финальном прогоне не менялись. Git-граница: ветка `feat/frontend-gold-polish`, HEAD `0b17152de149727204b7e09272371baff19a1a94` — факт той проверки, не вечная гарантия. CI config локально валиден; GitHub run NOT RUN. Неподтверждённые UI claims сертификатов/доверие localStorage остаются вне закрытого scope.
+
+**Итог: автоматизация выполнена, общая приёмка частичная; работы приостановлены по текущему scope.** Общий PASS и CI PASS не заявляются.
+
 ### Реализация полировки (2026-09-29)
 
 > **Статус фронтенда:** Весь фронтенд приложения, кроме Личного кабинета (ЛК), теперь полностью отполирован и приведен к единому золотому дизайн-стандарту Главной страницы.

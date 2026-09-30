@@ -52,8 +52,10 @@ const STEPS: SpotlightStep[] = [
 
 export default function SpotlightTutorial({
   onComplete,
+  onSkip,
 }: {
   onComplete: () => void
+  onSkip?: () => void
 }) {
   const [step, setStep] = useState(0)
   const [rect, setRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null)
@@ -149,7 +151,16 @@ export default function SpotlightTutorial({
 
   const skip = () => {
     triggerHaptic('light')
-    finish()
+    try {
+      localStorage.setItem('zvery_intro_seen', 'true')
+    } catch {
+      // no-op
+    }
+    if (onSkip) {
+      onSkip()
+    } else {
+      finish()
+    }
   }
 
   const pad = current.pad ?? 4

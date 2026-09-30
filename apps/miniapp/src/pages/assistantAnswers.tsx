@@ -8,7 +8,7 @@ export const ASSISTANT_INTENTS = [
   { id: 'measures', label: 'Какие меры поддержки есть для моего бизнеса?' },
   { id: 'taxes', label: 'Как рассчитать налоги для ИП и самозанятых?' },
   { id: 'learning', label: 'Где пройти бесплатное обучение для предпринимателей?' },
-  { id: 'quiz', label: 'Пройти квиз: какая господдержка мне подходит?' },
+  { id: 'quiz', label: 'Пройти тест на знание основ бизнеса' },
   { id: 'selection', label: 'Как работает подбор мер в приложении?' },
 ] as const
 
@@ -177,14 +177,23 @@ function learningAnswer(go: (to: string) => void): ReactNode {
   )
 }
 
-function quizAnswer(openQuiz: () => void): ReactNode {
+function quizAnswer(go: (to: string) => void): ReactNode {
   return (
     <>
-      <p>Квиз поможет определить, какие меры господдержки могут подойти вашему бизнесу. Это быстрый тест из нескольких вопросов.</p>
-      <p>⚠️ Результаты квиза — это демонстрация возможностей приложения. Сертификат показывается только в ответе и не сохраняется.</p>
+      <p>Пройти тест на знание основ бизнеса можно во вкладке «Обучение» или прямо по ссылке:</p>
       <p>
-        <button type="button" className="link-y" onClick={openQuiz}>
-          Начать квиз
+        <a
+          href="https://zverybot.ru/quiz"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: 'var(--yellow)', textDecoration: 'underline', wordBreak: 'break-all' }}
+        >
+          https://zverybot.ru/quiz
+        </a>
+      </p>
+      <p>
+        <button type="button" className="link-y" onClick={() => go('/quiz')}>
+          Перейти к тесту →
         </button>
       </p>
     </>
@@ -217,7 +226,7 @@ export function answerIntent(intent: AssistantIntent, facts: AssistantFacts, act
   if (intent === 'measures') return measuresAnswer(facts, actions)
   if (intent === 'taxes') return taxesAnswer(actions.go)
   if (intent === 'learning') return learningAnswer(actions.go)
-  if (intent === 'quiz') return quizAnswer(actions.openQuiz)
+  if (intent === 'quiz') return quizAnswer(actions.go)
   return selectionAnswer(facts, actions.go)
 }
 

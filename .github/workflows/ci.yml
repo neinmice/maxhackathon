@@ -35,8 +35,9 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Build
-        run: npm run build
+      - name: Verify frontend
+        working-directory: apps/miniapp
+        run: npm run verify
 
   api:
     name: api pytest

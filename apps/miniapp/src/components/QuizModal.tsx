@@ -19,7 +19,7 @@ import {
   triggerNotification,
   triggerSelectionChanged,
 } from '../lib/maxBridge'
-import { saveCertificate } from '../lib/storage'
+import { saveCertificateResult } from '../lib/storage'
 
 export type Question = {
   id: string
@@ -130,14 +130,8 @@ export default function QuizModal() {
         setResult(res)
         if (res.passed && res.certificate) {
           triggerNotification('success')
-          // Сохраняем только точные серверные поля сертификата
-          saveCertificate({
-            id: res.certificate.certificate_id,
-            userName: userName || 'Предприниматель',
-            date: new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }),
-            score: `${res.score}%`,
-            title: res.certificate.title,
-          })
+          // Кэшируем только валидированный серверный результат; presentation-поля выставляет storage
+          saveCertificateResult(res, userName || 'Предприниматель')
         } else {
           triggerNotification('warning')
         }

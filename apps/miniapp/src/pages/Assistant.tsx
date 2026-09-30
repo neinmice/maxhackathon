@@ -145,11 +145,11 @@ function answer(
             className="filter"
             onClick={() => {
               triggerHaptic('light')
-              actions.openQuiz()
+              actions.nav('/quiz')
             }}
             style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '10px' }}
           >
-            Пройти квиз
+            Тест по бизнесу →
           </button>
         </div>
       </>
@@ -162,14 +162,24 @@ function answer(
       </p>
     )
   }
-  if (t.includes('квиз') || t.includes('тест') || t.includes('сертифик')) {
+  if (t.includes('квиз') || t.includes('тест') || t.includes('сертифик') || t.includes('основ бизнеса')) {
     return (
       <>
         <p>
-          В ZVERY доступен <span className="text-y">Квиз готовности бизнес-проекта</span>!
+          Пройти <span className="text-y">тест на знание основ бизнеса</span> можно во вкладке <b style={{ color: '#fff' }}>«Обучение»</b> в нижнем меню или прямо по ссылке:
         </p>
         <p>
-          Ответь на 5 вопросов по налогам, грантам и открытию своего дела. При результате от 70% формируется именной верифицированный сертификат.
+          <a
+            href="https://zverybot.ru/quiz"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'var(--yellow)', textDecoration: 'underline', wordBreak: 'break-all' }}
+          >
+            https://zverybot.ru/quiz
+          </a>
+        </p>
+        <p style={{ marginTop: '6px' }}>
+          Тест состоит из 5 вопросов по налогам, грантам и открытию своего дела. При результате от 70% формируется именной верифицированный сертификат!
         </p>
         <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button
@@ -177,11 +187,22 @@ function answer(
             className="filter is-active"
             onClick={() => {
               triggerHaptic('light')
-              actions.openQuiz()
+              actions.nav('/quiz')
             }}
-            style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '10px' }}
+            style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '10px' }}
           >
-            Начать квиз →
+            Перейти к тесту →
+          </button>
+          <button
+            type="button"
+            className="filter"
+            onClick={() => {
+              triggerHaptic('light')
+              actions.nav('/learning')
+            }}
+            style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '10px' }}
+          >
+            Раздел «Обучение»
           </button>
         </div>
       </>
@@ -338,8 +359,8 @@ export default function Assistant() {
 
         {empty && (
           <div className="chips">
-            <button className="chip" onClick={() => setQuizOpen(true)}>
-              <u>Пройти квиз</u> {'для бизнеса'}
+            <button className="chip" onClick={() => send('Пройти тест на знание основ бизнеса')}>
+              <u>Пройти тест</u> на знание основ бизнеса
             </button>
             {QUICK_QUESTIONS.map((q) => (
               <button key={q.hl} className="chip" onClick={() => send(quickText(q))}>

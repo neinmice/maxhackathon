@@ -18,7 +18,8 @@ import {
   InternshipService,
 } from './pages/services'
 import { AppProvider, useApp } from './store'
-import { bindBackButton, hideBackButton, initBridge, measureIdFromStartParam, parseStartParam } from './lib/maxBridge'
+import { bindBackButton, hideBackButton, initBridge } from './lib/maxBridge'
+import { applyLaunchParam, resolveLaunchParamFromWindow } from './lib/deepLink'
 import { apiClient } from './api/client'
 
 function Shell() {
@@ -58,33 +59,14 @@ function Shell() {
     }
   }, [pathname, nav])
 
-  // Deep linking: обработка ?startapp= (quiz, catalog, saved, home, onboarding, measure)
+  // Deep linking: канонический payload measure_<id> и маршруты home/quiz/cert/catalog/saved/onboarding
   useEffect(() => {
-    const params = new URLSearchParams(search)
-    const rawStartParam =
-      params.get('startapp') ||
-      params.get('tgWebAppStartParam') ||
-      params.get('start_param') ||
-      (window as any).WebApp?.initDataUnsafe?.start_param
-    const startParam = parseStartParam(rawStartParam)
-
-    if (!startParam) return
-
-    if (startParam === 'quiz' || startParam === 'cert') {
-      setQuizOpen(true)
-    } else if (startParam === 'catalog') {
-      nav('/grants')
-    } else if (startParam === 'saved') {
-      nav('/profile')
-    } else if (startParam === 'home') {
-      nav('/')
-    } else if (startParam === 'onboarding') {
-      setOnboardingOpen(true)
-    } else if (startParam === 'measure' || measureIdFromStartParam(startParam)) {
-      const measureId = measureIdFromStartParam(startParam) || params.get('id')
-      if (!measureId) return
-      openMeasure(measureId)
-    }
+    applyLaunchParam(resolveLaunchParamFromWindow(), {
+      openMeasure,
+      openQuiz: () => setQuizOpen(true),
+      openOnboarding: () => setOnboardingOpen(true),
+      navigate: nav,
+    })
   }, [search, nav, setQuizOpen, setOnboardingOpen, setMeasureDetail])
 
   return (
@@ -120,6 +102,9 @@ function Shell() {
           onComplete={() => {
             dismissIntro()
             setOnboardingOpen(true)
+          }}
+          onSkip={() => {
+            dismissIntro()
           }}
         />
       )}
