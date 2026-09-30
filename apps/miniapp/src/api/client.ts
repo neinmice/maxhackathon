@@ -58,7 +58,7 @@ export class ApiClient {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    const initData = (window as any).WebApp?.initData;
+    const initData = (window as any).WebApp?.initData || (window as any).MAXBridge?.initData;
     if (initData) {
       headers['X-Max-Init-Data'] = initData;
     }
