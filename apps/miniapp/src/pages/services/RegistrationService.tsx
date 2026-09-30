@@ -104,7 +104,7 @@ export default function RegistrationService() {
     })
   }
 
-  const handleSendChecklist = (item: RegItem) => {
+  const handleSendChecklist = async (item: RegItem) => {
     triggerHaptic('medium')
     const webapp = (window as any).WebApp
     if (webapp && typeof webapp.sendData === 'function') {
@@ -114,7 +114,8 @@ export default function RegistrationService() {
         // no-op
       }
     }
-    apiClient.sendChecklistToChat({
+    showToast('Отправка чеклиста в чат MAX...')
+    const ok = await apiClient.sendChecklistToChat({
       measure_id: item.id,
       title: item.title,
       operator: 'ФНС России',
@@ -125,10 +126,14 @@ export default function RegistrationService() {
         title: doc,
         completed: checkedDocs.has(idx),
       })),
-    }).catch(() => {})
+    })
     const text = `${item.title}\n\nНеобходимые документы:\n${item.docs.map((d) => `• ${d}`).join('\n')}\n\n${item.deadline}`
     navigator.clipboard?.writeText(text).catch(() => {})
-    showToast('Чеклист отправлен в чат MAX!')
+    if (ok) {
+      showToast('✅ Чеклист успешно отправлен в чат MAX!')
+    } else {
+      showToast('Чеклист скопирован в буфер обмена')
+    }
   }
 
   return (

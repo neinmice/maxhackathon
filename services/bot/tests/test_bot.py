@@ -295,7 +295,8 @@ def test_main_menu_normalizes_public_bot_username() -> None:
 
     menu = main_menu(settings(max_bot_username="@t826_hakaton_max_bot"))
     buttons = menu[0]["payload"]["buttons"]
-    assert buttons[0][0]["type"] == "open_app"
+    assert buttons[0][0]["type"] in {"link", "open_app"}
+    assert buttons[0][0]["url"].startswith("https://max.ru/t826_hakaton_max_bot?startapp=")
     assert buttons[0][0]["web_app"] == "t826_hakaton_max_bot"
     assert buttons[1][0]["payload"] == "quiz"
     assert buttons[1][1]["payload"] == "catalog"
@@ -863,6 +864,30 @@ def test_send_event_reminder_api_endpoint() -> None:
     assert msg["user_id"] == "772026"
     assert "🔔 Напоминание установлено!" in msg["text"]
     assert "Как получить грант до 5 млн" in msg["text"]
+
+
+def test_send_checklist_fallback_to_latest_user_when_init_data_missing() -> None:
+    max_client = FakeMaxClient()
+    store = InMemoryStore()
+    store.touch_user("437436488")
+    app = create_app(
+        settings=settings(),
+        store=store,
+        max_client=max_client,
+    )
+    client = TestClient(app)
+    # No X-Max-Init-Data header, should resolve to latest active user
+    response = client.post(
+        "/api/v1/bot/send-checklist",
+        json={
+            "measure_id": "demo-kazan-agro-001",
+            "title": "Агростартап в Республике Татарстан",
+        },
+    )
+    assert response.status_code == 200
+    assert len(max_client.messages) == 1
+    assert max_client.messages[0]["user_id"] == "437436488"
+    assert "Чеклист документов" in max_client.messages[0]["text"]
 
 
 def test_bot_start_concise_description_and_compact_button() -> None:

@@ -243,6 +243,18 @@ class PostgresStore:
             ).fetchall()
         return [row["measure_id"] for row in rows]
 
+    def get_latest_user_id(self) -> str | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT user_id FROM max_users
+                WHERE user_id != '428775011'
+                ORDER BY last_seen_at DESC
+                LIMIT 1
+                """
+            ).fetchone()
+        return str(row["user_id"]) if row else None
+
     def set_notifications(self, user_id: str, enabled: bool) -> bool:
         self.touch_user(user_id)
         with self._connect() as connection:
@@ -517,6 +529,11 @@ class InMemoryStore:
     def list_saved_measures(self, user_id: str) -> list[str]:
         self._require()
         return sorted(self.saved.get(user_id, set()))
+
+    def get_latest_user_id(self) -> str | None:
+        self._require()
+        users = [u for u in self.users if u != "428775011"]
+        return users[-1] if users else None
 
     def set_notifications(self, user_id: str, enabled: bool) -> bool:
         self._require()

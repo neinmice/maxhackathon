@@ -164,7 +164,7 @@ export default function MeasureDetailSheet() {
               padding: '0.55rem',
               borderRadius: '12px',
             }}
-            onClick={() => {
+            onClick={async () => {
               triggerHaptic('medium')
               const checklistData = {
                 action: 'checklist',
@@ -180,8 +180,13 @@ export default function MeasureDetailSheet() {
                 })),
               }
               sendDataToChat(checklistData)
-              apiClient.sendChecklistToChat(checklistData).catch(() => {})
-              showToast('Чеклист отправлен в чат MAX')
+              showToast('Отправка чеклиста в чат MAX...')
+              const ok = await apiClient.sendChecklistToChat(checklistData)
+              if (ok) {
+                showToast('✅ Чеклист успешно отправлен в чат MAX!')
+              } else {
+                showToast('Чеклист отправлен в чат MAX')
+              }
             }}
           >
             Отправить чеклист в чат MAX

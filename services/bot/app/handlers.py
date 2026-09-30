@@ -138,10 +138,11 @@ def _open_app_button(
     payload: str,
 ) -> dict[str, str]:
     return {
-        "type": "open_app",
+        "type": "link",
         "text": text,
-        "web_app": username,
+        "url": f"https://max.ru/{username}?startapp={payload}",
         "payload": payload,
+        "web_app": username,
     }
 
 

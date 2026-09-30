@@ -62,6 +62,10 @@ export class ApiClient {
     if (initData) {
       headers['X-Max-Init-Data'] = initData;
     }
+    const userId = (window as any).WebApp?.initDataUnsafe?.user?.id || (window as any).MAXBridge?.initDataUnsafe?.user?.id;
+    if (userId) {
+      headers['X-Max-User-Id'] = String(userId);
+    }
     return headers;
   }
 
@@ -364,15 +368,23 @@ export class ApiClient {
     amount?: string;
     deadline?: string;
     items?: Array<{ key: string; title: string; completed: boolean }>;
-  }): Promise<void> {
+    user_id?: string;
+  }): Promise<boolean> {
     try {
-      await fetch(`${this.baseUrl}/api/v1/bot/send-checklist`, {
+      const userId = (window as any).WebApp?.initDataUnsafe?.user?.id
+                  || (window as any).MAXBridge?.initDataUnsafe?.user?.id;
+      const bodyPayload = {
+        ...payload,
+        user_id: payload.user_id || (userId ? String(userId) : ''),
+      };
+      const res = await fetch(`${this.baseUrl}/api/v1/bot/send-checklist`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
-        body: JSON.stringify(payload),
+        body: JSON.stringify(bodyPayload),
       });
+      return res.ok;
     } catch {
-      // non-fatal fallback
+      return false;
     }
   }
 
@@ -382,15 +394,23 @@ export class ApiClient {
     date_time: string;
     kind?: string;
     location?: string;
-  }): Promise<void> {
+    user_id?: string;
+  }): Promise<boolean> {
     try {
-      await fetch(`${this.baseUrl}/api/v1/bot/send-event-reminder`, {
+      const userId = (window as any).WebApp?.initDataUnsafe?.user?.id
+                  || (window as any).MAXBridge?.initDataUnsafe?.user?.id;
+      const bodyPayload = {
+        ...payload,
+        user_id: payload.user_id || (userId ? String(userId) : ''),
+      };
+      const res = await fetch(`${this.baseUrl}/api/v1/bot/send-event-reminder`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
-        body: JSON.stringify(payload),
+        body: JSON.stringify(bodyPayload),
       });
+      return res.ok;
     } catch {
-      // non-fatal fallback
+      return false;
     }
   }
 }

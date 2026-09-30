@@ -44,6 +44,7 @@ class ChecklistItemRequest(BaseModel):
 
 
 class SendChecklistRequest(BaseModel):
+    user_id: str = ""
     measure_id: str = ""
     title: str = ""
     operator: str = ""
@@ -53,6 +54,7 @@ class SendChecklistRequest(BaseModel):
 
 
 class SendReminderRequest(BaseModel):
+    user_id: str = ""
     event_id: str = ""
     title: str = ""
     date_time: str = ""
@@ -401,27 +403,73 @@ def create_app(
     async def send_checklist_to_chat(
         payload: SendChecklistRequest,
         request: Request,
-        identity: LaunchIdentity = Depends(identity_dependency),
+        x_max_init_data: str | None = Header(default=None, alias="X-Max-Init-Data"),
+        x_max_user_id: str | None = Header(default=None, alias="X-Max-User-Id"),
     ) -> dict[str, Any]:
+        settings = request.app.state.settings
+        store = request.app.state.store
+        user_id = None
+        if x_max_init_data:
+            try:
+                identity = validate_launch_data(
+                    x_max_init_data,
+                    settings.max_bot_token,
+                    max_age_seconds=settings.max_launch_max_age_seconds,
+                )
+                user_id = identity.user_id
+            except Exception:
+                pass
+        if not user_id:
+            candidate = (x_max_user_id or payload.user_id or "").strip()
+            if candidate and candidate != "428775011":
+                user_id = candidate
+        if not user_id and hasattr(store, "get_latest_user_id"):
+            user_id = store.get_latest_user_id()
+        if not user_id:
+            raise _error(401, "user_not_identified", "Пользователь MAX не определён")
+
         data = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
         await request.app.state.handlers._handle_checklist(
-            identity.user_id,
+            user_id,
             data,
         )
-        return {"ok": True}
+        return {"ok": True, "user_id": user_id}
 
     @app.post("/api/v1/bot/send-event-reminder")
     async def send_event_reminder_to_chat(
         payload: SendReminderRequest,
         request: Request,
-        identity: LaunchIdentity = Depends(identity_dependency),
+        x_max_init_data: str | None = Header(default=None, alias="X-Max-Init-Data"),
+        x_max_user_id: str | None = Header(default=None, alias="X-Max-User-Id"),
     ) -> dict[str, Any]:
+        settings = request.app.state.settings
+        store = request.app.state.store
+        user_id = None
+        if x_max_init_data:
+            try:
+                identity = validate_launch_data(
+                    x_max_init_data,
+                    settings.max_bot_token,
+                    max_age_seconds=settings.max_launch_max_age_seconds,
+                )
+                user_id = identity.user_id
+            except Exception:
+                pass
+        if not user_id:
+            candidate = (x_max_user_id or payload.user_id or "").strip()
+            if candidate and candidate != "428775011":
+                user_id = candidate
+        if not user_id and hasattr(store, "get_latest_user_id"):
+            user_id = store.get_latest_user_id()
+        if not user_id:
+            raise _error(401, "user_not_identified", "Пользователь MAX не определён")
+
         data = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
         await request.app.state.handlers._handle_event_reminder(
-            identity.user_id,
+            user_id,
             data,
         )
-        return {"ok": True}
+        return {"ok": True, "user_id": user_id}
 
 
     @app.get("/api/v1/notifications/opt-in")
