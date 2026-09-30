@@ -286,5 +286,5 @@ curl -s -X POST https://zverybot.ru/api/v1/recommendations \
 ## 12. Метаданные релиза
 
 - **Ветка:** `release/zvery-hackathon-2026`
-- **Commit:** `__COMMIT_HASH__`
+- **Commit:** `17786d2` (`release/zvery-hackathon-2026`)
 - **Команда ZVERY:** Хакатон MAX 2026
