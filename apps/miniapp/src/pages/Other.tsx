@@ -266,7 +266,8 @@ export function Learning() {
   const myCourses = COURSES.filter((c) => c.done > 0)
   const otherCourses = COURSES.filter((c) => c.done === 0)
 
-  const quizCompleted = typeof window !== 'undefined' && localStorage.getItem('quiz_completed') === 'true'
+  // Тест засчитан, только если сервер выдал сертификат (он сохраняется в storage после успешного submit)
+  const quizCompleted = typeof window !== 'undefined' && loadCertificates().length > 0
 
   return (
     <div className="page">
@@ -651,7 +652,10 @@ export function Profile() {
       </div>
       <div className="profile">
         <Avatar size={88} className="profile__ava" />
-        <div className="profile__name">
+        <div
+          className="profile__name"
+          style={userName.length > 12 ? { fontSize: userName.length > 16 ? '1.05rem' : '1.2rem' } : undefined}
+        >
           <Scribble className="profile__scribble" />
           <span>{userName}</span>
         </div>

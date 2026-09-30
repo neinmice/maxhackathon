@@ -8,6 +8,7 @@ export type UserGoal = 'start' | 'grants' | 'growth' | 'education' | 'support'
 
 type Ctx = {
   userName: string
+  userPhoto: string | null
   city: City
   setCity: (c: City) => void
   role: UserRole
@@ -40,8 +41,10 @@ type Ctx = {
 const AppCtx = createContext<Ctx>(null!)
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  // Имя пользователя приходит только из MAX Bridge.
-  const [userName, setUserName] = useState<string>('')
+  // Имя и аватар пользователя:
+  // По умолчанию "Гость" и аватар-маскот, пока из MAX не поступили данные пользователя.
+  const [userName, setUserName] = useState<string>('Гость')
+  const [userPhoto, setUserPhoto] = useState<string | null>(null)
   const [city, setCity] = useState<City>('Казань')
   const [role, setRole] = useState<UserRole>('ip')
   const [taxMode, setTaxMode] = useState<UserTaxMode>('usn6')
@@ -93,18 +96,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Инициализация MAX Bridge и пользователя
   useEffect(() => {
-    const webapp = (window as any).WebApp
-    if (webapp) {
+    const syncUser = () => {
+      const bridge = (window as any).WebApp || (window as any).MAXBridge
+      if (!bridge) return false
+
       try {
-        webapp.ready?.()
-        webapp.expand?.()
-        const user = webapp.initDataUnsafe?.user
-        if (user?.first_name) {
-          setUserName(user.first_name)
-        }
+        bridge.ready?.()
+        bridge.expand?.()
       } catch {
         // no-op
       }
+
+      const user = bridge.initDataUnsafe?.user
+      if (user) {
+        const name = user.first_name || user.username || ''
+        if (name) {
+          setUserName(name)
+        }
+        const photo = user.photo_url || user.avatar_url || null
+        if (photo) {
+          setUserPhoto(photo)
+        }
+        return true
+      }
+      return false
+    }
+
+    syncUser()
+    const timers = [100, 400, 1200].map((t) => setTimeout(syncUser, t))
+    return () => {
+      timers.forEach(clearTimeout)
     }
   }, [])
 
@@ -260,6 +281,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppCtx.Provider
       value={{
         userName,
+        userPhoto,
         city,
         setCity,
         role,

@@ -7,9 +7,27 @@ import { CheckIcon, PinIcon, Scribble, SearchIcon } from './icons'
 import Sheet from './Sheet'
 
 export function Avatar({ size = 32, className = '' }: { size?: number; className?: string }) {
+  const { userPhoto } = useApp()
+  const isCustomUser = Boolean(userPhoto)
+
   return (
-    <span className={`avatar ${className}`} style={{ width: size, height: size }}>
-      <img src={mascot} alt="" draggable={false} />
+    <span
+      className={`avatar ${isCustomUser ? 'avatar--user' : 'avatar--mascot'} ${className}`}
+      style={{ width: size, height: size }}
+    >
+      <img
+        src={userPhoto || mascot}
+        alt=""
+        draggable={false}
+        onError={(e) => {
+          const target = e.currentTarget
+          if (target.src !== mascot) {
+            target.src = mascot
+            target.parentElement?.classList.remove('avatar--user')
+            target.parentElement?.classList.add('avatar--mascot')
+          }
+        }}
+      />
     </span>
   )
 }
@@ -25,7 +43,10 @@ export default function Header() {
       <header className="header">
         <button className="header__user" onClick={() => nav('/profile')} aria-label="Личный кабинет">
           <Avatar size={34} />
-          <span className="header__name">
+          <span
+            className="header__name"
+            style={userName.length > 10 ? { fontSize: userName.length > 14 ? '0.74rem' : '0.82rem' } : undefined}
+          >
             <Scribble className="header__scribble" />
             <span>{userName}</span>
           </span>

@@ -46,10 +46,7 @@ export default function OnboardingSheet() {
   ]
 
   const goals: { id: UserGoal; title: string; desc: string }[] = [
-    { id: 'start', title: 'Стартовый капитал', desc: 'Субсидии на открытие дела' },
-    { id: 'grants', title: 'Гранты и субсидии', desc: 'Безвозмездное финансирование' },
-    { id: 'education', title: 'Обучение и менторство', desc: 'Курсы и акселерационные программы' },
-    { id: 'growth', title: 'Льготные кредиты', desc: 'Микрозаймы под низкий процент' },
+    { id: 'support', title: 'Гранты и субсидии', desc: 'Безвозмездное финансирование и субсидии' },
   ]
 
   const skipTaxStep = role === 'self_employed' || role === 'intern' || role === 'planning'

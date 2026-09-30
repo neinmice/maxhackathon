@@ -263,7 +263,14 @@ p {
 .header__user {
   display: flex;
   align-items: center;
-  gap: 0.2rem;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  min-width: 0;
+  max-width: 58vw;
 }
 
 .avatar {
@@ -275,7 +282,8 @@ p {
   background: linear-gradient(135deg, #c8a9e6 0%, #9d6bc6 45%, #b9dbe9 100%);
 }
 
-.avatar img {
+.avatar img,
+.avatar--mascot img {
   position: absolute;
   width: 150%;
   max-width: none;
@@ -283,27 +291,46 @@ p {
   top: -22%;
 }
 
+.avatar--user img {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  object-fit: cover;
+}
+
 .header__name {
   position: relative;
   font-family: var(--display);
   font-weight: 800;
-  font-size: 0.97rem;
+  font-size: clamp(0.78rem, 3.2vw, 0.97rem);
   letter-spacing: 0.01em;
-  padding: 0 0.1rem;
+  padding: 0 0.15rem;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .header__name > span {
   position: relative;
+  z-index: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40vw;
 }
 
 .header__scribble {
   position: absolute;
-  left: 4%;
+  left: -6%;
   top: -0.55rem;
-  width: 7.4rem;
+  width: 112%;
   height: 2.1rem;
   pointer-events: none;
+  z-index: 0;
 }
 
 .header__right {
@@ -2743,20 +2770,33 @@ p {
   position: relative;
   font-family: var(--display);
   font-weight: 800;
-  font-size: 1.4rem;
-  margin-top: 0.4rem;
+  font-size: clamp(1.05rem, 5vw, 1.45rem);
+  margin-top: 0.5rem;
+  margin-bottom: 0.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.9rem;
+  max-width: 90vw;
 }
 
 .profile__name span {
   position: relative;
+  z-index: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 82vw;
 }
 
 .profile__scribble {
   position: absolute;
-  left: -10%;
-  top: -0.7rem;
-  width: 120%;
+  left: -8%;
+  top: -0.85rem;
+  width: 116%;
   height: 3rem;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .stats {

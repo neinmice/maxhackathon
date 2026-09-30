@@ -4,7 +4,7 @@ import { Download, Award, CheckCircle2, ArrowRight, RotateCcw } from 'lucide-rea
 import mascotShrug from '../assets/mascot/mascot-shrug.webp'
 import { PageTitle } from './Other'
 import { useApp } from '../store'
-import { loadCertificates, saveCertificate, type StoredCertificate } from '../lib/storage'
+import { loadCertificates, type StoredCertificate } from '../lib/storage'
 import { triggerHaptic } from '../lib/maxBridge'
 
 /**
@@ -164,23 +164,9 @@ export default function CertificatesPage() {
   const { userName, showToast } = useApp()
   const [certs, setCerts] = useState<StoredCertificate[]>([])
 
+  // Только сертификаты, выданные сервером и сохранённые после успешного submit
   useEffect(() => {
-    let list = loadCertificates()
-
-    // Если тест был сдан ранее, но сертификат еще не был сохранен в zvery_certificates_v1
-    if (list.length === 0 && typeof window !== 'undefined' && localStorage.getItem('quiz_completed') === 'true') {
-      const initialCert: StoredCertificate = {
-        id: 'ZV-CERT-2026-MVP-01',
-        userName: userName || 'Предприниматель',
-        date: new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }),
-        score: '100%',
-        title: 'Сертификат готовности бизнеса',
-      }
-      saveCertificate(initialCert)
-      list = [initialCert]
-    }
-
-    setCerts(list)
+    setCerts(loadCertificates())
   }, [userName])
 
   const handleDownload = (cert: StoredCertificate) => {

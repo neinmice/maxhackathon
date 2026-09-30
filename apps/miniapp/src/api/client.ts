@@ -23,7 +23,7 @@ export class ApiErrorResponse extends Error {
     this.code = code;
     this.requestId = requestId;
     this.status = status;
-    this.kind = kind;
+    this.kind = (kind === 'client' && code === 'invalid_response') ? 'unavailable' : kind;
   }
 }
 
@@ -128,7 +128,7 @@ export class ApiClient {
     try {
       res = await fetch(url, init);
     } catch {
-      throw new ApiErrorResponse('Сервис недоступен', 'network_error');
+      throw new ApiErrorResponse('Сервис недоступен', 'network_error', undefined, 0, 'network');
     }
     if (!res.ok) {
       let code = 'http_error';
@@ -142,7 +142,12 @@ export class ApiClient {
       } catch {
         // тело не error-envelope — остаётся generic http_error
       }
-      throw new ApiErrorResponse(message, code, requestId);
+      const kind = res.status === 401
+        ? 'unauthorized'
+        : res.status >= 500
+          ? 'unavailable'
+          : 'client';
+      throw new ApiErrorResponse(message, code, requestId, res.status, kind);
     }
     let parsed: unknown;
     try {
@@ -200,8 +205,11 @@ export class ApiClient {
     const parsed = await this.requestJson<Record<string, unknown>>(
       `${this.baseUrl}/api/v1/measures/${encodeURIComponent(id)}`,
     );
-    if (typeof parsed?.id !== 'string' || parsed.id !== id) {
+    if (typeof parsed?.id !== 'string') {
       throw new ApiErrorResponse(`Мера поддержки "${id}" не найдена в каталоге`, 'measure_not_found');
+    }
+    if (parsed.id !== id) {
+      throw new ApiErrorResponse('Идентификатор меры не совпадает с запрошенным', 'invalid_response');
     }
     return parsed as unknown as MeasureRecord;
   }
