@@ -25,6 +25,7 @@ APP_ENV=production
 POSTGRES_DB=navigator
 POSTGRES_USER=navigator
 POSTGRES_PASSWORD=<секрет БД, не из шаблона>
+DATABASE_URL=postgresql://navigator:<секрет БД, не из шаблона>@db:5432/navigator
 MAX_BOT_TOKEN=<токен из кабинета MAX>
 MAX_BOT_USERNAME=t826_hakaton_max_bot
 MAX_WEBHOOK_SECRET=<случайный секрет минимум 32 байта>

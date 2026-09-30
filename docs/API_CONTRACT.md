@@ -23,6 +23,8 @@ graph TD
     B5["GET /api/v1/measures/saved"]
     B6["POST /api/v1/quiz/submit"]
     B7["POST /api/v1/notifications/opt-in"]
+    B8["POST /api/v1/bot/send-checklist"]
+    B9["POST /api/v1/bot/send-event-reminder"]
   end
 ```
 

@@ -170,247 +170,35 @@ function GrantCard({ g, onOpen }: { g: Grant; onOpen: () => void }) {
   )
 }
 
-const MEASURE_PRESENTATION: Record<string, {
-  kind: string
-  amount: string
-  deadline: string
-  tags: string[]
-  filled: number
-  hot?: boolean
-  req: string[]
-}> = {
-  'demo-kazan-agro-001': {
-    kind: 'Гранты',
-    amount: 'до 3 млн ₽',
-    deadline: 'до 15 октября',
-    tags: ['до 25 лет', 'агробизнес'],
-    filled: 72,
-    hot: true,
-    req: [
-      'Регистрация КФХ или ИП в Республике Татарстан',
-      'Бизнес-план создания и развития хозяйства',
-      'Обучение «Азы бизнеса» в Центре «Мой бизнес»',
-      'Софинансирование проекта от 10%',
-    ],
-  },
-  'demo-kazan-services-001': {
-    kind: 'Субсидии',
-    amount: 'до 500 тыс. ₽',
-    deadline: 'до 1 ноября',
-    tags: ['сфера услуг', 'субсидия'],
-    filled: 54,
-    req: [
-      'Статус плательщика НПД или субъекта МСП в РТ',
-      'Деятельность в сфере бытовых или цифровых услуг',
-      'Обучение в Центре «Мой бизнес»',
-      'Отсутствие налоговой задолженности',
-    ],
-  },
-  'demo-kazan-it-001': {
-    kind: 'Гранты',
-    amount: 'до 1 млн ₽',
-    deadline: 'до 15 ноября',
-    tags: ['IT-сектор', 'акселерация'],
-    filled: 68,
-    hot: true,
-    req: [
-      'Разработка отечественного IT-решения или ПО',
-      'Наличие действующего прототипа или MVP',
-      'Резидентство или акселерация в ИТ-парке Казани',
-    ],
-  },
-  'demo-moscow-agro-001': {
-    kind: 'Гранты',
-    amount: 'до 3 млн ₽',
-    deadline: 'до 15 октября',
-    tags: ['до 25 лет', 'агробизнес'],
-    filled: 65,
-    req: [
-      'Регистрация бизнеса в Москве',
-      'Производство или переработка фермерской продукции',
-      'Софинансирование от 15%',
-    ],
-  },
-  'demo-moscow-services-001': {
-    kind: 'Субсидии',
-    amount: 'до 500 тыс. ₽',
-    deadline: 'до 1 ноября',
-    tags: ['сфера услуг', 'креатив'],
-    filled: 58,
-    req: [
-      'Статус МСП или самозанятого в Москве',
-      'Деятельность в сфере услуг или креативных индустрий',
-      'Отсутствие налоговой задолженности',
-    ],
-  },
-  'demo-moscow-it-001': {
-    kind: 'Гранты',
-    amount: 'до 1 млн ₽',
-    deadline: 'до 15 ноября',
-    tags: ['IT-сектор', 'инновации'],
-    filled: 75,
-    hot: true,
-    req: [
-      'Разработка отечественного ПО или цифровых платформ',
-      'Наличие MVP',
-      'Регистрация в Москве',
-    ],
-  },
-  'demo-spb-agro-001': {
-    kind: 'Гранты',
-    amount: 'до 3 млн ₽',
-    deadline: 'до 15 октября',
-    tags: ['до 25 лет', 'агробизнес'],
-    filled: 60,
-    req: [
-      'Регистрация бизнеса в Санкт-Петербурге',
-      'Производство сельскохозяйственной продукции',
-      'Софинансирование от 10%',
-    ],
-  },
-  'demo-spb-services-001': {
-    kind: 'Субсидии',
-    amount: 'до 500 тыс. ₽',
-    deadline: 'до 1 ноября',
-    tags: ['микробизнес', 'субсидия'],
-    filled: 52,
-    req: [
-      'Статус плательщика НПД или ИП в СПб',
-      'Деятельность в сфере бытовых или сервисных услуг',
-      'Обучение в Центре «Мой бизнес»',
-    ],
-  },
-  'demo-spb-it-001': {
-    kind: 'Гранты',
-    amount: 'до 1 млн ₽',
-    deadline: 'до 15 ноября',
-    tags: ['IT-сектор', 'стартап'],
-    filled: 70,
-    hot: true,
-    req: [
-      'Технологический или цифровой проект',
-      'Наличие MVP',
-      'Резидентство Технопарка Санкт-Петербурга',
-    ],
-  },
-}
-
-const REGIONAL_EXTRA_GRANTS: Record<string, (Grant & { kind: string })[]> = {
-  kazan: [
-    {
-      id: 'g2',
-      kind: 'Займы',
-      amount: 'до 1 млн ₽',
-      title: 'Микрозаём «Старт» под 0%',
-      org: 'Фонд поддержки предпринимательства РТ',
-      deadline: 'бессрочно',
-      tags: ['без залога', 'до 3 лет'],
-      filled: 35,
-      req: [
-        'Субъект МСП или самозанятый, зарегистрированный в РТ',
-        'Срок ведения деятельности от 1 месяца',
-        'Бизнес-план и финансовая модель',
-        'Поручительство для сумм свыше 500 тыс. ₽',
-      ],
-    },
-    {
-      id: 'g5',
-      kind: 'Лизинг',
-      amount: 'ставка 6%',
-      title: 'Льготный лизинг оборудования',
-      org: 'Региональная лизинговая компания РТ',
-      deadline: 'до 31 декабря',
-      tags: ['лизинг 6%', 'аванс от 10%'],
-      filled: 41,
-      req: [
-        'ИП или ООО, зарегистрированное в Республике Татарстан',
-        'Отечественное производственное оборудование',
-        'Авансовый платёж от 10%',
-      ],
-    },
-  ],
-  moscow: [
-    {
-      id: 'g2',
-      kind: 'Займы',
-      amount: 'до 1 млн ₽',
-      title: 'Льготное микрокредитование МСП',
-      org: 'Московский гарантийный фонд',
-      deadline: 'бессрочно',
-      tags: ['без залога', 'до 3 лет'],
-      filled: 40,
-      req: [
-        'Субъект МСП в Москве',
-        'Срок деятельности от 3 месяцев',
-        'Бизнес-план',
-      ],
-    },
-    {
-      id: 'g5',
-      kind: 'Лизинг',
-      amount: 'ставка 6%',
-      title: 'Льготный лизинг оборудования',
-      org: 'Московский фонд промышленности',
-      deadline: 'до 31 декабря',
-      tags: ['лизинг 6%', 'аванс от 10%'],
-      filled: 45,
-      req: [
-        'ИП или ООО в Москве',
-        'Российское оборудование',
-        'Аванс от 10%',
-      ],
-    },
-  ],
-  spb: [
-    {
-      id: 'g2',
-      kind: 'Займы',
-      amount: 'до 1 млн ₽',
-      title: 'Микрозаём для предпринимателей',
-      org: 'Фонд содействия кредитованию СПб',
-      deadline: 'бессрочно',
-      tags: ['без залога', 'до 3 лет'],
-      filled: 38,
-      req: [
-        'Субъект МСП или самозанятый в СПб',
-        'Срок деятельности от 3 месяцев',
-        'Бизнес-план',
-      ],
-    },
-    {
-      id: 'g5',
-      kind: 'Лизинг',
-      amount: 'ставка 6%',
-      title: 'Льготный лизинг оборудования',
-      org: 'Лизинговая компания Санкт-Петербурга',
-      deadline: 'до 31 декабря',
-      tags: ['лизинг 6%', 'аванс от 10%'],
-      filled: 42,
-      req: [
-        'ИП или ООО в Санкт-Петербурге',
-        'Российское оборудование',
-        'Аванс от 10%',
-      ],
-    },
-  ],
-}
-
-// Сопоставление MeasureRecord с ручным layout GrantCard: обогащение канонических данных
+// Сопоставление MeasureRecord с layout GrantCard: только данные из API
 function measureToGrant(m: MeasureRecord): (Grant & { kind: string }) | null {
-  const p = MEASURE_PRESENTATION[m.id]
-  const kind = m.category ?? p?.kind ?? (m.sector === 'services' ? 'Субсидии' : 'Гранты')
+  const lowerTitle = m.title.toLowerCase()
+  const kind = m.category
+    ? (m.category === 'grants' ? 'Гранты' : m.category === 'finance' ? 'Займы' : 'Субсидии')
+    : lowerTitle.includes('субсид')
+      ? 'Субсидии'
+      : lowerTitle.includes('займ') || lowerTitle.includes('микрозайм')
+        ? 'Займы'
+        : lowerTitle.includes('лизинг')
+          ? 'Лизинг'
+          : 'Гранты'
+
   if (!GRANT_FILTERS.includes(kind)) return null
+
+  const sectorTag = m.sector === 'agro' ? 'АГРОБИЗНЕС' : m.sector === 'it' ? 'IT-СЕКТОР' : 'СФЕРА УСЛУГ'
+  const tags = [sectorTag, kind]
+
   return {
     id: m.id,
     kind,
-    amount: m.amount_description ?? p?.amount ?? (m.sector === 'agro' ? 'до 3 млн ₽' : m.sector === 'it' ? 'до 1 млн ₽' : 'до 500 тыс. ₽'),
+    amount: m.amount_description || 'Сумма не указана',
     title: m.title,
     org: m.operator,
-    deadline: m.deadline ?? p?.deadline ?? 'приём открыт',
-    tags: p?.tags ?? [m.sector.toUpperCase(), kind],
-    filled: p?.filled ?? 60,
-    hot: p?.hot,
-    req: p?.req ?? [m.eligibility],
+    deadline: m.deadline || 'приём открыт',
+    tags,
+    filled: 60,
+    hot: m.sector === 'it',
+    req: m.documents && m.documents.length > 0 ? m.documents : [m.eligibility],
   }
 }
 
@@ -445,108 +233,31 @@ function pluralProgramsDative(count: number): string {
   return `${count} программам поддержки`
 }
 
-const CANONICAL_CATALOG_FALLBACK: Record<string, Array<{
-  id: string
-  title: string
-  operator: string
-  region: string
-  sector: string
-  eligibility: string
-}>> = {
-  kazan: [
-    {
-      id: 'demo-kazan-agro-001',
-      title: 'Грант «Агростартап» (Республика Татарстан)',
-      operator: 'Минсельхозпрод Республики Татарстан',
-      region: 'kazan',
-      sector: 'agro',
-      eligibility: 'Регистрация КФХ или ИП в Республике Татарстан, бизнес-план развития хозяйства, софинансирование от 10%.',
-    },
-    {
-      id: 'demo-kazan-services-001',
-      title: 'Субсидия для МСП и самозанятых в сфере услуг',
-      operator: 'Центр «Мой бизнес» Республики Татарстан',
-      region: 'kazan',
-      sector: 'services',
-      eligibility: 'Статус плательщика НПД или субъекта МСП в РТ, деятельность в сфере услуг, обучение в Центре «Мой бизнес».',
-    },
-    {
-      id: 'demo-kazan-it-001',
-      title: 'Грант «ИТ-стартап» (Технопарк «ИТ-парк»)',
-      operator: 'Технопарк в сфере высоких технологий «ИТ-парк» Казань',
-      region: 'kazan',
-      sector: 'it',
-      eligibility: 'Разработка отечественного IT-решения или ПО, наличие MVP, резидентство или акселерация в ИТ-парке Казани.',
-    },
-  ],
-  moscow: [
-    {
-      id: 'demo-moscow-agro-001',
-      title: 'Грант на развитие фермерских хозяйств (Московский регион)',
-      operator: 'Министерство сельского хозяйства и продовольствия',
-      region: 'moscow',
-      sector: 'agro',
-      eligibility: 'Регистрация бизнеса в Москве, производство или переработка фермерской продукции, софинансирование от 15%.',
-    },
-    {
-      id: 'demo-moscow-services-001',
-      title: 'Субсидия на оборудование для сферы услуг',
-      operator: 'Департамент предпринимательства и инновационного развития г. Москвы',
-      region: 'moscow',
-      sector: 'services',
-      eligibility: 'Статус МСП или самозанятого в Москве, деятельность в сфере услуг или креативных индустрий.',
-    },
-    {
-      id: 'demo-moscow-it-001',
-      title: 'Грант на пилотирование IT-инноваций',
-      operator: 'Агентство инноваций Москвы',
-      region: 'moscow',
-      sector: 'it',
-      eligibility: 'Регистрация в реестре стартапов Москвы, разработка и тестирование инновационных технологий.',
-    },
-  ],
-  spb: [
-    {
-      id: 'demo-spb-agro-001',
-      title: 'Грант на агропромышленные проекты (Северо-Запад)',
-      operator: 'Комитет по промышленной политике, инновациям и торговле',
-      region: 'spb',
-      sector: 'agro',
-      eligibility: 'Регистрация КФХ или ИП, проект в сфере АПК или продовольственной безопасности.',
-    },
-    {
-      id: 'demo-spb-services-001',
-      title: 'Субсидия на развитие сервисных и креативных предприятий',
-      operator: 'Центр развития и поддержки предпринимательства СПб (ЦРПП)',
-      region: 'spb',
-      sector: 'services',
-      eligibility: 'Субъект МСП в Санкт-Петербурге, деятельность в сфере услуг, отсутствие задолженности.',
-    },
-    {
-      id: 'demo-spb-it-001',
-      title: 'Грант для высокотехнологичных стартапов',
-      operator: 'Технопарк Санкт-Петербурга',
-      region: 'spb',
-      sector: 'it',
-      eligibility: 'Резидентство в Технопарке СПб, разработка ПО или аппаратных комплексов, стадия MVP.',
-    },
-  ],
-}
-
 export function Grants() {
   const { setMeasureDetail, city } = useApp()
   const [f, setF] = useState('Все')
   const [measures, setMeasures] = useState<MeasureRecord[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState<boolean>(true)
 
   useEffect(() => {
     let cancelled = false
+    setLoading(true)
+    setError(null)
     apiClient
       .getAllMeasures()
       .then((records) => {
-        if (!cancelled) setMeasures(records)
+        if (!cancelled) {
+          setMeasures(records)
+          setLoading(false)
+        }
       })
-      .catch(() => {
-        // Fallback-каталог используется локально при недоступности API
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setMeasures(null)
+          setError(err instanceof Error ? err.message : 'Каталог недоступен')
+          setLoading(false)
+        }
       })
     return () => {
       cancelled = true
@@ -555,16 +266,12 @@ export function Grants() {
 
   const currentRegion = city === 'Казань' ? 'kazan' : city === 'Санкт-Петербург' ? 'spb' : 'moscow'
 
-  const rawCatalog = measures && measures.length > 0 ? measures : (CANONICAL_CATALOG_FALLBACK[currentRegion] as unknown as MeasureRecord[])
-
-  const catalogGrants = (rawCatalog ?? [])
+  const catalogGrants = (measures ?? [])
     .filter((m) => m.region === currentRegion)
     .map(measureToGrant)
     .filter((g): g is Grant & { kind: string } => g !== null)
 
-  const extraGrants = REGIONAL_EXTRA_GRANTS[currentRegion] || []
-  const allGrants = [...catalogGrants, ...extraGrants]
-  const list = allGrants.filter((g) => f === 'Все' || g.kind === f)
+  const list = catalogGrants.filter((g) => f === 'Все' || g.kind === f)
 
   const totalSum = list.reduce((acc, g) => acc + parseGrantAmount(g.amount), 0)
   const displaySum =
@@ -593,10 +300,23 @@ export function Grants() {
         ))}
       </div>
       <div className="grant-list">
-        {list.map((g) => (
-          <GrantCard key={g.id} g={g} onOpen={() => setMeasureDetail(g)} />
-        ))}
-        {list.length === 0 && (
+        {list.map((g) => {
+          const rawMeasure = measures?.find((m) => m.id === g.id)
+          return (
+            <GrantCard
+              key={g.id}
+              g={g}
+              onOpen={() => setMeasureDetail(rawMeasure || g)}
+            />
+          )
+        })}
+        {error !== null && (
+          <EmptyState
+            title="Каталог недоступен"
+            description="Не удалось связаться с сервером каталога. Пожалуйста, попробуйте позже."
+          />
+        )}
+        {!loading && error === null && list.length === 0 && (
           <EmptyState
             title="В этой категории пока нет программ"
             description="Выберите «Все» или измените категорию, чтобы увидеть доступные меры господдержки."

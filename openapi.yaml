@@ -390,6 +390,67 @@ paths:
           content:
             application/json:
               schema:
+  /api/v1/bot/send-checklist:
+    post:
+      x-zvery-service: bot
+      operationId: sendChecklistToChat
+      servers:
+        - url: http://127.0.0.1:8001
+        - url: https://zverybot.ru
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Checklist sent to MAX chat
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  user_id:
+                    type: string
+        '401':
+          description: User not identified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/bot/send-event-reminder:
+    post:
+      x-zvery-service: bot
+      operationId: sendEventReminderToChat
+      servers:
+        - url: http://127.0.0.1:8001
+        - url: https://zverybot.ru
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Event reminder sent to MAX chat
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  user_id:
+                    type: string
+        '401':
+          description: User not identified
+          content:
+            application/json:
+              schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
   /webhooks/max:
     post:

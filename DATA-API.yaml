@@ -1,7 +1,7 @@
 version: "0.1"
 solution_id: zvery-business-navigator
-api_base_url: http://127.0.0.1:8000
-bot_base_url: http://127.0.0.1:8001
+api_base_url: https://zverybot.ru
+bot_base_url: https://zverybot.ru
 checks:
   - method: GET
     path: /health
@@ -106,3 +106,13 @@ checks:
     expected_status: 200
     required_request_header: X-Max-Init-Data
     required_response_fields: [enabled]
+  - method: POST
+    path: /api/v1/bot/send-checklist
+    base: bot
+    role: user
+    expected_status: 200
+  - method: POST
+    path: /api/v1/bot/send-event-reminder
+    base: bot
+    role: user
+    expected_status: 200

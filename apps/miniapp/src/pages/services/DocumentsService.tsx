@@ -130,32 +130,25 @@ export default function DocumentsService() {
     })
   }
 
-  const handleDownload = (doc: DocItem) => {
+  const handleDownload = (_doc: DocItem) => {
     triggerHaptic('medium')
-    const content = `%PDF-1.4\n% ОФИЦИАЛЬНЫЙ ШАБЛОН: ${doc.title}\n% Код: ${doc.code}\n% ${doc.deadline}\n\nУсловия:\n${doc.reqs.map((r, i) => `${i + 1}. ${r}`).join('\n')}\n\nЧеклист:\n${doc.checklist.map((c) => `• ${c}`).join('\n')}`
-    const blob = new Blob([content], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = doc.pdfName
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-    showToast(`Файл ${doc.pdfName} скачивается!`)
+    showToast('Скачивание шаблонов будет доступно после подключения сервиса')
   }
 
   const handleSendToBot = (doc: DocItem) => {
     triggerHaptic('medium')
-    const webapp = (window as any).WebApp
+    const webapp = (window as any).WebApp || (window as any).MAXBridge
     if (webapp && typeof webapp.sendData === 'function') {
       try {
         webapp.sendData(JSON.stringify({ action: 'send_doc', docId: doc.id, docCode: doc.code }))
+        showToast(`Шаблон «${doc.title}» отправлен в МАКС!`)
+        return
       } catch {
-        // no-op
+        showToast('Не удалось отправить шаблон в чат')
+        return
       }
     }
-    showToast(`Шаблон «${doc.title}» отправлен в МАКС!`)
+    showToast('Отправка шаблонов в чат доступна внутри приложения MAX')
   }
 
   return (

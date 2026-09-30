@@ -24,6 +24,8 @@ BOT_ROUTES = {
     ("POST", "/api/v1/quiz/submit"),
     ("GET", "/api/v1/notifications/opt-in"),
     ("POST", "/api/v1/notifications/opt-in"),
+    ("POST", "/api/v1/bot/send-checklist"),
+    ("POST", "/api/v1/bot/send-event-reminder"),
 }
 CONTRACT_ROUTES = API_ROUTES | BOT_ROUTES
 
@@ -79,8 +81,8 @@ def test_route_lists_match_across_contract_files() -> None:
         assert path in contract
         assert method in contract or path == "/health"
 
-    assert "api_base_url: http://127.0.0.1:8000" in data_api
-    assert "bot_base_url: http://127.0.0.1:8001" in data_api
+    assert "api_base_url: https://zverybot.ru" in data_api
+    assert "bot_base_url: https://zverybot.ru" in data_api
     assert "/bot/health" not in data_api
     assert "http://127.0.0.1:8000" in openapi
     assert "http://127.0.0.1:8001" in openapi

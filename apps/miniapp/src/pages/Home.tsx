@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FACTS, GRANTS, SECTIONS, STORIES, type Card, type Section } from '../data'
+import { FACTS, SECTIONS, STORIES, type Card, type Section } from '../data'
 import { cityIn, useApp } from '../store'
 import { ClayCoin, DeadlineSticker, SparkleClay, StartSticker, QuizPinSticker, TwinSparkle, ZeroPercentSticker, ZigArrow, ServiceGlyph } from '../components/icons'
 import StoryViewer from '../components/StoryViewer'
@@ -221,20 +221,10 @@ export function SingleCard({
     if (isHero) return
     triggerHaptic('light')
 
-    // Финансовая поддержка: 300.000 ₽, 0% ставка, субсидия, лизинг -> открывает карточку с мерой из grants
+    // Финансовая поддержка -> переход в раздел грантов и программ поддержки
     if (sId === 'finance') {
-      const grantMap: Record<string, string> = {
-        'grant-300': 'g1',
-        'credit': 'g2',
-        'subsidy': 'g4',
-        'leasing': 'g5',
-      }
-      const gId = grantMap[c.id]
-      const found = GRANTS.find((g) => g.id === gId)
-      if (found) {
-        setMeasureDetail(found)
-        return
-      }
+      nav('/grants')
+      return
     }
 
     // Блок «Начни свое дело»: карточка «Грант» -> просто открывает категорию с грантами
