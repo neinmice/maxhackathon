@@ -176,7 +176,10 @@ export function measureIdFromStartParam(value: string | null): string | null {
 
 export function triggerHaptic(style: 'light' | 'medium' | 'heavy' = 'light'): void {
   try {
-    getBridge().HapticFeedback?.impactOccurred(style);
+    const res: unknown = getBridge().HapticFeedback?.impactOccurred(style);
+    if (res && typeof (res as any).catch === 'function') {
+      (res as any).catch(() => {});
+    }
   } catch {
     // ignore in browsers
   }
@@ -184,7 +187,10 @@ export function triggerHaptic(style: 'light' | 'medium' | 'heavy' = 'light'): vo
 
 export function triggerSelectionChanged(): void {
   try {
-    getBridge().HapticFeedback?.selectionChanged();
+    const res: unknown = getBridge().HapticFeedback?.selectionChanged();
+    if (res && typeof (res as any).catch === 'function') {
+      (res as any).catch(() => {});
+    }
   } catch {
     // ignore in browsers
   }
@@ -192,7 +198,10 @@ export function triggerSelectionChanged(): void {
 
 export function triggerNotification(type: 'error' | 'success' | 'warning'): void {
   try {
-    getBridge().HapticFeedback?.notificationOccurred(type);
+    const res: unknown = getBridge().HapticFeedback?.notificationOccurred(type);
+    if (res && typeof (res as any).catch === 'function') {
+      (res as any).catch(() => {});
+    }
   } catch {
     // ignore in browsers
   }

@@ -60,14 +60,17 @@ function Shell() {
   }, [pathname, nav])
 
   // Deep linking: канонический payload measure_<id> и маршруты home/quiz/cert/catalog/saved/onboarding
+  const hasAppliedLaunchRef = useRef(false)
   useEffect(() => {
+    if (hasAppliedLaunchRef.current) return
+    hasAppliedLaunchRef.current = true
     applyLaunchParam(resolveLaunchParamFromWindow(), {
       openMeasure,
       openQuiz: () => setQuizOpen(true),
       openOnboarding: () => setOnboardingOpen(true),
       navigate: nav,
     })
-  }, [search, nav, setQuizOpen, setOnboardingOpen, setMeasureDetail])
+  }, [nav])
 
   return (
     <div className="app">

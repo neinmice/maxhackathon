@@ -12,6 +12,7 @@ import {
   WalletIcon,
 } from './icons'
 import { triggerSelectionChanged } from '../lib/maxBridge'
+import { useApp } from '../store'
 
 const TABS = [
   { to: '/', label: 'главная', Icon: HomeOutlineIcon, Active: HomeIcon, hasDot: false },
@@ -25,6 +26,7 @@ const match = (path: string, to: string) => (to === '/' ? path === '/' || path.s
 
 export default function TabBar() {
   const { pathname } = useLocation()
+  const { dismissIntro } = useApp()
   const assistantActive = pathname.startsWith('/assistant')
 
   const [seenDots, setSeenDots] = useState<Record<string, boolean>>(() => {
@@ -37,6 +39,7 @@ export default function TabBar() {
   })
 
   const markTabSeen = (to: string) => {
+    dismissIntro()
     triggerSelectionChanged()
     if (!seenDots[to]) {
       const next = { ...seenDots, [to]: true }
@@ -49,6 +52,11 @@ export default function TabBar() {
     }
   }
 
+  const handleAssistantClick = () => {
+    dismissIntro()
+    triggerSelectionChanged()
+  }
+
   return (
     <nav className="tabbar">
       {TABS.map((t) =>
@@ -56,7 +64,7 @@ export default function TabBar() {
           <NavLink
             key="assistant"
             to="/assistant"
-            onClick={() => triggerSelectionChanged()}
+            onClick={handleAssistantClick}
             className={`tab tab--mascot ${assistantActive ? 'is-active' : ''}`}
             aria-label="Ассистент"
           >

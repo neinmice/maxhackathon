@@ -119,14 +119,11 @@ export default function SpotlightTutorial({
     const timer2 = setTimeout(updateRect, 320)
 
     window.addEventListener('resize', updateRect)
-    const mainEl = document.querySelector('.main')
-    mainEl?.addEventListener('scroll', updateRect)
 
     return () => {
       clearTimeout(timer1)
       clearTimeout(timer2)
       window.removeEventListener('resize', updateRect)
-      mainEl?.removeEventListener('scroll', updateRect)
     }
   }, [step, current.selector, current.fallbackSelector])
 
@@ -199,6 +196,7 @@ export default function SpotlightTutorial({
           {/* Сверху от выреза */}
           <div
             className="spotlight-panel"
+            onClick={skip}
             style={{
               top: 0,
               left: 0,
@@ -209,6 +207,7 @@ export default function SpotlightTutorial({
           {/* Снизу от выреза */}
           <div
             className="spotlight-panel"
+            onClick={skip}
             style={{
               top: `${cutBottom}px`,
               left: 0,
@@ -219,6 +218,7 @@ export default function SpotlightTutorial({
           {/* Слева от выреза */}
           <div
             className="spotlight-panel"
+            onClick={skip}
             style={{
               top: `${cutTop}px`,
               left: 0,
@@ -229,6 +229,7 @@ export default function SpotlightTutorial({
           {/* Справа от выреза */}
           <div
             className="spotlight-panel"
+            onClick={skip}
             style={{
               top: `${cutTop}px`,
               left: `${cutRight}px`,
@@ -240,6 +241,7 @@ export default function SpotlightTutorial({
       ) : (
         <div
           className="spotlight-panel"
+          onClick={skip}
           style={{
             top: 0,
             left: 0,

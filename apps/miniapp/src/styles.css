@@ -827,7 +827,7 @@ p {
   height: calc(var(--tabbar-h) + var(--safe-b));
   padding: 0 0.25rem var(--safe-b);
   background: var(--tabbar);
-  z-index: 10;
+  z-index: 1005;
 }
 
 .tab {
@@ -3067,11 +3067,10 @@ p {
 
 .spotlight-panel {
   position: absolute;
-  background: rgba(10, 6, 20, 0.94);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(10, 6, 20, 0.92);
   pointer-events: auto;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .spotlight-cutout {
@@ -3083,7 +3082,7 @@ p {
     inset 0 0 14px rgba(132, 85, 246, 0.25);
   pointer-events: none;
   z-index: 1000;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .spotlight-close {
@@ -3094,15 +3093,13 @@ p {
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(30, 24, 45, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.18);
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   pointer-events: auto;
   transition: transform 0.15s, background 0.15s;
 }
@@ -3212,15 +3209,13 @@ p {
   flex: 1;
   height: 2.85rem;
   border-radius: var(--radius-btn, 12px);
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(40, 32, 60, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   color: #ffffff;
   font-family: 'VK Sans Display Expanded', var(--display);
   font-size: 0.88rem;
   font-weight: 700;
   letter-spacing: -0.01em;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   cursor: pointer;
   transition: transform 0.15s, background 0.15s;
   display: inline-flex;
