@@ -34,6 +34,21 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  reminders:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.bot
+    env_file:
+      - path: ${APP_ENV_FILE:?Set APP_ENV_FILE to a private env file outside git}
+        required: true
+    environment:
+      APP_ENV: production
+    command: ["python", "-m", "app.manage", "run-reminders"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
   db:
     image: postgres:16-alpine
     env_file:

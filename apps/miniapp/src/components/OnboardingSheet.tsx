@@ -9,6 +9,7 @@ import { CheckIcon, Rays, StartSticker } from './icons'
 import Sheet from './Sheet'
 import { useApp, type UserGoal, type UserRole, type UserTaxMode } from '../store'
 import type { City } from '../data'
+import { apiClient } from '../api/client'
 
 export default function OnboardingSheet() {
   const {
@@ -43,19 +44,30 @@ export default function OnboardingSheet() {
   ]
 
   const goals: { id: UserGoal; title: string }[] = [
-    { id: 'start', title: 'Стартовый капитал' },
-    { id: 'grants', title: 'Гранты и субсидии' },
-    { id: 'education', title: 'Обучение и менторство' },
-    { id: 'growth', title: 'Льготные кредиты' },
+    { id: 'support', title: 'Гранты и субсидии' },
   ]
 
-  const handleApply = () => {
+  const requestRecommendations = () => {
+    const region = city === 'Казань' ? 'kazan' : city === 'Москва' ? 'moscow' : 'spb'
+    return apiClient.getRecommendations({
+      region,
+      role,
+      tax_mode: taxMode,
+      goal,
+    })
+  }
+
+  const handleApply = async () => {
     setLoading(true)
-    setTimeout(() => {
+    try {
+      await requestRecommendations()
       setLoading(false)
       setOnboardingOpen(false)
       showToast(`Профиль обновлён: ${city}, ${role === 'ip' ? 'ИП' : role === 'self_employed' ? 'Самозанятый' : 'ООО'}`)
-    }, 350)
+    } catch {
+      setLoading(false)
+      showToast('Не удалось подобрать меры: сервер недоступен')
+    }
   }
 
   return (

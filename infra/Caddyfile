@@ -17,6 +17,11 @@
         reverse_proxy bot:8001
     }
 
+    @checklist path_regexp checklist ^/api/v1/measures/[^/]+/checklist$
+    handle @checklist {
+        reverse_proxy bot:8001
+    }
+
     handle /api/v1/measures/saved {
         reverse_proxy bot:8001
     }

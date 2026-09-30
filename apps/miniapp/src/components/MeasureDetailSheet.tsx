@@ -4,16 +4,40 @@
  * Назначение: отображение условий программы, плашки свежести «АКТУАЛЬНО · 2026»,
  * оператора («Мой бизнес»), интерактивного чеклиста документов и сохранения меры.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CheckIcon, ClockIcon } from './icons'
 import Sheet from './Sheet'
 import { cityIn, useApp } from '../store'
+import { apiClient } from '../api/client'
 
 export default function MeasureDetailSheet() {
   const { measureDetail, setMeasureDetail, savedMeasures, toggleSaveMeasure, city } = useApp()
   const nav = useNavigate()
-  const [checkedDocs, setCheckedDocs] = useState<Set<number>>(new Set([0]))
+  const [checkedDocs, setCheckedDocs] = useState<Set<number>>(new Set())
+
+  useEffect(() => {
+    if (!measureDetail) {
+      setCheckedDocs(new Set())
+      return
+    }
+    let active = true
+    setCheckedDocs(new Set())
+    apiClient.getChecklist(measureDetail.id)
+      .then((items) => {
+        if (active) {
+          setCheckedDocs(
+            new Set(items.filter((item) => item.completed).map((item) => Number(item.key))),
+          )
+        }
+      })
+      .catch(() => {
+        // The checklist remains usable locally if the server is unavailable.
+      })
+    return () => {
+      active = false
+    }
+  }, [measureDetail?.id])
 
   if (!measureDetail) return null
 
@@ -24,6 +48,7 @@ export default function MeasureDetailSheet() {
       const next = new Set(prev)
       if (next.has(idx)) next.delete(idx)
       else next.add(idx)
+      apiClient.updateChecklist(measureDetail.id, String(idx), next.has(idx)).catch(() => {})
       return next
     })
   }
@@ -37,12 +62,14 @@ export default function MeasureDetailSheet() {
     'Регистрация бизнеса в выбранном регионе',
     'Соответствие критериям субъекта МСП',
   ]
-  const docs = [
-    'Паспорт гражданина РФ (скан всех страниц)',
-    'Справка об отсутствии задолженности (КНД 1120101)',
-    'Бизнес-план и финансовая смета проекта',
-    'Заявление по утверждённой форме оператора',
-  ]
+  const docs: string[] = Array.isArray(measureDetail.documents) && measureDetail.documents.length
+    ? measureDetail.documents
+    : [
+        'Паспорт гражданина РФ (скан всех страниц)',
+        'Справка об отсутствии задолженности (КНД 1120101)',
+        'Бизнес-план и финансовая смета проекта',
+        'Заявление по утверждённой форме оператора',
+      ]
 
   return (
     <Sheet open={!!measureDetail} onClose={() => setMeasureDetail(null)} title={title}>
@@ -134,7 +161,7 @@ export default function MeasureDetailSheet() {
             lineHeight: 1.4,
           }}
         >
-          <b>Источник:</b> Официальный портал поддержки МСП (мойбизнес.рф).
+          <b>Источник:</b> Официальный портал поддержки МСП.
           <br />
           ZVERY предоставляет справочную верифицированную информацию. Итоговое решение о выдаче принимает уполномоченный оператор.
         </div>

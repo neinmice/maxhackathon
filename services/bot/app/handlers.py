@@ -77,41 +77,56 @@ def start_app_payload(value: str) -> str | None:
     return None
 
 
+def _bot_username(settings: Settings) -> str:
+    return settings.max_bot_username.strip().removeprefix("@")
+
+
+def _open_app_button(
+    *,
+    username: str,
+    text: str,
+    payload: str,
+) -> dict[str, str]:
+    return {
+        "type": "open_app",
+        "text": text,
+        "web_app": username,
+        "payload": payload,
+    }
+
+
 def main_menu(settings: Settings, start_payload: str | None = None) -> list[dict[str, Any]]:
-    if not settings.max_bot_username:
+    username = _bot_username(settings)
+    if not username:
         return []
     open_payload = start_payload if start_payload and start_payload.startswith("measure_") else "home"
     open_text = "Открыть меру" if open_payload != "home" else "Открыть ZVERY"
     buttons = [
         [
-            {
-                "type": "open_app",
-                "text": open_text,
-                "web_app": settings.max_bot_username,
-                "payload": open_payload,
-            }
+            _open_app_button(
+                username=username,
+                text=open_text,
+                payload=open_payload,
+            )
         ],
         [
-            {
-                "type": "open_app",
-                "text": "Пройти квиз",
-                "web_app": settings.max_bot_username,
-                "payload": "quiz",
-            },
-            {
-                "type": "open_app",
-                "text": "Каталог мер",
-                "web_app": settings.max_bot_username,
-                "payload": "catalog",
-            },
+            _open_app_button(
+                username=username,
+                text="Пройти квиз",
+                payload="quiz",
+            ),
+            _open_app_button(
+                username=username,
+                text="Каталог мер",
+                payload="catalog",
+            ),
         ],
         [
-            {
-                "type": "open_app",
-                "text": "Мои сохранённые",
-                "web_app": settings.max_bot_username,
-                "payload": "saved",
-            }
+            _open_app_button(
+                username=username,
+                text="Мои сохранённые",
+                payload="saved",
+            )
         ],
     ]
     return [{"type": "inline_keyboard", "payload": {"buttons": buttons}}]

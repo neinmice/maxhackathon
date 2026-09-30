@@ -344,12 +344,12 @@ export function CardPage() {
 export function Profile() {
   const nav = useNavigate()
   const { city, userName, role, savedMeasures, toggleSaveMeasure, setOnboardingOpen, setQuizOpen, showToast } = useApp()
-  const [notif, setNotif] = useState(true)
+  const [notif, setNotif] = useState(false)
 
   const roleTitle = role === 'ip' ? 'Индивидуальный предприниматель' : role === 'self_employed' ? 'Самозанятый (НПД)' : 'Юрлицо (ООО)'
 
   const rows = [
-    { t: 'Мои заявки', v: '1 активная', onClick: () => showToast('Заявка на рассмотрении') },
+    { t: 'Мои заявки', v: 'Нет данных', onClick: () => showToast('Раздел заявок пока недоступен') },
     { t: 'Избранные меры', v: `${savedMeasures.size} сохранено`, onClick: () => nav('/grants') },
     { t: 'Квиз и сертификат', v: 'Пройти тест', onClick: () => setQuizOpen(true) },
     { t: 'Параметры подбора мер', v: `${city} · ${role === 'ip' ? 'ИП' : role === 'self_employed' ? 'НПД' : 'ООО'}`, onClick: () => setOnboardingOpen(true) },
@@ -386,7 +386,7 @@ export function Profile() {
       </div>
       <div className="app-status">
         <div className="app-status__head">
-          <b>Грант 300.000 ₽</b>
+          <b>Статус заявки</b>
           <em>на проверке</em>
         </div>
         <div className="app-status__steps">
@@ -419,7 +419,10 @@ export function Profile() {
             onChange={(e) => {
               const val = e.target.checked
               setNotif(val)
-              apiClient.optInNotifications(val)
+              apiClient.optInNotifications(val).catch(() => {
+                setNotif(!val)
+                showToast('Настройку уведомлений не удалось сохранить')
+              })
               showToast(val ? 'Уведомления включены' : 'Уведомления отключены')
             }}
           />

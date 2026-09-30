@@ -10,7 +10,7 @@ import Assistant from './pages/Assistant'
 import Home from './pages/Home'
 import { CardPage, Course, Grants, Learning, Profile, Search, SectionPage, Services } from './pages/Other'
 import { AppProvider, useApp } from './store'
-import { bindBackButton, hideBackButton } from './lib/maxBridge'
+import { bindBackButton, hideBackButton, measureIdFromStartParam, parseStartParam } from './lib/maxBridge'
 import { apiClient } from './api/client'
 
 function Shell() {
@@ -19,6 +19,9 @@ function Shell() {
   const { toast, setQuizOpen, setOnboardingOpen, setMeasureDetail, introOpen, dismissIntro } = useApp()
   const main = useRef<HTMLElement>(null)
   const bare = pathname.startsWith('/search') || pathname.startsWith('/profile')
+  const openMeasure = (measureId: string) => {
+    apiClient.getMeasure(measureId).then(setMeasureDetail).catch(() => {})
+  }
 
   useEffect(() => {
     main.current?.scrollTo(0, 0)
@@ -42,15 +45,16 @@ function Shell() {
   // Deep linking: обработка ?startapp= (quiz, catalog, saved, home, onboarding, measure)
   useEffect(() => {
     const params = new URLSearchParams(search)
-    const startParam =
+    const rawStartParam =
       params.get('startapp') ||
       params.get('tgWebAppStartParam') ||
       params.get('start_param') ||
       (window as any).WebApp?.initDataUnsafe?.start_param
+    const startParam = parseStartParam(rawStartParam)
 
-    if (!startParam && params.get('cert') !== '1') return
+    if (!startParam) return
 
-    if (startParam === 'quiz' || startParam === 'cert' || params.get('cert') === '1') {
+    if (startParam === 'quiz' || startParam === 'cert') {
       setQuizOpen(true)
     } else if (startParam === 'catalog') {
       nav('/grants')
@@ -60,9 +64,10 @@ function Shell() {
       nav('/')
     } else if (startParam === 'onboarding') {
       setOnboardingOpen(true)
-    } else if (startParam === 'measure') {
-      const measureId = params.get('id') || 'demo-kazan-agro-001'
-      apiClient.getMeasure(measureId).then(setMeasureDetail).catch(() => {})
+    } else if (startParam === 'measure' || measureIdFromStartParam(startParam)) {
+      const measureId = measureIdFromStartParam(startParam) || params.get('id')
+      if (!measureId) return
+      openMeasure(measureId)
     }
   }, [search, nav, setQuizOpen, setOnboardingOpen, setMeasureDetail])
 

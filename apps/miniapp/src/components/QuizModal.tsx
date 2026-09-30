@@ -85,20 +85,8 @@ export default function QuizModal() {
   const [step, setStep] = useState<number>(0)
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState<boolean>(false)
-  const [result, setResult] = useState<QuizSubmitResult | null>(() => {
-    if (typeof window !== 'undefined' && window.location.search.includes('cert=1')) {
-      return {
-        attempt_id: 'demo-cert-1',
-        score: 100,
-        passed: true,
-        certificate: {
-          certificate_id: 'ZV-CERT-2026-A1B2C3D4',
-          payload: 'signed-demo-payload',
-        },
-      }
-    }
-    return null
-  })
+  const [result, setResult] = useState<QuizSubmitResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   if (!quizOpen) return null
 
@@ -106,6 +94,7 @@ export default function QuizModal() {
 
   const handleSelectOption = (key: string) => {
     triggerHaptic('light')
+    setError(null)
     setAnswers((prev) => ({ ...prev, [curQ.id]: key }))
   }
 
@@ -115,22 +104,18 @@ export default function QuizModal() {
       setStep((s) => s + 1)
     } else {
       setSubmitting(true)
+      setError(null)
       try {
         const res = await apiClient.submitQuiz('v1', answers)
         setResult(res)
         if (res.passed) triggerNotification('success')
         else triggerNotification('warning')
-      } catch {
-        setResult({
-          attempt_id: `offline-${Date.now()}`,
-          score: 100,
-          passed: true,
-          certificate: {
-            certificate_id: `ZV-CERT-2026-OK`,
-            payload: 'demo-signed-payload',
-          },
-        })
-        triggerNotification('success')
+      } catch (err) {
+        const message = err instanceof Error
+          ? err.message
+          : 'Сервер не смог проверить ответы'
+        setError(message)
+        showToast(message)
       } finally {
         setSubmitting(false)
       }
@@ -141,6 +126,7 @@ export default function QuizModal() {
     setAnswers({})
     setStep(0)
     setResult(null)
+    setError(null)
   }
 
   const handleClose = () => {
@@ -155,6 +141,20 @@ export default function QuizModal() {
       <div className="sheet-body" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
         {!result ? (
           <div>
+            {error && (
+              <div
+                role="alert"
+                style={{
+                  marginBottom: '0.8rem',
+                  padding: '0.7rem',
+                  borderRadius: '0.75rem',
+                  background: 'rgba(210, 78, 78, 0.12)',
+                  color: '#ff9d9d',
+                }}
+              >
+                {error}
+              </div>
+            )}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.8rem' }}>
               {QUESTIONS.map((_, i) => (
                 <div

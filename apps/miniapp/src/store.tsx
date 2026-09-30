@@ -4,7 +4,7 @@ import type { City } from './data'
 
 export type UserRole = 'self_employed' | 'ip' | 'llc'
 export type UserTaxMode = 'npd' | 'usn6' | 'usn15' | 'ausn'
-export type UserGoal = 'start' | 'grants' | 'growth' | 'education'
+export type UserGoal = 'support'
 
 type Ctx = {
   userName: string
@@ -36,21 +36,21 @@ type Ctx = {
 const AppCtx = createContext<Ctx>(null!)
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  // 1. Имя пользователя: из MAX WebApp или по умолчанию "Анастасия"
-  const [userName, setUserName] = useState<string>('Анастасия')
+  // Имя пользователя приходит только из MAX Bridge.
+  const [userName, setUserName] = useState<string>('')
   const [city, setCity] = useState<City>('Казань')
   const [role, setRole] = useState<UserRole>('ip')
   const [taxMode, setTaxMode] = useState<UserTaxMode>('usn6')
-  const [goal, setGoal] = useState<UserGoal>('start')
+  const [goal, setGoal] = useState<UserGoal>('support')
 
   // «Цифры» уже просмотрены — как на макете (серая рамка)
   const [viewedStories, setViewed] = useState<Set<string>>(new Set(['numbers']))
   const [savedMeasures, setSavedMeasures] = useState<Set<string>>(() => {
     try {
       const raw = localStorage.getItem('zvery_saved_measures')
-      return raw ? new Set(JSON.parse(raw)) : new Set(['young', 'micro'])
+      return raw ? new Set(JSON.parse(raw)) : new Set<string>()
     } catch {
-      return new Set(['young', 'micro'])
+      return new Set<string>()
     }
   })
   const [toast, setToast] = useState<string | null>(null)
@@ -89,6 +89,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // no-op
       }
     }
+  }, [])
+
+  useEffect(() => {
+    apiClient.getSavedMeasures()
+      .then((ids) => {
+        setSavedMeasures(new Set(ids))
+        localStorage.setItem('zvery_saved_measures', JSON.stringify(ids))
+      })
+      .catch(() => {
+        // Local storage remains the offline visual state only.
+      })
   }, [])
 
   const markViewed = (id: string) => setViewed((s) => new Set(s).add(id))

@@ -80,6 +80,8 @@ class Settings:
     quiz_pass_score: int
     certificate_signing_secret: str
     max_ca_bundle_path: str | None
+    reminder_poll_seconds: int
+    reminder_lead_days: int
 
     def __post_init__(self) -> None:
         if self.app_env != "production":
@@ -118,6 +120,8 @@ class Settings:
             quiz_pass_score=int(os.getenv("QUIZ_PASS_SCORE", "70")),
             certificate_signing_secret=os.getenv("CERTIFICATE_SIGNING_SECRET", ""),
             max_ca_bundle_path=os.getenv("MAX_CA_BUNDLE_PATH") or None,
+            reminder_poll_seconds=int(os.getenv("REMINDER_POLL_SECONDS", "60")),
+            reminder_lead_days=int(os.getenv("REMINDER_LEAD_DAYS", "1")),
         )
         if settings.app_env == "production" and _is_placeholder(
             os.getenv("POSTGRES_PASSWORD", "")

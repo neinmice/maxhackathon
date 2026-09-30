@@ -22,6 +22,7 @@ export default defineConfig({
       '/api/v1/notifications/opt-in': botProxy,
       '/api/v1/measures/saved': botProxy,
       '^/api/v1/measures/[^/]+/save$': botProxy,
+      '^/api/v1/measures/[^/]+/checklist$': botProxy,
       '/bot/health': {
         target: botTarget,
         changeOrigin: true,
