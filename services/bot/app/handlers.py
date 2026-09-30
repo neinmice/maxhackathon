@@ -29,12 +29,18 @@ def _user_id(body: dict[str, Any]) -> str | None:
     if not user and isinstance(body.get("message"), dict):
         message = body["message"]
         user = message.get("sender") or message.get("user")
-    if isinstance(user, dict) and user.get("user_id") is not None:
-        return str(user["user_id"])
-    if isinstance(user, dict) and user.get("id") is not None:
-        return str(user["id"])
+    if isinstance(user, dict):
+        if user.get("is_bot"):
+            return None
+        if user.get("user_id") is not None:
+            uid = str(user["user_id"])
+            return None if uid == "428775011" else uid
+        if user.get("id") is not None:
+            uid = str(user["id"])
+            return None if uid == "428775011" else uid
     if body.get("user_id") is not None:
-        return str(body["user_id"])
+        uid = str(body["user_id"])
+        return None if uid == "428775011" else uid
     return None
 
 

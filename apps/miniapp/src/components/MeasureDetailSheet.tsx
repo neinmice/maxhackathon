@@ -1,8 +1,6 @@
 /**
- * [ZVERY MVP] Задачи Паши №8 и №10: Карточка меры, официальный источник и чеклист документов
- * Автор: Паша (в стилистике Стаса)
- * Назначение: отображение условий программы, плашки свежести «АКТУАЛЬНО · 2026»,
- * оператора («Мой бизнес»), интерактивного чеклиста документов и сохранения меры.
+ * Карточка меры: условия, срок, документы и сохранение.
+ * Данные приходят из канонического каталога; суммы и сроки не синтезируются.
  */
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -29,20 +27,14 @@ export default function MeasureDetailSheet() {
   }
 
   const title = (measureDetail.title || '').replace('{city}', cityIn(city))
-  const amount = measureDetail.amount || measureDetail.tag || 'Доступно'
-  const org = measureDetail.org || 'Центр «Мой бизнес»'
-  const deadline = measureDetail.deadline || 'Приём открыт'
-  const reqs: string[] = measureDetail.req || measureDetail.body || [
-    'Отсутствие задолженности по налогам и сборам',
-    'Регистрация бизнеса в выбранном регионе',
-    'Соответствие критериям субъекта МСП',
-  ]
-  const docs = [
-    'Паспорт гражданина РФ (скан всех страниц)',
-    'Справка об отсутствии задолженности (КНД 1120101)',
-    'Бизнес-план и финансовая смета проекта',
-    'Заявление по утверждённой форме оператора',
-  ]
+  // Только фактические поля серверной записи: суммы и сроки не выдумываются
+  const amount: string = measureDetail.amount_description || 'Сумма не указана'
+  const org = measureDetail.operator || 'Оператор не указан'
+  const deadline: string = measureDetail.deadline || 'срок не указан'
+  const reqs: string[] = measureDetail.documents || []
+  const conditions: string[] = measureDetail.eligibility ? [measureDetail.eligibility] : []
+  const isModelData = measureDetail.data_status === 'MODEL DATA' || measureDetail.freshness_status === 'model'
+  const docs: string[] = reqs.length > 0 ? reqs : ['Документы не указаны оператором']
 
   return (
     <Sheet open={!!measureDetail} onClose={() => setMeasureDetail(null)} title={title}>
@@ -64,7 +56,7 @@ export default function MeasureDetailSheet() {
               flexShrink: 0,
             }}
           >
-            АКТУАЛЬНО · 2026
+            {measureDetail.last_checked ? `ДАННЫЕ ОТ ${measureDetail.last_checked}` : 'ДАННЫЕ НЕ ПРОВЕРЕНЫ'}
           </span>
         </div>
 
@@ -75,12 +67,21 @@ export default function MeasureDetailSheet() {
         <div>
           <h4 className="sheet-sub" style={{ marginBottom: '0.5rem' }}>Условия программы</h4>
           <ul className="checklist" style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-            {reqs.map((r, i) => (
+            {conditions.length > 0 && conditions.map((r, i) => (
               <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}>
                 <CheckIcon style={{ color: 'var(--yellow)', flexShrink: 0, marginTop: '0.15rem' }} />
                 <span>{r}</span>
               </li>
             ))}
+            {reqs.map((r, i) => (
+              <li key={`d${i}`} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}>
+                <CheckIcon style={{ color: 'var(--yellow)', flexShrink: 0, marginTop: '0.15rem' }} />
+                <span>{r}</span>
+              </li>
+            ))}
+            {conditions.length === 0 && reqs.length === 0 && (
+              <li style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>Условия не указаны оператором</li>
+            )}
           </ul>
         </div>
 
@@ -138,9 +139,9 @@ export default function MeasureDetailSheet() {
             lineHeight: 1.4,
           }}
         >
-          <b>Источник:</b> Официальный портал поддержки МСП (мойбизнес.рф).
+          <b>Источник:</b> {measureDetail.source_name || 'не указан'}{isModelData ? ' · MODEL DATA (демонстрационная запись)' : ''}.
           <br />
-          ZVERY предоставляет справочную верифицированную информацию. Итоговое решение о выдаче принимает уполномоченный оператор.
+          {measureDetail.disclaimer || 'Итоговое решение о выдаче принимает уполномоченный оператор.'}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.25rem' }}>

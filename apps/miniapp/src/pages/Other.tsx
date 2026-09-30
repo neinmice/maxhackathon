@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import mascotWave from '../assets/mascot/mascot-wave.webp'
 import mascotCoin from '../assets/mascot/mascot-coin.webp'
 import { apiClient } from '../api/client'
 import { Avatar } from '../components/Header'
 import EmptyState from '../components/ui/EmptyState'
+import type { MeasureRecord } from '../types/api'
 import {
   BackIcon,
   BellIcon,
@@ -23,7 +24,7 @@ import {
 } from '../components/icons'
 import Sheet from '../components/Sheet'
 import InDevelopmentCard from '../components/InDevelopmentCard'
-import { COURSES, GRANT_FILTERS, GRANTS, LESSONS, SECTIONS, SERVICES, allCards, type Grant } from '../data'
+import { COURSES, GRANT_FILTERS, LESSONS, SECTIONS, SERVICES, allCards, type Grant } from '../data'
 import { cityIn, useApp } from '../store'
 import { triggerHaptic } from '../lib/maxBridge'
 import { loadCertificates } from '../lib/storage'
@@ -169,10 +170,47 @@ function GrantCard({ g, onOpen }: { g: Grant; onOpen: () => void }) {
   )
 }
 
+// Сопоставление MeasureRecord с ручным layout GrantCard: только фактические server-поля,
+// суммы/сроки/источники не синтезируются — отсутствующее поле даёт нейтральный прочерк.
+function measureToGrant(m: MeasureRecord): (Grant & { kind: string }) | null {
+  const kind = m.category ?? 'Гранты'
+  if (!GRANT_FILTERS.includes(kind)) return null
+  return {
+    id: m.id,
+    kind,
+    amount: m.amount_description ?? '—',
+    title: m.title,
+    org: m.operator,
+    deadline: m.deadline ?? 'срок не указан',
+    tags: [m.sector, m.data_status],
+    filled: 0,
+    req: [m.eligibility],
+  }
+}
+
 export function Grants() {
   const { setMeasureDetail } = useApp()
   const [f, setF] = useState('Все')
-  const list = GRANTS.filter((g) => f === 'Все' || g.kind === f)
+  const [measures, setMeasures] = useState<MeasureRecord[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    apiClient
+      .getAllMeasures()
+      .then((records) => {
+        if (!cancelled) setMeasures(records)
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Каталог недоступен')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const grants = (measures ?? []).map(measureToGrant).filter((g): g is Grant & { kind: string } => g !== null)
+  const list = grants.filter((g) => f === 'Все' || g.kind === f)
   return (
     <div className="page">
       <PageTitle pre="Гранты и" hl="поддержка" color="purple" />
@@ -195,12 +233,18 @@ export function Grants() {
         {list.map((g) => (
           <GrantCard key={g.id} g={g} onOpen={() => setMeasureDetail(g)} />
         ))}
-        {list.length === 0 && (
+        {measures !== null && list.length === 0 && (
           <EmptyState
             title="В этой категории пока нет программ"
             description="Выберите «Все» или измените категорию, чтобы увидеть доступные меры господдержки."
             onResetFilters={() => setF('Все')}
             resetLabel="Показать все гранты"
+          />
+        )}
+        {error !== null && (
+          <EmptyState
+            title="Каталог недоступен"
+            description={error}
           />
         )}
       </div>
@@ -531,8 +575,27 @@ export function CardPage() {
 
 export function Profile() {
   const nav = useNavigate()
-  const { city, userName, role, savedMeasures, toggleSaveMeasure, setOnboardingOpen, setQuizOpen, showToast } = useApp()
+  const { city, userName, role, savedMeasures, canonicalIds, toggleSaveMeasure, setOnboardingOpen, setQuizOpen, showToast } = useApp()
   const [notif, setNotif] = useState(true)
+  const [measuresById, setMeasuresById] = useState<Map<string, MeasureRecord>>(new Map())
+
+  // Тайтлы сохранённых мер берутся из канонического каталога; при недоступном API секция скрыта
+  useEffect(() => {
+    let cancelled = false
+    apiClient
+      .getAllMeasures()
+      .then((records) => {
+        if (!cancelled) setMeasuresById(new Map(records.map((item) => [item.id, item])))
+      })
+      .catch(() => {
+        // no-op: фантомные тайтлы не подставляем
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const canonicalSaved = canonicalIds === null ? [] : [...savedMeasures].filter((id) => canonicalIds.has(id))
 
   const roleTitle =
     role === 'ip'
@@ -553,12 +616,12 @@ export function Profile() {
       v: `${savedMeasures.size} сохранено`,
       onClick: () => {
         triggerHaptic('light')
-        if (savedMeasures.size > 0) {
+        if (canonicalSaved.length > 0) {
           const el = document.getElementById('saved-measures-section')
           if (el) {
             el.scrollIntoView({ behavior: 'smooth' })
           } else {
-            showToast(`Сохранено: ${savedMeasures.size} мер`)
+            showToast(`Сохранено: ${canonicalSaved.length} мер`)
           }
         } else {
           showToast('В избранном пока нет сохранённых мер')
@@ -600,7 +663,7 @@ export function Profile() {
           <small>уроков</small>
         </div>
         <div>
-          <b>{savedMeasures.size}</b>
+          <b>{canonicalSaved.length}</b>
           <small>сохранено</small>
         </div>
         <div>
@@ -636,19 +699,16 @@ export function Profile() {
         </label>
       </div>
 
-      {savedMeasures.size > 0 && (
+      {canonicalSaved.length > 0 && (
         <div id="saved-measures-section" style={{ marginTop: '1.25rem' }}>
           <h2 className="sub-h" style={{ marginBottom: '0.6rem' }}>Сохранённые меры</h2>
           <div className="menu">
-            {[...savedMeasures].map((id) => {
-              const grantItem = GRANTS.find((g) => g.id === id || (id === 'young' && g.id === 'g1') || (id === 'micro' && g.id === 'g2'))
+            {canonicalSaved.map((id) => {
               const cardItem = allCards().find((c) => c.id === id)
               const itemTitle = (
-                grantItem?.title ||
+                measuresById.get(id)?.title ||
                 cardItem?.title ||
-                (id === 'young' ? 'Грант молодому предпринимателю' :
-                 id === 'micro' ? 'Микрозаём под 0%' :
-                 'Мера государственной поддержки')
+                'Мера государственной поддержки'
               ).replace('{city}', cityIn(city))
 
               return (
@@ -660,7 +720,7 @@ export function Profile() {
                   <div
                     style={{ minWidth: 0, flex: 1, marginRight: '0.6rem', cursor: 'pointer' }}
                     onClick={() => {
-                      if (grantItem) nav('/grants')
+                      if (measuresById.has(id)) nav('/grants')
                       else if (cardItem) nav(`/card/${cardItem.id}`)
                     }}
                   >
@@ -695,10 +755,25 @@ export function Search() {
   const nav = useNavigate()
   const { city } = useApp()
   const [q, setQ] = useState('')
+  const [measures, setMeasures] = useState<MeasureRecord[]>([])
+  useEffect(() => {
+    let cancelled = false
+    apiClient
+      .getAllMeasures()
+      .then((records) => {
+        if (!cancelled) setMeasures(records)
+      })
+      .catch(() => {
+        // каталог недоступен: поиск показывает только локальные разделы
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
   const items = [
     ...allCards().map((c) => ({ t: c.title.replace('{city}', cityIn(city)), s: c.subtitle, to: `/card/${c.id}` })),
     ...SERVICES.map((s) => ({ t: s.title, s: s.sub, to: '/services' })),
-    ...GRANTS.map((g) => ({ t: g.title, s: g.amount, to: '/grants' })),
+    ...measures.map((m) => ({ t: m.title, s: m.amount_description ?? 'мера поддержки', to: '/grants' })),
     ...COURSES.map((c) => ({ t: c.title, s: 'курс', to: `/learning/${c.id}` })),
   ]
   const res = q.trim() ? items.filter((i) => (i.t + ' ' + i.s).toLowerCase().includes(q.toLowerCase())) : []

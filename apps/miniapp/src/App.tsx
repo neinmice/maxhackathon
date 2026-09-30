@@ -18,7 +18,7 @@ import {
   InternshipService,
 } from './pages/services'
 import { AppProvider, useApp } from './store'
-import { bindBackButton, hideBackButton } from './lib/maxBridge'
+import { bindBackButton, hideBackButton, initBridge } from './lib/maxBridge'
 import { apiClient } from './api/client'
 
 function Shell() {
@@ -27,6 +27,10 @@ function Shell() {
   const { toast, setQuizOpen, setOnboardingOpen, setMeasureDetail, introOpen, dismissIntro } = useApp()
   const main = useRef<HTMLElement>(null)
   const bare = pathname.startsWith('/search') || pathname.startsWith('/profile') || pathname.startsWith('/certificates')
+
+  useEffect(() => {
+    initBridge()
+  }, [])
 
   useEffect(() => {
     main.current?.scrollTo(0, 0)
@@ -72,8 +76,10 @@ function Shell() {
     } else if (startParam === 'onboarding') {
       setOnboardingOpen(true)
     } else if (startParam === 'measure') {
-      const measureId = params.get('id') || 'demo-kazan-agro-001'
-      apiClient.getMeasure(measureId).then(setMeasureDetail).catch(() => {})
+      // Строгая форма deep link: только measure_<id>, ID непустой и без подмены первой карточкой
+      const rawId = params.get('id') || ''
+      if (!rawId || rawId.length > 128) return
+      apiClient.getMeasure(rawId).then(setMeasureDetail).catch(() => {})
     }
   }, [search, nav, setQuizOpen, setOnboardingOpen, setMeasureDetail])
 

@@ -22,6 +22,7 @@ type Ctx = {
   markViewed: (id: string) => void
   isStoryFullyViewed: (storyId: string, slidesCount: number) => boolean
   savedMeasures: Set<string>
+  canonicalIds: Set<string> | null
   toggleSaveMeasure: (id: string) => void
   toast: string | null
   showToast: (t: string) => void
@@ -55,20 +56,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return new Set<string>()
     }
   })
+  // Saved-набор стартует пустым: фантомные локальные ID не являются мерами каталога.
+  // Фильтрация против канонического каталога выполняется ниже, после загрузки каталога из API.
   const [savedMeasures, setSavedMeasures] = useState<Set<string>>(() => {
     try {
       const raw = localStorage.getItem('zvery_saved_measures')
-      if (raw) {
-        const parsed: string[] = JSON.parse(raw)
-        // Миграция старых фиктивных id 'young' и 'micro' на реальные гранты 'g1' и 'g2'
-        const migrated = parsed.map((id) => (id === 'young' ? 'g1' : id === 'micro' ? 'g2' : id))
-        return new Set(migrated)
-      }
-      return new Set(['g1', 'g2'])
+      if (!raw) return new Set<string>()
+      const parsed: unknown = JSON.parse(raw)
+      if (!Array.isArray(parsed)) return new Set<string>()
+      return new Set(parsed.filter((id): id is string => typeof id === 'string' && id.length > 0))
     } catch {
-      return new Set(['g1', 'g2'])
+      return new Set<string>()
     }
   })
+  const [canonicalIds, setCanonicalIds] = useState<Set<string> | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [onboardingOpen, setOnboardingOpen] = useState(false)
   const [introOpen, setIntroOpen] = useState(() => {
@@ -104,6 +105,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } catch {
         // no-op
       }
+    }
+  }, [])
+
+  // Канонический каталог — единственный источник production-данных о мерах (ADR 0001).
+  // Пока каталог не загружен, сохранённые ID не фильтруются и не рендерятся как меры.
+  useEffect(() => {
+    let cancelled = false
+    apiClient
+      .getAllMeasures()
+      .then((records) => {
+        if (cancelled) return
+        const ids = new Set(records.map((item) => item.id))
+        setCanonicalIds(ids)
+        setSavedMeasures((prev) => {
+          const filtered = new Set([...prev].filter((id) => ids.has(id)))
+          if (filtered.size === prev.size) return prev
+          try {
+            localStorage.setItem('zvery_saved_measures', JSON.stringify([...filtered]))
+          } catch {
+            // no-op
+          }
+          return filtered
+        })
+      })
+      .catch(() => {
+        // каталог недоступен: canonicalIds остаётся null, UI показывает честное отсутствие данных
+      })
+    return () => {
+      cancelled = true
     }
   }, [])
 
@@ -157,26 +187,49 @@ export function AppProvider({ children }: { children: ReactNode }) {
     window.setTimeout(() => setToast(null), 2400)
   }
 
+  // Сохранение/удаление подтверждает сервер: при недоступном API локальное состояние не меняется
+  // и toast честно сообщает об ошибке вместо ложного успеха.
   const toggleSaveMeasure = (id: string) => {
-    setSavedMeasures((prev) => {
-      const next = new Set(prev)
-      const isSaved = next.has(id)
-      if (isSaved) {
-        next.delete(id)
-        apiClient.removeSavedMeasure(id).catch(() => {})
-        showToast('Удалено из сохранённых')
-      } else {
-        next.add(id)
-        apiClient.saveMeasure(id).catch(() => {})
-        showToast('Добавлено в сохранённые')
-      }
-      try {
-        localStorage.setItem('zvery_saved_measures', JSON.stringify([...next]))
-      } catch {
-        // no-op
-      }
-      return next
-    })
+    const isSaved = savedMeasures.has(id)
+    if (isSaved) {
+      apiClient
+        .removeSavedMeasure(id)
+        .then(() => {
+          setSavedMeasures((prev) => {
+            const next = new Set(prev)
+            next.delete(id)
+            try {
+              localStorage.setItem('zvery_saved_measures', JSON.stringify([...next]))
+            } catch {
+              // no-op
+            }
+            return next
+          })
+          showToast('Удалено из сохранённых')
+        })
+        .catch(() => {
+          showToast('Не удалось удалить: сервис недоступен')
+        })
+    } else {
+      apiClient
+        .saveMeasure(id)
+        .then(() => {
+          setSavedMeasures((prev) => {
+            const next = new Set(prev)
+            next.add(id)
+            try {
+              localStorage.setItem('zvery_saved_measures', JSON.stringify([...next]))
+            } catch {
+              // no-op
+            }
+            return next
+          })
+          showToast('Добавлено в сохранённые')
+        })
+        .catch(() => {
+          showToast('Не удалось сохранить: сервис недоступен')
+        })
+    }
   }
 
   return (
@@ -197,6 +250,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         markViewed,
         isStoryFullyViewed,
         savedMeasures,
+        canonicalIds,
         toggleSaveMeasure,
         toast,
         showToast,

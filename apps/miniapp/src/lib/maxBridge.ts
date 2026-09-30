@@ -64,8 +64,12 @@ export function getBridge(): WebApp {
 export function initBridge(): void {
   const bridge = getBridge();
   try {
-    bridge.ready();
-    bridge.expand();
+    if (typeof bridge.ready === 'function') {
+      bridge.ready();
+    }
+    if (typeof (bridge as any).expand === 'function') {
+      (bridge as any).expand();
+    }
   } catch (err) {
     console.warn('[MAX Bridge] Initialization notice:', err);
   }

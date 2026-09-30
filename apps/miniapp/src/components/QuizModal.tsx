@@ -86,20 +86,8 @@ export default function QuizModal() {
   const [step, setStep] = useState<number>(0)
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState<boolean>(false)
-  const [result, setResult] = useState<QuizSubmitResult | null>(() => {
-    if (typeof window !== 'undefined' && window.location.search.includes('cert=1')) {
-      return {
-        attempt_id: 'demo-cert-1',
-        score: 100,
-        passed: true,
-        certificate: {
-          certificate_id: 'ZV-CERT-2026-A1B2C3D4',
-          payload: 'signed-demo-payload',
-        },
-      }
-    }
-    return null
-  })
+  const [result, setResult] = useState<QuizSubmitResult | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   if (!quizOpen) return null
 
@@ -116,42 +104,27 @@ export default function QuizModal() {
       setStep((s) => s + 1)
     } else {
       setSubmitting(true)
+      setSubmitError(null)
       try {
         const res = await apiClient.submitQuiz('v1', answers)
         setResult(res)
-        if (res.passed) {
+        if (res.passed && res.certificate) {
           triggerNotification('success')
-          try { localStorage.setItem('quiz_completed', 'true') } catch {}
+          // Сохраняем только точные серверные поля сертификата
           saveCertificate({
-            id: res.certificate?.certificate_id || `ZV-CERT-${Date.now().toString(36).toUpperCase()}`,
+            id: res.certificate.certificate_id,
             userName: userName || 'Предприниматель',
             date: new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }),
             score: `${res.score}%`,
-            title: 'Сертификат готовности бизнеса',
+            title: res.certificate.title,
           })
         } else {
           triggerNotification('warning')
         }
-      } catch {
-        const certId = `ZV-CERT-${Date.now().toString(36).toUpperCase()}`
-        setResult({
-          attempt_id: `offline-${Date.now()}`,
-          score: 100,
-          passed: true,
-          certificate: {
-            certificate_id: certId,
-            payload: 'demo-signed-payload',
-          },
-        })
-        triggerNotification('success')
-        try { localStorage.setItem('quiz_completed', 'true') } catch {}
-        saveCertificate({
-          id: certId,
-          userName: userName || 'Предприниматель',
-          date: new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }),
-          score: '100%',
-          title: 'Сертификат готовности бизнеса',
-        })
+      } catch (err) {
+        // Честный retry-статус: результат требует сервера, локальный сертификат не создаётся
+        setSubmitError(err instanceof Error && err.message ? err.message : 'Сервис проверки недоступен')
+        triggerNotification('error')
       } finally {
         setSubmitting(false)
       }
@@ -162,6 +135,7 @@ export default function QuizModal() {
     setAnswers({})
     setStep(0)
     setResult(null)
+    setSubmitError(null)
   }
 
   const handleClose = () => {
@@ -230,6 +204,24 @@ export default function QuizModal() {
             >
               {submitting ? 'Проверка ответов...' : step === QUESTIONS.length - 1 ? 'Получить сертификат' : 'Следующий вопрос'}
             </button>
+
+            {submitError && (
+              <div
+                style={{
+                  marginTop: '0.6rem',
+                  padding: '0.6rem 0.7rem',
+                  borderRadius: '12px',
+                  background: 'rgba(255, 90, 90, 0.12)',
+                  border: '1px solid rgba(255, 90, 90, 0.35)',
+                  color: '#ff8a8a',
+                  fontSize: '0.78rem',
+                  lineHeight: 1.4,
+                  textAlign: 'left',
+                }}
+              >
+                {submitError}. Проверка выполняется на сервере — нажмите «Получить сертификат», чтобы повторить.
+              </div>
+            )}
           </div>
         ) : (
           <div style={{ textAlign: 'center', position: 'relative' }}>

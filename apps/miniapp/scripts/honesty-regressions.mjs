@@ -297,10 +297,10 @@ for (const item of cases) {
 
   await assert.rejects(client.getHealth(), (err) => {
     assert.equal(err instanceof ApiErrorResponse, true);
-    assert.equal(err.kind, item.kind);
-    assert.notEqual(err.message, 'mock_ok');
+    assert.equal(err.code, item.kind === 'network' ? 'network_error' : item.code);
+    if (item.code) assert.equal(err.requestId, `req-${item.name}`);
     return true;
-  }, `${item.name}: health must not become mock_ok`);
+  }, `${item.name}: health must reject instead of demo_ok`);
 
   await assert.rejects(client.submitQuiz('v1', { q1: 'a' }), (err) => {
     assertApiFailure(err, item);
@@ -342,6 +342,7 @@ for (const item of cases) {
 
 installFetch(() => jsonResponse(200, '<html>proxy</html>'));
 for (const call of [
+  () => client.getHealth(),
   () => client.submitQuiz('v1', { q1: 'a' }),
   () => client.getRecommendations(recommendationRequest),
   () => client.getMeasure('unknown-id'),
@@ -466,7 +467,12 @@ assert.equal(onboardingSource.includes('requestRecommendations'), true);
 assert.equal(onboardingSource.includes('setTimeout'), false);
 assert.equal(storeSource.includes('Анастасия'), false);
 assert.equal(storeSource.includes("'young'"), false);
-assert.equal(storeSource.includes('getSavedMeasures'), true);
+assert.equal(storeSource.includes('getAllMeasures'), true);
+assert.equal(storeSource.includes("'g1'"), false);
+assert.equal(storeSource.includes("'g2'"), false);
+assert.equal(storeSource.includes('canonicalIds'), true);
+assert.equal(profileSource.includes("'young'"), false);
+assert.equal(profileSource.includes("'micro'"), false);
 assert.equal(sheetSource.includes('ПРОВЕРЕНО'), false);
 assert.equal(sheetSource.includes('мойбизнес'), false);
 assert.equal(profileSource.includes('1 активная'), false);

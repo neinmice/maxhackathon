@@ -28,6 +28,9 @@ class MaxApiClient:
         if not self.configured:
             logger.warning("MAX_BOT_TOKEN is not configured; outgoing message suppressed")
             return
+        if str(user_id) == "428775011":
+            logger.warning("Attempted to send message to bot's own user_id %s; suppressed", user_id)
+            return
 
         body: dict[str, Any] = {"text": text}
         if attachments:

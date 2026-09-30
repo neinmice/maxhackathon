@@ -4,7 +4,6 @@ import type {
   RecommendationRequest,
   RecommendationResponse,
 } from '../types/api';
-import { FIXTURE_MEASURES } from './fixtures';
 
 export class ApiErrorResponse extends Error {
   code: string;
@@ -18,12 +17,16 @@ export class ApiErrorResponse extends Error {
   }
 }
 
+// Схема QuizSubmitResponse из openapi.yaml: certificate выдаёт только сервер
 export type QuizSubmitResult = {
   attempt_id: string;
   score: number;
   passed: boolean;
-  certificate?: {
+  pass_score: number;
+  certificate: {
     certificate_id: string;
+    title: string;
+    disclaimer: string;
     payload: string;
   } | null;
 };
@@ -47,184 +50,184 @@ export class ApiClient {
   }
 
   async getHealth(): Promise<{ status: string; version: string }> {
+    let res: Response;
     try {
-      const res = await fetch(`${this.baseUrl}/health`);
-      if (!res.ok) throw new Error(`Health check failed with ${res.status}`);
-      return await res.json();
+      res = await fetch(`${this.baseUrl}/health`);
     } catch {
-      return { status: 'demo_ok', version: '0.1.0' };
+      throw new ApiErrorResponse('Сервис проверки недоступен', 'network_error');
     }
+    if (!res.ok) {
+      // 503 bot-health отвечает BotHealth-телом, а не error-envelope — код остаётся generic
+      let code = 'http_error';
+      let requestId: string | undefined;
+      try {
+        const body = JSON.parse(await res.text());
+        if (typeof body?.error?.code === 'string') code = body.error.code;
+        if (typeof body?.error?.request_id === 'string') requestId = body.error.request_id;
+      } catch {
+        // тело не envelope
+      }
+      throw new ApiErrorResponse(`Health check failed with ${res.status}`, code, requestId);
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(await res.text());
+    } catch {
+      throw new ApiErrorResponse('Health check: ответ не является JSON', 'invalid_response');
+    }
+    const health = parsed as { status?: unknown; version?: unknown };
+    if (typeof health?.status !== 'string' || typeof health?.version !== 'string') {
+      throw new ApiErrorResponse('Health check: ответ не соответствует схеме /health', 'invalid_response');
+    }
+    return { status: health.status, version: health.version };
   }
 
   async getCatalogFilters(): Promise<CatalogFiltersResponse> {
-    try {
-      const res = await fetch(`${this.baseUrl}/api/v1/catalog/filters`);
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch {
-      // fallback
+    const parsed = await this.requestJson<Record<string, unknown>>(
+      `${this.baseUrl}/api/v1/catalog/filters`,
+    );
+    if (!parsed || !Array.isArray(parsed.regions) || !Array.isArray(parsed.goals)) {
+      throw new ApiErrorResponse('Фильтры каталога: неожиданная схема ответа', 'invalid_response');
     }
-
-    return {
-      regions: ['kazan', 'moscow', 'spb'],
-      roles: ['ip', 'self_employed', 'llc'],
-      tax_modes: ['usn6', 'usn15', 'none', 'osno'],
-      sectors: [
-        'Любая сфера деятельности',
-        'IT, инновации и цифровые сервисы',
-        'Услуги и торговля',
-        'Производство, креативные индустрии',
-        'Электронная коммерция',
-      ],
-      goals: ['support'],
-      accepted_tax_modes: ['npd', 'usn6', 'usn15', 'ausn', 'osno', 'none'],
-      content_gaps: [],
-      catalog_version: 'demo-2026-09-28',
-    };
+    return parsed as unknown as CatalogFiltersResponse;
   }
 
   async getRecommendations(request: RecommendationRequest): Promise<RecommendationResponse> {
-    try {
-      const res = await fetch(`${this.baseUrl}/api/v1/recommendations`, {
+    const parsed = await this.requestJson<Record<string, unknown>>(
+      `${this.baseUrl}/api/v1/recommendations`,
+      {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(request),
-      });
-
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch {
-      // Network failure, fallback to curated dataset
+      },
+    );
+    if (!parsed || !Array.isArray(parsed.items) || typeof parsed.catalog_version !== 'string') {
+      throw new ApiErrorResponse('Рекомендации: неожиданная схема ответа', 'invalid_response');
     }
+    return parsed as unknown as RecommendationResponse;
+  }
 
-    // Curated local deterministic filtering fallback
-    const filtered = FIXTURE_MEASURES.filter((item) => {
-      if (item.region !== request.region) return false;
-      if (!item.roles.includes(request.role)) return false;
-      if (request.tax_mode && !item.tax_modes.includes(request.tax_mode)) return false;
-      return true;
-    });
-
-    return {
-      items: filtered.map((item) => ({
-        id: item.id,
-        title: item.title,
-        data_status: item.data_status,
-        match_reasons: [
-          `Регион: ${item.region.toUpperCase()}`,
-          `Форма бизнеса: ${request.role.toUpperCase()}`,
-        ],
-        freshness: item.last_checked,
-      })),
-      catalog_version: 'zvery-verified-2026-09-20',
-    };
+  // Запрос к API: network/HTTP/invalid JSON всегда дают typed rejection, никаких локальных fallback
+  private async requestJson<T>(url: string, init?: RequestInit): Promise<T> {
+    let res: Response;
+    try {
+      res = await fetch(url, init);
+    } catch {
+      throw new ApiErrorResponse('Сервис недоступен', 'network_error');
+    }
+    if (!res.ok) {
+      let code = 'http_error';
+      let requestId: string | undefined;
+      let message = `Запрос завершился с кодом ${res.status}`;
+      try {
+        const body = JSON.parse(await res.text());
+        if (typeof body?.error?.code === 'string') code = body.error.code;
+        if (typeof body?.error?.request_id === 'string') requestId = body.error.request_id;
+        if (typeof body?.error?.message === 'string') message = body.error.message;
+      } catch {
+        // тело не error-envelope — остаётся generic http_error
+      }
+      throw new ApiErrorResponse(message, code, requestId);
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(await res.text());
+    } catch {
+      throw new ApiErrorResponse('Ответ не является JSON', 'invalid_response');
+    }
+    return parsed as T;
   }
 
   async getMeasure(id: string): Promise<MeasureRecord> {
-    try {
-      const res = await fetch(`${this.baseUrl}/api/v1/measures/${id}`);
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch {
-      // Fallback
+    const parsed = await this.requestJson<Record<string, unknown>>(
+      `${this.baseUrl}/api/v1/measures/${encodeURIComponent(id)}`,
+    );
+    if (typeof parsed?.id !== 'string' || parsed.id !== id) {
+      throw new ApiErrorResponse(`Мера поддержки "${id}" не найдена в каталоге`, 'measure_not_found');
     }
-
-    const item = FIXTURE_MEASURES.find((m) => m.id === id);
-    if (item) return item;
-
-    throw new ApiErrorResponse(`Мера поддержки "${id}" не найдена в каталоге`, 'measure_not_found');
+    return parsed as unknown as MeasureRecord;
   }
 
   async getAllMeasures(): Promise<MeasureRecord[]> {
-    return FIXTURE_MEASURES;
+    const parsed = await this.requestJson<unknown>(`${this.baseUrl}/api/v1/measures`);
+    if (!Array.isArray(parsed)) {
+      throw new ApiErrorResponse('Каталог мер: ожидался массив', 'invalid_response');
+    }
+    return parsed as MeasureRecord[];
   }
 
   async saveMeasure(measureId: string): Promise<{ measure_id: string; saved: boolean }> {
-    try {
-      const res = await fetch(`${this.baseUrl}/api/v1/measures/${measureId}/save`, {
-        method: 'POST',
-        headers: this.getAuthHeaders(),
-      });
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch {
-      // Fallback
+    const parsed = await this.requestJson<Record<string, unknown>>(
+      `${this.baseUrl}/api/v1/measures/${encodeURIComponent(measureId)}/save`,
+      { method: 'POST', headers: this.getAuthHeaders() },
+    );
+    if (parsed?.saved !== true) {
+      throw new ApiErrorResponse('Сервер не подтвердил сохранение меры', 'invalid_response');
     }
-    return { measure_id: measureId, saved: true };
+    return parsed as unknown as { measure_id: string; saved: boolean };
   }
 
   async removeSavedMeasure(measureId: string): Promise<{ measure_id: string; saved: boolean }> {
-    try {
-      const res = await fetch(`${this.baseUrl}/api/v1/measures/${measureId}/save`, {
-        method: 'DELETE',
-        headers: this.getAuthHeaders(),
-      });
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch {
-      // Fallback
+    const parsed = await this.requestJson<Record<string, unknown>>(
+      `${this.baseUrl}/api/v1/measures/${encodeURIComponent(measureId)}/save`,
+      { method: 'DELETE', headers: this.getAuthHeaders() },
+    );
+    if (parsed?.saved !== false) {
+      throw new ApiErrorResponse('Сервер не подтвердил удаление меры', 'invalid_response');
     }
-    return { measure_id: measureId, saved: false };
+    return parsed as unknown as { measure_id: string; saved: boolean };
   }
 
   async getSavedMeasures(): Promise<string[]> {
-    try {
-      const res = await fetch(`${this.baseUrl}/api/v1/measures/saved`, {
-        headers: this.getAuthHeaders(),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.measure_ids || [];
-      }
-    } catch {
-      // Fallback
+    const parsed = await this.requestJson<Record<string, unknown>>(
+      `${this.baseUrl}/api/v1/measures/saved`,
+      { headers: this.getAuthHeaders() },
+    );
+    if (!parsed || !Array.isArray(parsed.measure_ids)) {
+      throw new ApiErrorResponse('Сохранённые меры: ожидался measure_ids', 'invalid_response');
     }
-    return [];
+    return parsed.measure_ids.filter((id): id is string => typeof id === 'string');
   }
 
+  // Результат квиза создаёт только сервер: network/HTTP/не-JSON/схема — typed rejection, локальной оценки нет
   async submitQuiz(
     quizVersion: string,
     answers: Record<string, string>,
   ): Promise<QuizSubmitResult> {
-    try {
-      const res = await fetch(`${this.baseUrl}/api/v1/quiz/submit`, {
+    const parsed = await this.requestJson<Record<string, unknown>>(
+      `${this.baseUrl}/api/v1/quiz/submit`,
+      {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify({
           quiz_version: quizVersion,
           answers,
         }),
-      });
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch {
-      // Fallback
+      },
+    );
+    if (
+      typeof parsed?.attempt_id !== 'string' ||
+      typeof parsed?.score !== 'number' ||
+      typeof parsed?.passed !== 'boolean' ||
+      typeof parsed?.pass_score !== 'number'
+    ) {
+      throw new ApiErrorResponse('Квиз: неожиданная схема ответа сервера', 'invalid_response');
     }
-
-    // Local deterministic evaluation if backend offline/unconfigured
-    const keys: Record<string, string> = { q1: 'a', q2: 'b', q3: 'c', q4: 'a', q5: 'b' };
-    const correct = Object.keys(keys).filter((k) => answers[k] === keys[k]).length;
-    const score = Math.round((correct * 100) / Object.keys(keys).length);
-    const passed = score >= 70;
-    const certId = passed ? `ZV-CERT-2026-${Math.random().toString(36).substring(2, 9).toUpperCase()}` : null;
-
-    return {
-      attempt_id: `local-attempt-${Date.now()}`,
-      score,
-      passed,
-      certificate: certId
-        ? {
-            certificate_id: certId,
-            payload: `signed-cert.${btoa(JSON.stringify({ certId, date: new Date().toISOString() }))}`,
-          }
-        : null,
-    };
+    const cert = (parsed.certificate ?? null) as Record<string, unknown> | null;
+    const fullCert =
+      !!cert &&
+      typeof cert.certificate_id === 'string' && cert.certificate_id.length > 0 &&
+      typeof cert.title === 'string' && cert.title.length > 0 &&
+      typeof cert.disclaimer === 'string' && cert.disclaimer.length > 0 &&
+      typeof cert.payload === 'string' && cert.payload.length > 0;
+    if (parsed.passed && !fullCert) {
+      // passed=true без полного серверного сертификата не является успехом
+      throw new ApiErrorResponse('Квиз: passed без серверного сертификата', 'invalid_response');
+    }
+    if (!parsed.passed && cert !== null) {
+      throw new ApiErrorResponse('Квиз: сертификат в неуспешном результате', 'invalid_response');
+    }
+    return parsed as unknown as QuizSubmitResult;
   }
 
   async optInNotifications(enabled: boolean): Promise<boolean> {

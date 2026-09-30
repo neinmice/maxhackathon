@@ -11,6 +11,75 @@
 
 TODO/FIXME в коде — 0. Заглушки в UI осознанные: разделы «в разработке» (Личный кабинет) и демо-ассистент без LLM.
 
+### Baseline 2026-09-30 (read-only, свежий)
+
+Дата: 2026-09-30. Scope: состояние рабочей копии на момент принятого read-only baseline; задача документационная, runtime-код не менялся. Свежий HEAD — `bd27af9c` (ветка `feat/frontend-gold-polish`, cwd репозитория); родительский каталог — не Git-репозиторий.
+
+| Команда | cwd | Exit | Результат |
+|---|---|---|---|
+| `git status --porcelain=v1` | корень репозитория | н/д | Вывод пуст — изменённых файлов нет |
+| `npm run build` | [`apps/miniapp`](apps/miniapp) | 0 | `tsc -b && vite build`, Vite 8.3.0, 1931 modules |
+| `node scripts/honesty-regressions.mjs` | [`apps/miniapp`](apps/miniapp) | 1 | Сбой в [`scripts/honesty-regressions.mjs`](apps/miniapp/scripts/honesty-regressions.mjs:298) — «bot down: health must not become mock_ok»: ожидаемый reject не произошёл, последующие assertions не достигнуты |
+| pytest api/bot | [`services/api`](services/api), [`services/bot`](services/bot) | не запускался | `python3.12` отсутствует (системный Python 3.14.7), `.venv` нет → BLOCKED, не PASS |
+| HTTP `127.0.0.1:3001` | — | 200 | Чужой Vite-процесс (PID 49843) из [`apps/miniapp`](apps/miniapp), text/html, 977 bytes; процесс не изменялся. Порт 3000 занят чужим Python-процессом (PID 40079) — не трогали |
+
+**Не доказано:** build не доказывает runtime/API/MAX/visual; HTTP 200 на `:3001` не доказывает network/API/MAX-интеграцию или функциональность; отсутствие pytest-прогонов — ограничение окружения, а не дефект продукта.
+
+**Блокеры:** honesty-regressions exit 1 — health маскирует недоступность bot (открытый дефект честности); pytest api/bot BLOCKED — нет `python3.12` (CI ожидает Python 3.12) и нет `.venv`; текущий CI-workflow не содержит honesty-шаг.
+
+**Исторические данные (не свежие прогоны):** цифры из разделов «Реализация полировки» ниже и «Последние локальные прогоны» в разделе [Проверки](#проверки) — не перепроверялись и не являются результатами baseline 2026-09-30.
+
+**Ограничения evidence:** memo-ID для этих прогонов инструментом не возвращены и не указываются; сырые логи не копируются; новые shell-команды, сборки и тесты в рамках документационной задачи не запускались. Контракты прочитаны без изменений: API `:8000`, bot `:8001` ([`docs/API_CONTRACT.md`](docs/API_CONTRACT.md), [`openapi.yaml`](openapi.yaml)); каталог — единственный источник ID; конкурс требует бот с подключённым Mini App, запрещает секреты и вводящие в заблуждение данные, требует доступный основной сценарий в MAX, Docker и явную маркировку модельных данных.
+
+### Пакет 2 принят (2026-09-30): честный health-контракт `getHealth`
+
+Принят Пакет 2 плана [`docs/DESLOP_PLAN.md`](docs/DESLOP_PLAN.md) (Задача 7). Изменённые файлы Пакета 2:
+
+- [`apps/miniapp/src/api/client.ts`](apps/miniapp/src/api/client.ts:49) — `getHealth()` больше не возвращает `demo_ok`/`mock_ok`: network → `ApiErrorResponse` c `code: 'network_error'`; HTTP !ok → error-envelope с сохранением server `code`/`requestId`; non-JSON/schema mismatch → `invalid_response`; валидный `{status, version}` — resolve.
+- [`apps/miniapp/scripts/honesty-regressions.mjs`](apps/miniapp/scripts/honesty-regressions.mjs:298) — H1-assertion переписана на реальный контракт `code`/`requestId`, добавлена проверка non-JSON health.
+- Новый focused harness [`apps/miniapp/scripts/health-contract.mjs`](apps/miniapp/scripts/health-contract.mjs:1) — 7 failure modes + валидный ответ.
+
+Evidence (cwd `apps/miniapp`):
+
+| Команда | Exit |
+|---|---|
+| `node scripts/health-contract.mjs` | 0 |
+| `npm run build` | 0 |
+| `node scripts/honesty-regressions.mjs` (после Пакета 2) | 1 — сбой на quiz assertion [`scripts/honesty-regressions.mjs`](apps/miniapp/scripts/honesty-regressions.mjs:305) |
+
+memo-ID прогонов: `memo-df9e4f44`, `memo-59ed431b`; boundary baseline — `memo-9352a1c4`. До Пакета 2 honesty был exit 1 на старом `mock_ok` guard (строка «Baseline 2026-09-30» выше). **Полный honesty PASS не заявлен** — quiz-пункты остаются красными.
+
+UI не менялся; production consumer `getHealth` в `src/` не найден — error screen не добавлялся. Accepted dirty baseline сохранён без переопределения смысла: defensive bridge, user-id guard, webhook self-echo guard; H3/H4/H5 не менялись.
+
+**Не доказано:** полный honesty PASS, Zero Regression, API/bot/visual/network/MAX PASS. **Не запускалось:** pytest api/bot — нет окружения Python 3.12/pytest. **Блокеры:** honesty exit 1 на quiz assertion (Задача 5 плана), pytest BLOCKED, в CI нет honesty-шага (Задача 8). **Rollback:** revert [`client.ts`](apps/miniapp/src/api/client.ts:49) и [`honesty-regressions.mjs`](apps/miniapp/scripts/honesty-regressions.mjs:298), удалить [`health-contract.mjs`](apps/miniapp/scripts/health-contract.mjs:1).
+
+### Пакет 3 принят (2026-09-30): API-only canonical catalog
+
+Принят Пакет 3 плана [`docs/DESLOP_PLAN.md`](docs/DESLOP_PLAN.md). Изменённые файлы Пакета 3:
+
+- [`apps/miniapp/src/api/client.ts`](apps/miniapp/src/api/client.ts:107) — удалён fixture/fallback; typed rejection для catalog/recommendations/saved; `getMeasure()` проверяет body-id, `getAllMeasures()` — массив.
+- [`apps/miniapp/src/store.tsx`](apps/miniapp/src/store.tsx:58) — default saved пуст, localStorage фильтруется против canonical ID, state меняется только после server save/remove success.
+- [`apps/miniapp/src/App.tsx`](apps/miniapp/src/App.tsx:78) — удалён default measure, валидация empty/oversized ID. Ограничение: query-путь `?startapp=measure&id=...` ещё не равен ADR-форме `measure_<id>`.
+- [`apps/miniapp/src/pages/Other.tsx`](apps/miniapp/src/pages/Other.tsx:172) — grants/search строятся из API; [`MeasureDetailSheet.tsx`](apps/miniapp/src/components/MeasureDetailSheet.tsx:31) — только server fields и маркировка `MODEL DATA`, synthetic factual claims убраны.
+- [`apps/miniapp/scripts/honesty-regressions.mjs`](apps/miniapp/scripts/honesty-regressions.mjs:468) — обновлён только H3 guard; новый focused harness [`catalog-contract.mjs`](apps/miniapp/scripts/catalog-contract.mjs:1).
+
+Контрактная матрица: catalog/recommendations/saved/measure — только API, без fixture/fallback; сохранения — server-success-first; deep link — строгая валидация ID, query-форма ограничена.
+
+Evidence (cwd `apps/miniapp`):
+
+| Команда | Exit |
+|---|---|
+| `node scripts/catalog-contract.mjs` | 0 |
+| `node scripts/health-contract.mjs` | 0 |
+| `npm run build` | 0 |
+| `node scripts/honesty-regressions.mjs` (после Пакета 3) | 1 — pre-existing H4 quiz assertion [`scripts/honesty-regressions.mjs`](apps/miniapp/scripts/honesty-regressions.mjs:305) |
+
+memo-ID прогонов: `memo-3bb34424`; предыдущие: `memo-9352a1c4`, `memo-df9e4f44`, `memo-59ed431b`.
+
+Accepted baseline semantics не менялись: defensive `initBridge`, user-id/self-echo guards. Python tests не запускались.
+
+**Не доказано / не заявлять:** build/health/catalog PASS не означает full honesty/API/bot/visual/network/MAX PASS; полный honesty PASS не заявлен (exit 1 на quiz assertion). **Открытые блокеры:** H2, H4 (honesty exit 1 на quiz assertion), H5 — детали в [`docs/DESLOP_PLAN.md`](docs/DESLOP_PLAN.md); ограничение deep-link (query-путь ≠ ADR-форме `measure_<id>`). **Rollback:** revert [`client.ts`](apps/miniapp/src/api/client.ts:107), [`store.tsx`](apps/miniapp/src/store.tsx:58), [`App.tsx`](apps/miniapp/src/App.tsx:78), [`Other.tsx`](apps/miniapp/src/pages/Other.tsx:172), [`MeasureDetailSheet.tsx`](apps/miniapp/src/components/MeasureDetailSheet.tsx:31), [`honesty-regressions.mjs`](apps/miniapp/scripts/honesty-regressions.mjs:468); удалить [`catalog-contract.mjs`](apps/miniapp/scripts/catalog-contract.mjs:1).
+
 ### Реализация полировки (2026-09-29)
 
 > **Статус фронтенда:** Весь фронтенд приложения, кроме Личного кабинета (ЛК), теперь полностью отполирован и приведен к единому золотому дизайн-стандарту Главной страницы.
