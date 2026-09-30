@@ -133,14 +133,17 @@ Bot `:8001`: `status`, `service` = `bot`, `version`, `max_configured`, `webhook_
 - `POST /api/v1/measures/{measure_id}/save` → `{measure_id, saved: true, created: boolean}`. Нет ID в каталоге → 404 `measure_not_found`.
 - `DELETE /api/v1/measures/{measure_id}/save` → `{measure_id, saved: false, removed: boolean}`. Повторное удаление идемпотентно и не требует, чтобы ID всё ещё был в каталоге.
 - `GET /api/v1/measures/saved` → `{measure_ids: string[]}`.
+- `GET /api/v1/measures/{measure_id}/checklist` → `{measure_id, items:[{key,label,completed}]}`.
+- `POST /api/v1/measures/{measure_id}/checklist` with `{item_key, completed}` updates one
+  checklist item and returns `{measure_id, item_key, completed}`.
 
-Все три требуют `X-Max-Init-Data`.
+Все пять требуют `X-Max-Init-Data`.
 
 ## Bot: прочие тела
 
 - Launch data 200: `{user:{id,first_name,last_name,username}, auth_date}`.
 - Quiz: тело `{quiz_version, answers}`. Ответ `{attempt_id, score, passed, pass_score, certificate}`. `score`, `passed` и `pass_score` считает только сервер. `certificate` — `null` при провале либо `{certificate_id, title, disclaimer, payload}`. `payload` — base64url JSON и HMAC-SHA256, не подпись государственного документа и не публичная верификация. Неполный, неизвестный или битый набор ответов — 422 без сертификата. PDF и explanations в этом ответе нет.
-- Opt-in: `GET` и `POST /api/v1/notifications/opt-in`. Тело POST `{enabled: boolean}`, ответ `{enabled: boolean}`. Согласие одно на пользователя, не подписка на меру. Пока записи нет, GET возвращает `enabled: false`. Сохранение флага не отправляет напоминания.
+- Opt-in: `GET` и `POST /api/v1/notifications/opt-in`. Тело POST `{enabled: boolean}`, ответ `{enabled: boolean}`. Согласие одно на пользователя. Worker отправляет не более одного напоминания за deadline в часовом поясе `Europe/Moscow`, если есть сохранённая мера или незавершённый checklist. При `deadline: null` напоминание не создаётся.
 - Webhook 200: `{ok: true}` или `{ok: true, duplicate: true}`. Повтор после сбоя обработки не считается дублем. Это не обещание exactly-once внешней доставки.
 
 ## Deep link

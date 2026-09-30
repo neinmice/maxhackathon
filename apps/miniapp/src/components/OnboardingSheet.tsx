@@ -4,6 +4,7 @@ import Sheet from './Sheet'
 import { useApp, type UserGoal, type UserRole, type UserTaxMode } from '../store'
 import type { City } from '../data'
 import { triggerHaptic, triggerSelectionChanged } from '../lib/maxBridge'
+import { apiClient } from '../api/client'
 
 export default function OnboardingSheet() {
   const {
@@ -76,15 +77,28 @@ export default function OnboardingSheet() {
     }
   }
 
-  const handleApply = () => {
+  const requestRecommendations = () => {
+    const region = city === 'Казань' ? 'kazan' : city === 'Москва' ? 'moscow' : 'spb'
+    return apiClient.getRecommendations({
+      region,
+      role: role as any,
+      tax_mode: taxMode,
+      goal: goal as any,
+    })
+  }
+
+  const handleApply = async () => {
     setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
-      setOnboardingOpen(false)
-      const roleLabel =
-        role === 'ip' ? 'ИП' : role === 'self_employed' ? 'Самозанятый' : role === 'llc' ? 'ООО' : role === 'intern' ? 'Стажер' : 'Планирую'
-      showToast(`Профиль настроен: ${city}, ${roleLabel}`)
-    }, 350)
+    try {
+      await requestRecommendations()
+    } catch {
+      // Keep optimistic flow if server is unreachable
+    }
+    setLoading(false)
+    setOnboardingOpen(false)
+    const roleLabel =
+      role === 'ip' ? 'ИП' : role === 'self_employed' ? 'Самозанятый' : role === 'llc' ? 'ООО' : role === 'intern' ? 'Стажер' : 'Планирую'
+    showToast(`Профиль настроен: ${city}, ${roleLabel}`)
   }
 
   const stepTitles = [

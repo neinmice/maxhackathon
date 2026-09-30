@@ -2,16 +2,40 @@
  * Карточка меры: условия, срок, документы и сохранение.
  * Данные приходят из канонического каталога; суммы и сроки не синтезируются.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CheckIcon, ClockIcon } from './icons'
 import Sheet from './Sheet'
 import { cityIn, useApp } from '../store'
+import { apiClient } from '../api/client'
 
 export default function MeasureDetailSheet() {
   const { measureDetail, setMeasureDetail, savedMeasures, toggleSaveMeasure, city } = useApp()
   const nav = useNavigate()
-  const [checkedDocs, setCheckedDocs] = useState<Set<number>>(new Set([0]))
+  const [checkedDocs, setCheckedDocs] = useState<Set<number>>(new Set())
+
+  useEffect(() => {
+    if (!measureDetail) {
+      setCheckedDocs(new Set())
+      return
+    }
+    let active = true
+    setCheckedDocs(new Set())
+    apiClient.getChecklist(measureDetail.id)
+      .then((items) => {
+        if (active) {
+          setCheckedDocs(
+            new Set(items.filter((item) => item.completed).map((item) => Number(item.key))),
+          )
+        }
+      })
+      .catch(() => {
+        // The checklist remains usable locally if the server is unavailable.
+      })
+    return () => {
+      active = false
+    }
+  }, [measureDetail?.id])
 
   if (!measureDetail) return null
 
@@ -22,16 +46,19 @@ export default function MeasureDetailSheet() {
       const next = new Set(prev)
       if (next.has(idx)) next.delete(idx)
       else next.add(idx)
+      apiClient.updateChecklist(measureDetail.id, String(idx), next.has(idx)).catch(() => {})
       return next
     })
   }
 
   const title = (measureDetail.title || '').replace('{city}', cityIn(city))
   // Только фактические поля серверной записи: суммы и сроки не выдумываются
-  const amount: string = measureDetail.amount_description || 'Сумма не указана'
-  const org = measureDetail.operator || 'Оператор не указан'
+  const amount: string = measureDetail.amount_description || (measureDetail as any).amount || 'Сумма не указана'
+  const org = measureDetail.operator || (measureDetail as any).org || 'Оператор не указан'
   const deadline: string = measureDetail.deadline || 'срок не указан'
-  const reqs: string[] = measureDetail.documents || []
+  const reqs: string[] = Array.isArray(measureDetail.documents) && measureDetail.documents.length
+    ? measureDetail.documents
+    : (Array.isArray((measureDetail as any).req) ? (measureDetail as any).req : [])
   const conditions: string[] = measureDetail.eligibility ? [measureDetail.eligibility] : []
   const isModelData = measureDetail.data_status === 'MODEL DATA' || measureDetail.freshness_status === 'model'
   const docs: string[] = reqs.length > 0 ? reqs : ['Документы не указаны оператором']

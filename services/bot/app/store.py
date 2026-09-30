@@ -44,6 +44,27 @@ CREATE TABLE IF NOT EXISTS notification_preferences (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS checklist_progress (
+    user_id TEXT NOT NULL REFERENCES max_users(user_id) ON DELETE CASCADE,
+    measure_id TEXT NOT NULL,
+    item_key TEXT NOT NULL,
+    completed BOOLEAN NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, measure_id, item_key)
+);
+
+CREATE TABLE IF NOT EXISTS reminder_deliveries (
+    user_id TEXT NOT NULL REFERENCES max_users(user_id) ON DELETE CASCADE,
+    measure_id TEXT NOT NULL,
+    reminder_kind TEXT NOT NULL,
+    deadline DATE NOT NULL,
+    status TEXT NOT NULL,
+    claimed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    sent_at TIMESTAMPTZ,
+    PRIMARY KEY (user_id, measure_id, reminder_kind, deadline),
+    CONSTRAINT reminder_deliveries_status_check CHECK (status IN ('processing', 'sent'))
+);
+
 CREATE TABLE IF NOT EXISTS quiz_attempts (
     attempt_id UUID PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES max_users(user_id) ON DELETE CASCADE,
@@ -252,6 +273,120 @@ class PostgresStore:
             return False
         return bool(row["enabled"])
 
+    def get_checklist(self, user_id: str, measure_id: str) -> dict[str, bool]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT item_key, completed
+                FROM checklist_progress
+                WHERE user_id = %s AND measure_id = %s
+                """,
+                (user_id, measure_id),
+            ).fetchall()
+        return {row["item_key"]: bool(row["completed"]) for row in rows}
+
+    def set_checklist_item(
+        self,
+        user_id: str,
+        measure_id: str,
+        item_key: str,
+        completed: bool,
+    ) -> bool:
+        self.touch_user(user_id)
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                INSERT INTO checklist_progress
+                    (user_id, measure_id, item_key, completed)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (user_id, measure_id, item_key) DO UPDATE
+                SET completed = EXCLUDED.completed, updated_at = NOW()
+                RETURNING completed
+                """,
+                (user_id, measure_id, item_key, completed),
+            ).fetchone()
+        return bool(row["completed"]) if row else completed
+
+    def list_reminder_candidates(self) -> list[dict[str, Any]]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                WITH candidates AS (
+                    SELECT user_id, measure_id FROM saved_measures
+                    UNION
+                    SELECT user_id, measure_id FROM checklist_progress
+                )
+                SELECT candidates.user_id, candidates.measure_id,
+                       EXISTS (
+                           SELECT 1 FROM saved_measures sm
+                           WHERE sm.user_id = candidates.user_id
+                             AND sm.measure_id = candidates.measure_id
+                       ) AS saved,
+                       COUNT(cp.item_key) FILTER (WHERE cp.completed) AS completed_count
+                FROM candidates
+                JOIN notification_preferences np
+                  ON np.user_id = candidates.user_id AND np.enabled = TRUE
+                LEFT JOIN checklist_progress cp
+                  ON cp.user_id = candidates.user_id
+                 AND cp.measure_id = candidates.measure_id
+                GROUP BY candidates.user_id, candidates.measure_id
+                """
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def claim_reminder(
+        self,
+        user_id: str,
+        measure_id: str,
+        reminder_kind: str,
+        deadline: str,
+        *,
+        stale_before: datetime,
+    ) -> bool:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                INSERT INTO reminder_deliveries
+                    (user_id, measure_id, reminder_kind, deadline, status)
+                VALUES (%s, %s, %s, %s, 'processing')
+                ON CONFLICT (user_id, measure_id, reminder_kind, deadline) DO UPDATE
+                SET status = 'processing', claimed_at = NOW(), sent_at = NULL
+                WHERE reminder_deliveries.status = 'processing'
+                  AND reminder_deliveries.claimed_at < %s
+                RETURNING user_id
+                """,
+                (user_id, measure_id, reminder_kind, deadline, stale_before),
+            ).fetchone()
+        return row is not None
+
+    def complete_reminder(
+        self, user_id: str, measure_id: str, reminder_kind: str, deadline: str
+    ) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                """
+                UPDATE reminder_deliveries
+                SET status = 'sent', sent_at = NOW()
+                WHERE user_id = %s AND measure_id = %s
+                  AND reminder_kind = %s AND deadline = %s
+                """,
+                (user_id, measure_id, reminder_kind, deadline),
+            )
+
+    def release_reminder(
+        self, user_id: str, measure_id: str, reminder_kind: str, deadline: str
+    ) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                """
+                DELETE FROM reminder_deliveries
+                WHERE user_id = %s AND measure_id = %s
+                  AND reminder_kind = %s AND deadline = %s
+                  AND status = 'processing'
+                """,
+                (user_id, measure_id, reminder_kind, deadline),
+            )
+
     def record_quiz_attempt(
         self,
         *,
@@ -304,6 +439,8 @@ class InMemoryStore:
         self.updates: dict[str, dict[str, Any]] = {}
         self.saved: dict[str, set[str]] = {}
         self.notifications: dict[str, bool] = {}
+        self.checklists: dict[tuple[str, str], dict[str, bool]] = {}
+        self.reminders: dict[tuple[str, str, str, str], dict[str, Any]] = {}
         self.attempts: list[dict[str, Any]] = []
         self.available = True
 
@@ -390,6 +527,81 @@ class InMemoryStore:
     def get_notifications(self, user_id: str) -> bool:
         self._require()
         return bool(self.notifications.get(user_id, False))
+
+    def get_checklist(self, user_id: str, measure_id: str) -> dict[str, bool]:
+        self._require()
+        return dict(self.checklists.get((user_id, measure_id), {}))
+
+    def set_checklist_item(
+        self,
+        user_id: str,
+        measure_id: str,
+        item_key: str,
+        completed: bool,
+    ) -> bool:
+        self._require()
+        self.touch_user(user_id)
+        self.checklists.setdefault((user_id, measure_id), {})[item_key] = completed
+        return completed
+
+    def list_reminder_candidates(self) -> list[dict[str, Any]]:
+        self._require()
+        result: list[dict[str, Any]] = []
+        for user_id, enabled in self.notifications.items():
+            if not enabled:
+                continue
+            measure_ids = set(self.saved.get(user_id, set()))
+            measure_ids.update(
+                measure_id
+                for checklist_user, measure_id in self.checklists
+                if checklist_user == user_id
+            )
+            for measure_id in measure_ids:
+                items = self.checklists.get((user_id, measure_id), {})
+                result.append(
+                    {
+                        "user_id": user_id,
+                        "measure_id": measure_id,
+                        "saved": measure_id in self.saved.get(user_id, set()),
+                        "completed_count": sum(items.values()),
+                    }
+                )
+        return result
+
+    def claim_reminder(
+        self,
+        user_id: str,
+        measure_id: str,
+        reminder_kind: str,
+        deadline: str,
+        *,
+        stale_before: datetime,
+    ) -> bool:
+        self._require()
+        key = (user_id, measure_id, reminder_kind, deadline)
+        current = self.reminders.get(key)
+        now = self._now()
+        if current and current["status"] == "sent":
+            return False
+        if current and current["claimed_at"] >= stale_before:
+            return False
+        self.reminders[key] = {"status": "processing", "claimed_at": now}
+        return True
+
+    def complete_reminder(
+        self, user_id: str, measure_id: str, reminder_kind: str, deadline: str
+    ) -> None:
+        self._require()
+        key = (user_id, measure_id, reminder_kind, deadline)
+        if key in self.reminders:
+            self.reminders[key]["status"] = "sent"
+            self.reminders[key]["sent_at"] = self._now()
+
+    def release_reminder(
+        self, user_id: str, measure_id: str, reminder_kind: str, deadline: str
+    ) -> None:
+        self._require()
+        self.reminders.pop((user_id, measure_id, reminder_kind, deadline), None)
 
     def record_quiz_attempt(
         self,

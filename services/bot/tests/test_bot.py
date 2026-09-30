@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta, timezone
 import base64
 import hashlib
@@ -13,6 +14,7 @@ from fastapi.testclient import TestClient
 from app.config import ProductionConfigError, Settings
 from app.handlers import update_hash
 from app.main import _certificate_payload, create_app
+from app.reminders import reminder_due_at, run_once
 from app.security import LaunchDataError, validate_launch_data
 from app.store import UPDATE_PROCESSING_STALE, UPDATE_RETENTION, InMemoryStore, PostgresStore
 
@@ -48,6 +50,8 @@ def settings(**overrides: str) -> Settings:
         "quiz_pass_score": 50,
         "certificate_signing_secret": "certificate-secret",
         "max_ca_bundle_path": None,
+        "reminder_poll_seconds": 60,
+        "reminder_lead_days": 1,
     }
     values.update(overrides)
     return Settings(**values)
@@ -286,6 +290,18 @@ def test_startapp_measure_payload_opens_known_measure_only() -> None:
     assert home[0]["payload"]["buttons"][0][0]["payload"] == "home"
 
 
+def test_main_menu_normalizes_public_bot_username() -> None:
+    from app.handlers import main_menu
+
+    menu = main_menu(settings(max_bot_username="@t826_hakaton_max_bot"))
+    buttons = menu[0]["payload"]["buttons"]
+    assert buttons[0][0]["type"] == "open_app"
+    assert buttons[0][0]["web_app"] == "t826_hakaton_max_bot"
+    assert buttons[1][0]["payload"] == "quiz"
+    assert buttons[1][1]["payload"] == "catalog"
+    assert buttons[2][0]["payload"] == "saved"
+
+
 def test_bot_started_unknown_measure_does_not_open_first_record() -> None:
     max_client = FakeMaxClient()
     app = create_app(
@@ -330,6 +346,106 @@ def test_save_unknown_measure_returns_404_envelope() -> None:
     assert body["error"]["request_id"]
     assert "detail" not in body
     assert "demo-kazan-agro-001" not in response.text
+
+
+def test_checklist_requires_launch_data_and_persists_item() -> None:
+    app = create_app(settings=settings(), store=InMemoryStore())
+    client = TestClient(app)
+    headers = {"X-Max-Init-Data": make_init_data()}
+
+    unauthorized = client.get("/api/v1/measures/demo-kazan-agro-001/checklist")
+    assert unauthorized.status_code == 401
+
+    initial = client.get(
+        "/api/v1/measures/demo-kazan-agro-001/checklist",
+        headers=headers,
+    )
+    assert initial.status_code == 200
+    assert initial.json()["items"][0]["completed"] is False
+
+    updated = client.post(
+        "/api/v1/measures/demo-kazan-agro-001/checklist",
+        headers=headers,
+        json={"item_key": "0", "completed": True},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["completed"] is True
+
+    loaded = client.get(
+        "/api/v1/measures/demo-kazan-agro-001/checklist",
+        headers=headers,
+    )
+    assert loaded.json()["items"][0]["completed"] is True
+
+
+def test_reminder_is_one_time_and_requires_opt_in(monkeypatch) -> None:
+    from app import reminders
+
+    measure = {
+        "id": "demo-kazan-agro-001",
+        "title": "Демо-мера",
+        "deadline": "2026-10-01",
+        "documents": ["one", "two"],
+    }
+    monkeypatch.setattr(reminders, "get_measure", lambda measure_id: measure)
+    store = InMemoryStore()
+    store.save_measure("772026", measure["id"])
+    store.set_notifications("772026", True)
+    max_client = FakeMaxClient()
+    current = reminder_due_at(datetime(2026, 10, 1).date()).astimezone(timezone.utc)
+
+    assert asyncio.run(
+        run_once(
+            settings=settings(),
+            store=store,
+            max_client=max_client,
+            now=current,
+        )
+    ) == 1
+    assert len(max_client.messages) == 1
+    assert asyncio.run(
+        run_once(
+            settings=settings(),
+            store=store,
+            max_client=max_client,
+            now=current + timedelta(minutes=5),
+        )
+    ) == 0
+
+
+def test_reminder_retries_after_delivery_failure(monkeypatch) -> None:
+    from app import reminders
+
+    measure = {
+        "id": "demo-kazan-agro-001",
+        "title": "Демо-мера",
+        "deadline": "2026-10-01",
+        "documents": ["one"],
+    }
+    monkeypatch.setattr(reminders, "get_measure", lambda measure_id: measure)
+    store = InMemoryStore()
+    store.set_notifications("772026", True)
+    store.set_checklist_item("772026", measure["id"], "0", False)
+    max_client = FakeMaxClient()
+    max_client.fail_times = 1
+    current = reminder_due_at(datetime(2026, 10, 1).date()).astimezone(timezone.utc)
+
+    assert asyncio.run(
+        run_once(
+            settings=settings(),
+            store=store,
+            max_client=max_client,
+            now=current,
+        )
+    ) == 0
+    assert asyncio.run(
+        run_once(
+            settings=settings(),
+            store=store,
+            max_client=max_client,
+            now=current + timedelta(minutes=1),
+        )
+    ) == 1
 
 
 def _decode_certificate(token: str) -> tuple[dict, str, str]:

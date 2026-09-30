@@ -80,6 +80,20 @@ export function getBridgeUser(): WebAppUser {
   return bridge.initDataUnsafe?.user || mockUser;
 }
 
+export function getDisplayUser(): WebAppUser | null {
+  if (typeof window === 'undefined') return null;
+  const bridge = window.WebApp || window.MAXBridge;
+  return bridge?.initDataUnsafe?.user || null;
+}
+
+export function getVerifiedInitData(): string | null {
+  if (typeof window === 'undefined') return null;
+  const bridge = window.WebApp || window.MAXBridge;
+  const initData = bridge?.initData;
+  if (typeof initData !== 'string' || !initData.trim()) return null;
+  return initData.trim();
+}
+
 export function getDeepLinkPayload(): string | null {
   if (typeof window === 'undefined') return null;
 
@@ -103,6 +117,19 @@ export function getDeepLinkPayload(): string | null {
   }
 
   return null;
+}
+
+export function parseStartParam(value: string | null): string | null {
+  if (!value || !/^[A-Za-z0-9_-]{1,512}$/.test(value)) return null;
+  if (value === 'measure' || value.startsWith('measure_')) return value;
+  if (['home', 'quiz', 'catalog', 'saved', 'onboarding', 'cert'].includes(value)) return value;
+  return null;
+}
+
+export function measureIdFromStartParam(value: string | null): string | null {
+  const payload = parseStartParam(value);
+  if (!payload || !payload.startsWith('measure_')) return null;
+  return payload.slice('measure_'.length) || null;
 }
 
 export function triggerHaptic(style: 'light' | 'medium' | 'heavy' = 'light'): void {

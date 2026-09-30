@@ -1,6 +1,6 @@
 # Развёртывание на Ubuntu 24
 
-> **Статус проверки**: gateway-разделение C3 (каталог `:8000` / bot `:8001`) проверялось **локально на `127.0.0.1:19080`**, не на VPS. На этой машине порты `8000` и `8080` были заняты чужим стеком. Production-стек по этой инструкции на VPS не разворачивался; Caddy, TLS и DNS `zverybot.ru` не проверялись.
+> **Статус проверки на 29 сентября 2026 года**: production-стек на VPS `95.181.213.55` запущен. Проверены DNS `zverybot.ru`, HTTPS через Caddy, API health, bot health, секрет webhook, публичная Mini App и тесты bot-контейнера. Секреты не входят в репозиторий; приватный `.env` хранится только на VPS.
 
 ## До запуска
 
@@ -26,13 +26,15 @@ POSTGRES_DB=navigator
 POSTGRES_USER=navigator
 POSTGRES_PASSWORD=<секрет БД, не из шаблона>
 MAX_BOT_TOKEN=<токен из кабинета MAX>
-MAX_BOT_USERNAME=<публичный username бота>
+MAX_BOT_USERNAME=t826_hakaton_max_bot
 MAX_WEBHOOK_SECRET=<случайный секрет минимум 32 байта>
 PUBLIC_DOMAIN=zverybot.ru
 PUBLIC_BASE_URL=https://zverybot.ru
 CERTIFICATE_SIGNING_SECRET=<отдельный случайный секрет минимум 32 байта>
 QUIZ_ANSWER_KEY_JSON=
 QUIZ_PASS_SCORE=70
+REMINDER_POLL_SECONDS=60
+REMINDER_LEAD_DAYS=1
 ```
 
 Сгенерировать секрет на VPS:
@@ -41,13 +43,17 @@ QUIZ_PASS_SCORE=70
 openssl rand -base64 48
 ```
 
-Проверка конфигурации без запуска контейнеров:
+Проверка конфигурации без запуска контейнеров. Не используйте обычный `config` без
+`--quiet`: Compose разворачивает `env_file` и может напечатать значения секретов:
 
 ```bash
-docker compose --env-file /path/to/private.env -f infra/compose.yaml config --no-env-resolution
+APP_ENV_FILE=/path/to/private.env \
+  docker compose --env-file /path/to/private.env \
+  -f infra/compose.yaml config --quiet
 ```
 
-Флаг обязателен: без него Compose разворачивает `env_file` и печатает секреты. С флагом в выводе остаётся только путь `APP_ENV_FILE`, без значений `MAX_BOT_TOKEN`, `MAX_WEBHOOK_SECRET`, `CERTIFICATE_SIGNING_SECRET` и `POSTGRES_PASSWORD`. Пустые и шаблонные секреты эта команда не запускает: bot отклоняет их при создании настроек, а entrypoint `db` завершается до старта PostgreSQL.
+Пустые и шаблонные секреты эта команда не запускает: bot отклоняет их при создании
+настроек, а entrypoint `db` завершается до запуска PostgreSQL.
 
 ## Первый запуск
 
@@ -84,15 +90,28 @@ docker compose --env-file "$APP_ENV_FILE" -f infra/compose.yaml exec bot python 
 
 Команда регистрирует `https://zverybot.ru/webhooks/max` и события `bot_started`, `message_created`, `message_callback`.
 
+Текущая проверенная учётная запись бота: `t826_hakaton_max_bot`. URL Mini App
+должен быть добавлен в настройках этого бота в кабинете MAX; webhook отвечает
+за события бота и не заменяет настройку Mini App.
+
 ## Роутинг
 
 | Путь | Сервис |
 | --- | --- |
 | `/` | Mini App |
 | `GET /api/v1/catalog/*`, `POST /api/v1/recommendations`, `GET /api/v1/measures`, `GET /api/v1/measures/{id}` | API `:8000` |
-| `/webhooks/max`, launch data, квиз, `POST|DELETE /api/v1/measures/{id}/save`, `GET /api/v1/measures/saved`, opt-in | Bot `:8001` |
+| `/webhooks/max`, launch data, квиз, `POST|DELETE /api/v1/measures/{id}/save`, `GET /api/v1/measures/saved`, checklist, opt-in | Bot `:8001` |
 
-`GET /api/v1/measures/saved` не является коллекцией каталога. На прямом порту API этот путь — неизвестный ID `saved` и 404. Caddyfile в фазе C1+C2 не меняется: коллекция уже попадает в API через `handle /api/*`, а saved/save — в bot более ранними правилами.
+`GET /api/v1/measures/saved` не является коллекцией каталога. На прямом порту API этот путь — неизвестный ID `saved` и 404. Caddy направляет saved/save и checklist в bot более ранними правилами, остальные `/api/*` — в API.
+
+После запуска проверьте worker:
+
+```bash
+docker compose --env-file "$APP_ENV_FILE" -f infra/compose.yaml ps reminders
+docker compose --env-file "$APP_ENV_FILE" -f infra/compose.yaml logs --tail=50 reminders
+```
+
+Worker опрашивает PostgreSQL каждые `REMINDER_POLL_SECONDS` секунд и отправляет не более одного напоминания для пары пользователь/мера/deadline. Напоминание планируется на 09:00 по `Europe/Moscow` за `REMINDER_LEAD_DAYS` дней. Если в каталоге у меры `deadline: null`, отправка не выполняется.
 
 ## Безопасность
 

@@ -232,6 +232,73 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/measures/{measure_id}/checklist:
+    get:
+      x-zvery-service: bot
+      operationId: getMeasureChecklist
+      servers:
+        - url: http://127.0.0.1:8001
+      parameters:
+        - $ref: '#/components/parameters/MeasureId'
+        - $ref: '#/components/parameters/MaxInitData'
+      responses:
+        '200':
+          description: Checklist progress for the verified user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistResponse'
+        '401':
+          description: Launch data rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Unknown measure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      x-zvery-service: bot
+      operationId: updateMeasureChecklist
+      servers:
+        - url: http://127.0.0.1:8001
+      parameters:
+        - $ref: '#/components/parameters/MeasureId'
+        - $ref: '#/components/parameters/MaxInitData'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChecklistItemRequest'
+      responses:
+        '200':
+          description: Updated checklist item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistItemResponse'
+        '401':
+          description: Launch data rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Unknown measure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: Unknown checklist item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/quiz/submit:
     post:
       x-zvery-service: bot
@@ -667,6 +734,44 @@ components:
       required: [enabled]
       properties:
         enabled:
+          type: boolean
+    ChecklistItemRequest:
+      type: object
+      required: [item_key, completed]
+      properties:
+        item_key:
+          type: string
+        completed:
+          type: boolean
+    ChecklistItem:
+      type: object
+      required: [key, label, completed]
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        completed:
+          type: boolean
+    ChecklistResponse:
+      type: object
+      required: [measure_id, items]
+      properties:
+        measure_id:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChecklistItem'
+    ChecklistItemResponse:
+      type: object
+      required: [measure_id, item_key, completed]
+      properties:
+        measure_id:
+          type: string
+        item_key:
+          type: string
+        completed:
           type: boolean
     WebhookAck:
       type: object

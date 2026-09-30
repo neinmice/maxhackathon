@@ -19,6 +19,8 @@ BOT_ROUTES = {
     ("POST", "/api/v1/measures/{measure_id}/save"),
     ("DELETE", "/api/v1/measures/{measure_id}/save"),
     ("GET", "/api/v1/measures/saved"),
+    ("GET", "/api/v1/measures/{measure_id}/checklist"),
+    ("POST", "/api/v1/measures/{measure_id}/checklist"),
     ("POST", "/api/v1/quiz/submit"),
     ("GET", "/api/v1/notifications/opt-in"),
     ("POST", "/api/v1/notifications/opt-in"),

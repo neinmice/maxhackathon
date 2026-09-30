@@ -88,6 +88,7 @@ export default function QuizModal() {
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [result, setResult] = useState<QuizSubmitResult | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const error = submitError
 
   if (!quizOpen) return null
 
@@ -95,6 +96,7 @@ export default function QuizModal() {
 
   const handleSelectOption = (key: string) => {
     triggerHaptic('light')
+    setSubmitError(null)
     setAnswers((prev) => ({ ...prev, [curQ.id]: key }))
   }
 
@@ -122,8 +124,9 @@ export default function QuizModal() {
           triggerNotification('warning')
         }
       } catch (err) {
-        // Честный retry-статус: результат требует сервера, локальный сертификат не создаётся
-        setSubmitError(err instanceof Error && err.message ? err.message : 'Сервис проверки недоступен')
+        const message = err instanceof Error && err.message ? err.message : 'Сервис проверки недоступен'
+        setSubmitError(message)
+        showToast(message)
         triggerNotification('error')
       } finally {
         setSubmitting(false)
@@ -150,6 +153,20 @@ export default function QuizModal() {
       <div className="sheet-body" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
         {!result ? (
           <div>
+            {error && (
+              <div
+                role="alert"
+                style={{
+                  marginBottom: '0.8rem',
+                  padding: '0.7rem',
+                  borderRadius: '0.75rem',
+                  background: 'rgba(210, 78, 78, 0.12)',
+                  color: '#ff9d9d',
+                }}
+              >
+                {error}
+              </div>
+            )}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.8rem' }}>
               {QUESTIONS.map((_, i) => (
                 <div

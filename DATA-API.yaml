@@ -72,6 +72,20 @@ checks:
     expected_status: 200
     required_request_header: X-Max-Init-Data
     required_response_fields: [measure_ids]
+  - method: GET
+    path: /api/v1/measures/{measure_id}/checklist
+    base: bot
+    role: user
+    expected_status: 200
+    required_request_header: X-Max-Init-Data
+    required_response_fields: [measure_id, items]
+  - method: POST
+    path: /api/v1/measures/{measure_id}/checklist
+    base: bot
+    role: user
+    expected_status: 200
+    required_request_header: X-Max-Init-Data
+    required_response_fields: [measure_id, item_key, completed]
   - method: POST
     path: /api/v1/quiz/submit
     base: bot

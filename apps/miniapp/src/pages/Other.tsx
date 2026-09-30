@@ -692,7 +692,10 @@ export function Profile() {
             onChange={(e) => {
               const val = e.target.checked
               setNotif(val)
-              apiClient.optInNotifications(val)
+              apiClient.optInNotifications(val).catch(() => {
+                setNotif(!val)
+                showToast('Настройку уведомлений не удалось сохранить')
+              })
               showToast(val ? 'Уведомления включены' : 'Уведомления отключены')
             }}
           />

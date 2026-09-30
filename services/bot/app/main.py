@@ -38,6 +38,11 @@ class NotificationOptInRequest(BaseModel):
     enabled: bool
 
 
+class ChecklistItemRequest(BaseModel):
+    item_key: str = Field(min_length=1, max_length=64)
+    completed: bool
+
+
 class ApiError(Exception):
     def __init__(self, status_code: int, code: str, message: str) -> None:
         self.status_code = status_code
@@ -318,6 +323,62 @@ def create_app(
         store: Any = Depends(store_dependency),
     ) -> dict[str, list[str]]:
         return {"measure_ids": store.list_saved_measures(identity.user_id)}
+
+    @app.get("/api/v1/measures/{measure_id}/checklist")
+    def checklist(
+        measure_id: str,
+        identity: LaunchIdentity = Depends(identity_dependency),
+        store: Any = Depends(store_dependency),
+    ) -> dict[str, Any]:
+        from .catalog import get_measure
+
+        measure = get_measure(measure_id)
+        if not measure:
+            raise _error(404, "measure_not_found", "Мера не найдена")
+        progress = store.get_checklist(identity.user_id, measure_id)
+        documents = measure.get("documents", [])
+        return {
+            "measure_id": measure_id,
+            "items": [
+                {
+                    "key": str(index),
+                    "label": label,
+                    "completed": bool(progress.get(str(index), False)),
+                }
+                for index, label in enumerate(documents)
+            ],
+        }
+
+    @app.post("/api/v1/measures/{measure_id}/checklist")
+    def update_checklist(
+        measure_id: str,
+        payload: ChecklistItemRequest,
+        identity: LaunchIdentity = Depends(identity_dependency),
+        store: Any = Depends(store_dependency),
+    ) -> dict[str, Any]:
+        from .catalog import get_measure
+
+        measure = get_measure(measure_id)
+        if not measure:
+            raise _error(404, "measure_not_found", "Мера не найдена")
+        documents = measure.get("documents", [])
+        try:
+            index = int(payload.item_key)
+        except ValueError as exc:
+            raise _error(422, "checklist_item_invalid", "Пункт чеклиста не найден") from exc
+        if index < 0 or index >= len(documents):
+            raise _error(422, "checklist_item_invalid", "Пункт чеклиста не найден")
+        completed = store.set_checklist_item(
+            identity.user_id,
+            measure_id,
+            payload.item_key,
+            payload.completed,
+        )
+        return {
+            "measure_id": measure_id,
+            "item_key": payload.item_key,
+            "completed": completed,
+        }
 
 
     @app.get("/api/v1/notifications/opt-in")

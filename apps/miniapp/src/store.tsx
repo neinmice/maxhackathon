@@ -4,7 +4,7 @@ import { CITIES, STORIES, type City } from './data'
 
 export type UserRole = 'self_employed' | 'ip' | 'llc' | 'intern' | 'planning'
 export type UserTaxMode = 'npd' | 'usn6' | 'usn15' | 'ausn'
-export type UserGoal = 'start' | 'grants' | 'growth' | 'education'
+export type UserGoal = 'start' | 'grants' | 'growth' | 'education' | 'support'
 
 type Ctx = {
   userName: string
@@ -40,12 +40,12 @@ type Ctx = {
 const AppCtx = createContext<Ctx>(null!)
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  // 1. Имя пользователя: из MAX WebApp или по умолчанию "Анастасия"
-  const [userName, setUserName] = useState<string>('Анастасия')
+  // Имя пользователя приходит только из MAX Bridge.
+  const [userName, setUserName] = useState<string>('')
   const [city, setCity] = useState<City>('Казань')
   const [role, setRole] = useState<UserRole>('ip')
   const [taxMode, setTaxMode] = useState<UserTaxMode>('usn6')
-  const [goal, setGoal] = useState<UserGoal>('start')
+  const [goal, setGoal] = useState<UserGoal>('support')
 
   // Хранилище просмотренных слайдов: "storyId:slideIndex"
   const [viewedSlides, setViewedSlides] = useState<Set<string>>(() => {
@@ -105,6 +105,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } catch {
         // no-op
       }
+    }
+  }, [])
+
+  // Синхронизация сохранённых мер с сервером
+  useEffect(() => {
+    let cancelled = false
+    apiClient.getSavedMeasures()
+      .then((ids) => {
+        if (cancelled) return
+        setSavedMeasures((prev) => {
+          const merged = new Set([...prev, ...ids])
+          try {
+            localStorage.setItem('zvery_saved_measures', JSON.stringify([...merged]))
+          } catch {
+            // no-op
+          }
+          return merged
+        })
+      })
+      .catch(() => {
+        // Local storage remains the offline visual state only.
+      })
+    return () => {
+      cancelled = true
     }
   }, [])
 

@@ -8,12 +8,22 @@ import type {
 export class ApiErrorResponse extends Error {
   code: string;
   requestId?: string;
+  status: number;
+  kind: 'network' | 'unauthorized' | 'client' | 'unavailable';
 
-  constructor(message: string, code: string = 'api_error', requestId?: string) {
+  constructor(
+    message: string,
+    code: string = 'api_error',
+    requestId?: string,
+    status: number = 0,
+    kind: 'network' | 'unauthorized' | 'client' | 'unavailable' = 'client',
+  ) {
     super(message);
     this.name = 'ApiErrorResponse';
     this.code = code;
     this.requestId = requestId;
+    this.status = status;
+    this.kind = kind;
   }
 }
 
@@ -29,6 +39,12 @@ export type QuizSubmitResult = {
     disclaimer: string;
     payload: string;
   } | null;
+};
+
+export type ChecklistItem = {
+  key: string;
+  label: string;
+  completed: boolean;
 };
 
 export class ApiClient {
@@ -57,7 +73,6 @@ export class ApiClient {
       throw new ApiErrorResponse('Сервис проверки недоступен', 'network_error');
     }
     if (!res.ok) {
-      // 503 bot-health отвечает BotHealth-телом, а не error-envelope — код остаётся generic
       let code = 'http_error';
       let requestId: string | undefined;
       try {
@@ -136,6 +151,49 @@ export class ApiClient {
       throw new ApiErrorResponse('Ответ не является JSON', 'invalid_response');
     }
     return parsed as T;
+  }
+
+  private async toApiError(res: Response, fallback: string): Promise<ApiErrorResponse> {
+    try {
+      const body = typeof res.json === 'function'
+        ? await res.json()
+        : JSON.parse(await res.text());
+      const error = body?.error;
+      if (error?.code && error?.message) {
+        const kind = res.status === 401
+          ? 'unauthorized'
+          : res.status >= 500
+            ? 'unavailable'
+            : 'client';
+        return new ApiErrorResponse(error.message, error.code, error.request_id, res.status, kind);
+      }
+    } catch {
+      // Non-JSON responses are converted to a stable client error below.
+    }
+    const kind = res.status === 401
+      ? 'unauthorized'
+      : res.status >= 500
+        ? 'unavailable'
+        : 'client';
+    return new ApiErrorResponse(fallback, 'api_error', undefined, res.status, kind);
+  }
+
+  private async parseResponseJson(res: Response): Promise<any> {
+    try {
+      const data = typeof res.json === 'function'
+        ? await res.json()
+        : JSON.parse(await res.text());
+      if (data === null || typeof data !== 'object') throw new Error('non-object response');
+      return data;
+    } catch {
+      throw new ApiErrorResponse(
+        'Сервер вернул некорректный ответ',
+        'invalid_response',
+        undefined,
+        res.status,
+        'unavailable',
+      );
+    }
   }
 
   async getMeasure(id: string): Promise<MeasureRecord> {
@@ -230,21 +288,65 @@ export class ApiClient {
     return parsed as unknown as QuizSubmitResult;
   }
 
-  async optInNotifications(enabled: boolean): Promise<boolean> {
+  async getChecklist(measureId: string): Promise<ChecklistItem[]> {
+    const res = await fetch(`${this.baseUrl}/api/v1/measures/${measureId}/checklist`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) {
+      throw await this.toApiError(res, 'Чеклист не удалось загрузить');
+    }
+    const data = await this.parseResponseJson(res);
+    return data.items || [];
+  }
+
+  async updateChecklist(
+    measureId: string,
+    itemKey: string,
+    completed: boolean,
+  ): Promise<void> {
+    let res: Response;
     try {
-      const res = await fetch(`${this.baseUrl}/api/v1/notifications/opt-in`, {
+      res = await fetch(`${this.baseUrl}/api/v1/measures/${measureId}/checklist`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({ item_key: itemKey, completed }),
+      });
+    } catch {
+      throw new ApiErrorResponse(
+        'Не удалось сохранить чеклист на сервере',
+        'api_unavailable',
+        undefined,
+        0,
+        'network',
+      );
+    }
+    if (!res.ok) {
+      throw await this.toApiError(res, 'Чеклист не удалось сохранить');
+    }
+  }
+
+  async optInNotifications(enabled: boolean): Promise<boolean> {
+    let res: Response;
+    try {
+      res = await fetch(`${this.baseUrl}/api/v1/notifications/opt-in`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify({ enabled }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        return data.enabled;
-      }
     } catch {
-      // Fallback
+      throw new ApiErrorResponse(
+        'Не удалось сохранить настройки уведомлений',
+        'api_unavailable',
+        undefined,
+        0,
+        'network',
+      );
     }
-    return enabled;
+    if (!res.ok) {
+      throw await this.toApiError(res, 'Настройку уведомлений не удалось сохранить');
+    }
+    const data = await this.parseResponseJson(res);
+    return Boolean(data.enabled);
   }
 }
 
