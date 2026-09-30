@@ -15,8 +15,13 @@ _CERTS_DIR = Path(__file__).resolve().parent / "certs"
 
 
 def _build_ssl_context(custom_ca_path: str | None = None) -> ssl.SSLContext | bool | str:
-    if custom_ca_path:
+    if custom_ca_path and Path(custom_ca_path).is_file():
         return custom_ca_path
+    elif custom_ca_path:
+        logger.warning(
+            "Custom CA bundle path %s does not exist on disk; falling back to bundled certs",
+            custom_ca_path,
+        )
 
     try:
         ctx = ssl.create_default_context()
