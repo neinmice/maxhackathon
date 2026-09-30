@@ -1,0 +1,167 @@
+# Static CI for the honest vertical. No production secrets, no live MAX, no deploy.
+# Rollback: delete this file. It does not change runtime, compose, or application code.
+
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  miniapp:
+    name: miniapp build and honesty
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/miniapp
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/miniapp/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Verify frontend
+        working-directory: apps/miniapp
+        run: npm run verify
+
+  api:
+    name: api pytest
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: services/api/requirements.txt
+
+      - name: Install requirements
+        run: python -m pip install -r requirements.txt
+
+      - name: Pytest
+        run: python -m pytest -q --tb=short
+
+  bot:
+    name: bot pytest
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/bot
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: services/bot/requirements.txt
+
+      - name: Install requirements
+        run: python -m pip install -r requirements.txt
+
+      - name: Pytest
+        run: python -m pytest -q --tb=short
+
+  guards:
+    name: compose and client guards
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Production compose does not publish db api bot and requires APP_ENV_FILE
+        run: |
+          python -c '
+          from pathlib import Path
+          import sys
+          text = Path("infra/compose.yaml").read_text(encoding="utf-8")
+          errors = []
+          names = ("api", "bot", "db", "web", "caddy")
+
+          def service_block(name):
+              marker = "\n  %s:" % name
+              start = text.find(marker)
+              if start < 0:
+                  errors.append("missing service %s" % name)
+                  return ""
+              start += 1
+              end = len(text)
+              for other in names + ("volumes",):
+                  if other == name:
+                      continue
+                  pos = text.find("\n  %s:" % other, start)
+                  if pos != -1 and pos < end:
+                      end = pos
+              return text[start:end]
+
+          for name in ("db", "api", "bot"):
+              block = service_block(name)
+              if "\n    ports:" in ("\n" + block):
+                  errors.append("%s publishes ports" % name)
+              if "${APP_ENV_FILE:?" not in block:
+                  errors.append("%s does not require APP_ENV_FILE" % name)
+
+          published = []
+          in_ports = False
+          for line in service_block("caddy").splitlines():
+              if line.startswith("    ports:"):
+                  in_ports = True
+                  continue
+              if in_ports and line.startswith("    ") and not line.startswith("      "):
+                  break
+              stripped = line.strip()
+              if in_ports and stripped.startswith("- "):
+                  published.append(stripped)
+          allowed = {"- \"80:80\"", "- \"443:443\""}
+          if set(published) != allowed:
+              errors.append("unexpected published ports: %s" % published)
+          if errors:
+              print("\n".join(errors), file=sys.stderr)
+              sys.exit(1)
+          print("compose guard ok: db/api/bot unpublished, APP_ENV_FILE required, public ports 80/443")
+          '
+
+      - name: Client sources do not contain signed-proof CERT-ZVERY or mock_ok
+        run: |
+          python -c '
+          from pathlib import Path
+          import sys
+          root = Path("apps/miniapp/src")
+          needles = ("signed-proof", "CERT-ZVERY", "mock_ok")
+          suffixes = {".ts", ".tsx", ".js", ".mjs", ".css"}
+          hits = []
+          for path in root.rglob("*"):
+              if not path.is_file() or path.suffix not in suffixes:
+                  continue
+              text = path.read_text(encoding="utf-8")
+              for needle in needles:
+                  if needle in text:
+                      hits.append("%s: %s" % (path, needle))
+          if hits:
+              print("\n".join(hits), file=sys.stderr)
+              sys.exit(1)
+          print("client guard ok: signed-proof, CERT-ZVERY, mock_ok absent from apps/miniapp/src")
+          '

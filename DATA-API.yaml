@@ -1,0 +1,118 @@
+version: "0.1"
+solution_id: zvery-business-navigator
+api_base_url: https://zverybot.ru
+bot_base_url: https://zverybot.ru
+checks:
+  - method: GET
+    path: /health
+    base: api
+    role: public
+    expected_status: 200
+    expected_content_type: application/json
+  - method: GET
+    path: /api/v1/catalog/filters
+    base: api
+    role: public
+    expected_status: 200
+    expected_content_type: application/json
+    required_response_fields: [regions, roles, tax_modes, sectors, goals, accepted_tax_modes, content_gaps, catalog_version]
+  - method: GET
+    path: /api/v1/measures
+    base: api
+    role: public
+    expected_status: 200
+    expected_content_type: application/json
+    response_shape: array
+  - method: GET
+    path: /api/v1/measures/{measure_id}
+    base: api
+    role: public
+    expected_status: 200
+    expected_content_type: application/json
+  - method: POST
+    path: /api/v1/recommendations
+    base: api
+    role: public
+    expected_status: 200
+    required_response_fields: [items, catalog_version]
+  - method: GET
+    path: /health
+    base: bot
+    role: public
+    expected_status: 200
+    expected_content_type: application/json
+    required_response_fields: [status, service, version, max_configured, webhook_configured, database_ready]
+  - method: POST
+    path: /webhooks/max
+    base: bot
+    role: max
+    expected_status: 200
+    required_request_header: X-Max-Bot-Api-Secret
+  - method: POST
+    path: /api/v1/auth/max/launch-data
+    base: bot
+    role: public
+    expected_status: 200
+  - method: POST
+    path: /api/v1/measures/{measure_id}/save
+    base: bot
+    role: user
+    expected_status: 200
+    required_request_header: X-Max-Init-Data
+  - method: DELETE
+    path: /api/v1/measures/{measure_id}/save
+    base: bot
+    role: user
+    expected_status: 200
+    required_request_header: X-Max-Init-Data
+  - method: GET
+    path: /api/v1/measures/saved
+    base: bot
+    role: user
+    expected_status: 200
+    required_request_header: X-Max-Init-Data
+    required_response_fields: [measure_ids]
+  - method: GET
+    path: /api/v1/measures/{measure_id}/checklist
+    base: bot
+    role: user
+    expected_status: 200
+    required_request_header: X-Max-Init-Data
+    required_response_fields: [measure_id, items]
+  - method: POST
+    path: /api/v1/measures/{measure_id}/checklist
+    base: bot
+    role: user
+    expected_status: 200
+    required_request_header: X-Max-Init-Data
+    required_response_fields: [measure_id, item_key, completed]
+  - method: POST
+    path: /api/v1/quiz/submit
+    base: bot
+    role: user
+    expected_status: 200
+    required_request_header: X-Max-Init-Data
+  - method: GET
+    path: /api/v1/notifications/opt-in
+    base: bot
+    role: user
+    expected_status: 200
+    required_request_header: X-Max-Init-Data
+    required_response_fields: [enabled]
+  - method: POST
+    path: /api/v1/notifications/opt-in
+    base: bot
+    role: user
+    expected_status: 200
+    required_request_header: X-Max-Init-Data
+    required_response_fields: [enabled]
+  - method: POST
+    path: /api/v1/bot/send-checklist
+    base: bot
+    role: user
+    expected_status: 200
+  - method: POST
+    path: /api/v1/bot/send-event-reminder
+    base: bot
+    role: user
+    expected_status: 200

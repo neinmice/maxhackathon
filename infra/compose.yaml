@@ -1,0 +1,109 @@
+# Production stack. Secrets come only from the private file at APP_ENV_FILE.
+# Compose interpolation (${...}) happens on the host and is limited to the file
+# path and PUBLIC_DOMAIN. Credential values stay in env_file, which is the
+# container environment; `docker compose config` must not inline them.
+# Do not point APP_ENV_FILE at .env.example.
+# Local Vite ports live in infra/compose.dev.yaml, not here.
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.api
+    env_file:
+      - path: ${APP_ENV_FILE:?Set APP_ENV_FILE to a private env file outside git}
+        required: true
+    environment:
+      APP_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  bot:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.bot
+    env_file:
+      - path: ${APP_ENV_FILE:?Set APP_ENV_FILE to a private env file outside git}
+        required: true
+    environment:
+      APP_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  reminders:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.bot
+    env_file:
+      - path: ${APP_ENV_FILE:?Set APP_ENV_FILE to a private env file outside git}
+        required: true
+    environment:
+      APP_ENV: production
+    command: ["python", "-m", "app.manage", "run-reminders"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    env_file:
+      - path: ${APP_ENV_FILE:?Set APP_ENV_FILE to a private env file outside git}
+        required: true
+    environment:
+      APP_ENV: production
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -eu
+        if [ "$${APP_ENV-}" = "production" ]; then
+          normalized=$(printf '%s' "$${POSTGRES_PASSWORD-}" | tr '[:upper:]' '[:lower:]')
+          case "$$normalized" in
+            ""|navigator|password|secret|changeme|change-me|change_me*|replace-*)
+              echo "production database rejects empty or template password" >&2
+              exit 1
+              ;;
+          esac
+        fi
+        exec docker-entrypoint.sh postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.web
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:?PUBLIC_DOMAIN is required}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - bot
+      - web
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
