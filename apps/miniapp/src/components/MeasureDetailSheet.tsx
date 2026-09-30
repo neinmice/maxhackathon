@@ -8,9 +8,10 @@ import { CheckIcon, ClockIcon } from './icons'
 import Sheet from './Sheet'
 import { cityIn, useApp } from '../store'
 import { apiClient } from '../api/client'
+import { sendDataToChat, triggerHaptic } from '../lib/maxBridge'
 
 export default function MeasureDetailSheet() {
-  const { measureDetail, setMeasureDetail, savedMeasures, toggleSaveMeasure, city } = useApp()
+  const { measureDetail, setMeasureDetail, savedMeasures, toggleSaveMeasure, city, showToast } = useApp()
   const nav = useNavigate()
   const [checkedDocs, setCheckedDocs] = useState<Set<number>>(new Set())
 
@@ -154,6 +155,35 @@ export default function MeasureDetailSheet() {
               )
             })}
           </div>
+          <button
+            type="button"
+            className="btn btn--ghost btn--block"
+            style={{
+              marginTop: '0.65rem',
+              fontSize: '0.8rem',
+              padding: '0.55rem',
+              borderRadius: '12px',
+            }}
+            onClick={() => {
+              triggerHaptic('medium')
+              sendDataToChat({
+                action: 'checklist',
+                measure_id: measureDetail.id,
+                title,
+                operator: org,
+                amount,
+                deadline,
+                items: docs.map((doc, idx) => ({
+                  key: String(idx),
+                  title: doc,
+                  completed: checkedDocs.has(idx),
+                })),
+              })
+              showToast('Чеклист отправлен в чат MAX')
+            }}
+          >
+            Отправить чеклист в чат MAX
+          </button>
         </div>
 
         <div

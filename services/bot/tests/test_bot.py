@@ -724,3 +724,84 @@ def test_postgres_store_roundtrip_when_local_database_exists() -> None:
     finally:
         admin.execute(f'DROP DATABASE "{database_name}" WITH (FORCE)')
         admin.close()
+
+
+def test_webhook_handles_certificate_send_data() -> None:
+    max_client = FakeMaxClient()
+    app = create_app(settings=settings(), store=InMemoryStore(), max_client=max_client)
+    client = TestClient(app)
+    cert_payload = {
+        "action": "certificate",
+        "certificate_id": "cert-2026-abcdef-12345678",
+        "score": 100,
+        "title": "Памятный сертификат за прохождение квиза*",
+        "user_name": "Станислав",
+    }
+    update = {
+        "update_type": "message_created",
+        "message_created": {
+            "message": {
+                "sender": {"user_id": "772026"},
+                "web_app_data": {"data": json.dumps(cert_payload)},
+            }
+        },
+    }
+    response = client.post(
+        "/webhooks/max",
+        json=update,
+        headers={"X-Max-Bot-Api-Secret": "webhook-secret"},
+    )
+    assert response.status_code == 200
+    assert len(max_client.messages) == 1
+    msg = max_client.messages[0]
+    assert msg["user_id"] == "772026"
+    assert "Поздравляем с успешным прохождением квиза" in msg["text"]
+    assert "Станислав" in msg["text"]
+    assert "100%" in msg["text"]
+    assert "cert-2026-abcdef" in msg["text"]
+    buttons = msg["attachments"][0]["payload"]["buttons"]
+    assert buttons[0][0]["payload"] == "quiz"
+
+
+def test_webhook_handles_checklist_send_data() -> None:
+    max_client = FakeMaxClient()
+    app = create_app(settings=settings(), store=InMemoryStore(), max_client=max_client)
+    client = TestClient(app)
+    checklist_payload = {
+        "action": "checklist",
+        "measure_id": "demo-kazan-agro-001",
+        "title": "Агростартап в Республике Татарстан",
+        "operator": "Минсельхозпрод РТ",
+        "amount": "до 5 млн ₽",
+        "deadline": "до 1 ноября",
+        "items": [
+            {"key": "0", "title": "Паспорт гражданина РФ", "completed": True},
+            {"key": "1", "title": "Бизнес-план КФХ", "completed": False},
+        ],
+    }
+    update = {
+        "update_type": "message_created",
+        "message_created": {
+            "message": {
+                "sender": {"user_id": "772026"},
+                "web_app_data": {"data": json.dumps(checklist_payload)},
+            }
+        },
+    }
+    response = client.post(
+        "/webhooks/max",
+        json=update,
+        headers={"X-Max-Bot-Api-Secret": "webhook-secret"},
+    )
+    assert response.status_code == 200
+    assert len(max_client.messages) == 1
+    msg = max_client.messages[0]
+    assert msg["user_id"] == "772026"
+    assert "Чеклист документов" in msg["text"]
+    assert "Агростартап" in msg["text"]
+    assert "✅ 1. Паспорт гражданина РФ" in msg["text"]
+    assert "⬜ 2. Бизнес-план КФХ" in msg["text"]
+    assert "1 из 2" in msg["text"]
+    buttons = msg["attachments"][0]["payload"]["buttons"]
+    assert buttons[0][0]["payload"] == "measure_demo-kazan-agro-001"
+

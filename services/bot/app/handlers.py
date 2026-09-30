@@ -6,7 +6,7 @@ import logging
 import re
 from typing import Any
 
-from .catalog import measure_exists
+from .catalog import get_measure, measure_exists
 from .config import Settings
 from .max_client import MaxApiClient
 
@@ -61,6 +61,50 @@ def _start_payload(body: dict[str, Any]) -> str:
         if isinstance(value, str) and value.strip():
             return value.strip()
     return ""
+
+
+def _extract_web_app_data(body: dict[str, Any], update: dict[str, Any]) -> dict[str, Any] | None:
+    message = body.get("message") if isinstance(body.get("message"), dict) else body
+    candidates: list[Any] = []
+
+    if isinstance(message, dict):
+        wad = message.get("web_app_data")
+        if isinstance(wad, dict):
+            candidates.append(wad.get("data"))
+        elif isinstance(wad, str):
+            candidates.append(wad)
+        candidates.append(message.get("data"))
+
+    if isinstance(body, dict):
+        wad = body.get("web_app_data")
+        if isinstance(wad, dict):
+            candidates.append(wad.get("data"))
+        elif isinstance(wad, str):
+            candidates.append(wad)
+        candidates.append(body.get("data"))
+
+    if isinstance(update, dict):
+        wad = update.get("web_app_data")
+        if isinstance(wad, dict):
+            candidates.append(wad.get("data"))
+        elif isinstance(wad, str):
+            candidates.append(wad)
+
+    msg_text = _message_text(body)
+    if msg_text and msg_text.startswith("{") and msg_text.endswith("}"):
+        candidates.append(msg_text)
+
+    for item in candidates:
+        if isinstance(item, dict):
+            return item
+        if isinstance(item, str) and item.strip():
+            try:
+                parsed = json.loads(item)
+                if isinstance(parsed, dict):
+                    return parsed
+            except Exception:
+                continue
+    return None
 
 
 _START_PARAM_RE = re.compile(r"^[A-Za-z0-9_-]{1,512}$")
@@ -158,6 +202,17 @@ class BotHandlers:
         if user_id:
             self.store.touch_user(user_id)
 
+        # Check for WebApp sendData payload (certificate or checklist from Mini App)
+        web_app_payload = _extract_web_app_data(body, update)
+        if web_app_payload and user_id:
+            action = str(web_app_payload.get("action") or "").lower()
+            if action in {"certificate", "send_certificate"} or "certificate_id" in web_app_payload:
+                await self._handle_certificate(user_id, web_app_payload)
+                return
+            if action in {"checklist", "send_checklist"} or "measure_id" in web_app_payload:
+                await self._handle_checklist(user_id, web_app_payload)
+                return
+
         if event_type == "bot_started" and user_id:
             payload = start_app_payload(_start_payload(body))
             text = (
@@ -193,18 +248,161 @@ class BotHandlers:
                 await self._handle_action(user_id, "catalog")
             elif text in {"сохранённые", "сохраненные", "мои сохранённые"}:
                 await self._handle_action(user_id, "saved")
+            elif text in {"сертификат", "мой сертификат", "/cert", "/certificate"}:
+                await self._handle_action(user_id, "cert")
+            elif text in {"чеклист", "/checklist"}:
+                await self._handle_action(user_id, "saved")
 
     async def _handle_action(self, user_id: str, action: str) -> None:
         text_by_action = {
             "quiz": "Откройте Mini App и перейдите в раздел квиза.",
             "catalog": "Откройте Mini App, чтобы посмотреть каталог мер.",
             "saved": "Откройте Mini App, чтобы посмотреть сохранённые меры.",
+            "cert": "Откройте Mini App, чтобы просмотреть полученный сертификат.",
         }
         text = text_by_action.get(action, "Откройте Mini App, чтобы продолжить.")
         await self.max_client.send_message(
             user_id=user_id,
             text=text,
             attachments=main_menu(self.settings),
+        )
+
+    async def _handle_certificate(self, user_id: str, data: dict[str, Any]) -> None:
+        cert_id = str(data.get("certificate_id") or "").strip()
+        score = data.get("score")
+        score_str = f"{score}%" if score is not None else "100%"
+        user_name = str(data.get("user_name") or "Предприниматель").strip()
+        title = str(data.get("title") or "Памятный сертификат за прохождение квиза*").strip()
+
+        cert_display_id = cert_id[:16] if len(cert_id) >= 16 else cert_id or "VERIFIED-ZVERY"
+
+        text = (
+            f"🎉 Поздравляем с успешным прохождением квиза!\n\n"
+            f"📜 {title}\n"
+            f"👤 Предприниматель: {user_name}\n"
+            f"🎯 Результат: {score_str}\n"
+            f"🆔 Номер: {cert_display_id}\n"
+            f"🔐 Верификация: ZVERY Core (HMAC-SHA256)\n\n"
+            f"*Памятный сертификат носит информационно-поощрительный характер "
+            f"и подтверждает базовые знания мер господдержки бизнеса."
+        )
+
+        username = _bot_username(self.settings)
+        buttons = []
+        if username:
+            buttons.append([
+                _open_app_button(
+                    username=username,
+                    text="Открыть сертификат в ZVERY",
+                    payload="quiz",
+                )
+            ])
+            buttons.append([
+                _open_app_button(
+                    username=username,
+                    text="Каталог мер поддержки",
+                    payload="catalog",
+                )
+            ])
+        attachments = [{"type": "inline_keyboard", "payload": {"buttons": buttons}}] if buttons else None
+
+        await self.max_client.send_message(
+            user_id=user_id,
+            text=text,
+            attachments=attachments,
+        )
+
+    async def _handle_checklist(self, user_id: str, data: dict[str, Any]) -> None:
+        measure_id = str(data.get("measure_id") or "").strip()
+        measure = get_measure(measure_id) if measure_id else None
+
+        title = (
+            str(data.get("title") or "")
+            or (measure.get("title") if measure else "")
+            or "Мера государственной поддержки"
+        )
+        operator = (
+            str(data.get("operator") or "")
+            or (measure.get("operator") if measure else "")
+        )
+        amount = str(data.get("amount") or "")
+        deadline = (
+            str(data.get("deadline") or "")
+            or (measure.get("deadline") if measure else "")
+        )
+
+        items = data.get("items")
+        checked_keys: set[str] = set()
+        doc_list: list[str] = []
+
+        if isinstance(items, list) and items:
+            for item in items:
+                if isinstance(item, dict):
+                    doc_list.append(str(item.get("title") or item.get("label") or ""))
+                    if item.get("completed"):
+                        checked_keys.add(str(item.get("key", len(doc_list) - 1)))
+                elif isinstance(item, str):
+                    doc_list.append(item)
+        elif measure:
+            doc_list = measure.get("documents", [])
+            saved_progress = self.store.get_checklist(user_id, measure_id)
+            checked_keys = {k for k, v in saved_progress.items() if v}
+
+        if not doc_list:
+            doc_list = ["Документы уточняются оператором"]
+
+        completed_count = len(checked_keys)
+        total_count = len(doc_list)
+
+        lines = [
+            "📋 Чеклист документов для подачи заявки",
+            f"📌 Мера: {title}",
+        ]
+        if operator and operator != "Оператор не указан":
+            lines.append(f"🏛 Оператор: {operator}")
+        if amount and amount != "Сумма не указана":
+            lines.append(f"💰 Сумма: {amount}")
+        if deadline and deadline != "срок не указан":
+            lines.append(f"⏰ Срок подачи: {deadline}")
+
+        lines.append(f"\nСтатус готовности: {completed_count} из {total_count}")
+
+        for idx, doc in enumerate(doc_list):
+            is_done = str(idx) in checked_keys
+            icon = "✅" if is_done else "⬜"
+            lines.append(f"{icon} {idx + 1}. {doc}")
+
+        lines.append(
+            "\n💡 Совет: соберите все отмеченные документы заранее. "
+            "Отслеживать статус можно прямо в приложении ZVERY."
+        )
+
+        text = "\n".join(lines)
+
+        username = _bot_username(self.settings)
+        buttons = []
+        if username:
+            open_payload = f"measure_{measure_id}" if measure_id and measure_exists(measure_id) else "catalog"
+            buttons.append([
+                _open_app_button(
+                    username=username,
+                    text="Открыть меру в ZVERY",
+                    payload=open_payload,
+                )
+            ])
+            buttons.append([
+                _open_app_button(
+                    username=username,
+                    text="Мои сохранённые",
+                    payload="saved",
+                )
+            ])
+        attachments = [{"type": "inline_keyboard", "payload": {"buttons": buttons}}] if buttons else None
+
+        await self.max_client.send_message(
+            user_id=user_id,
+            text=text,
+            attachments=attachments,
         )
 
 

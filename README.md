@@ -80,6 +80,26 @@ Accepted baseline semantics не менялись: defensive `initBridge`, user-
 
 **Не доказано / не заявлять:** build/health/catalog PASS не означает full honesty/API/bot/visual/network/MAX PASS; полный honesty PASS не заявлен (exit 1 на quiz assertion). **Открытые блокеры:** H2, H4 (honesty exit 1 на quiz assertion), H5 — детали в [`docs/DESLOP_PLAN.md`](docs/DESLOP_PLAN.md); ограничение deep-link (query-путь ≠ ADR-форме `measure_<id>`). **Rollback:** revert [`client.ts`](apps/miniapp/src/api/client.ts:107), [`store.tsx`](apps/miniapp/src/store.tsx:58), [`App.tsx`](apps/miniapp/src/App.tsx:78), [`Other.tsx`](apps/miniapp/src/pages/Other.tsx:172), [`MeasureDetailSheet.tsx`](apps/miniapp/src/components/MeasureDetailSheet.tsx:31), [`honesty-regressions.mjs`](apps/miniapp/scripts/honesty-regressions.mjs:468); удалить [`catalog-contract.mjs`](apps/miniapp/scripts/catalog-contract.mjs:1).
 
+> **Уточнение (2026-09-30, после Пакета 4):** приёмка Пакета 3 не распространяется на появившиеся в ходе подзадачи коммиты `994a889` (merge) и `1224a83` — их авторство/источник не установлены. Канонический deep-link `measure_<id>` (ограничение выше) после merge требует отдельной перепроверки; приёмка не означает закрытия H1–H5.
+
+### Пакет 4 (2026-09-30): серверный квиз/сертификат — реализация и заявленные проверки; итоговая приёмка ограничена
+
+Запись по **отчёту исполнителя** (не свежие прогоны приёмщика). Изменённые файлы (пути от `apps/miniapp/src`, кроме `scripts` — от `apps/miniapp`):
+
+- [`client.ts`](apps/miniapp/src/api/client.ts:1) — `submitQuiz` server-only, schema-валидация, инварианты `passed`/`certificate`;
+- [`QuizPage.tsx`](apps/miniapp/src/pages/QuizPage.tsx:29), [`QuizModal.tsx`](apps/miniapp/src/components/QuizModal.tsx:103) — удалены query fake-results и локальный success; добавлен retry;
+- [`CertificatesPage.tsx`](apps/miniapp/src/pages/CertificatesPage.tsx:165) — удалён bootstrap из `quiz_completed`;
+- [`Other.tsx`](apps/miniapp/src/pages/Other.tsx:269) — бейдж «5/5» зависит от persisted certificates;
+- новый harness [`scripts/quiz-contract.mjs`](apps/miniapp/scripts/quiz-contract.mjs:1); [`catalog-contract.mjs`](apps/miniapp/scripts/catalog-contract.mjs:1) синхронизирован на `invalid_response`.
+
+Заявленные прогоны (cwd `apps/miniapp`, отчёт исполнителя, exit 0): `honesty-regressions`, `quiz-contract`, `catalog-contract`, `health-contract`, `npm run build`; red-green «passed без сертификата»: exit 1 → 0. memo-ID `memo-04df770d` / `memo-0858e39f` при точечной сверке оказались инспекциями кода (assertions honesty-скрипта; бейдж `Other.tsx`), а не логами финальных прогонов; связь «команда → memo» не установлена.
+
+Git-граница (read-only проверка 2026-09-30, cwd репозитория, exit 0): ветка `feat/frontend-gold-polish`, HEAD `da1847a`; в истории присутствуют `1224a83` и merge `994a889` — источник/авторство не установлены и никому не приписываются; tracked diff пуст, untracked — только [`scripts/quiz-contract.mjs`](apps/miniapp/scripts/quiz-contract.mjs:1).
+
+**Не доказано / не заявлять:** H4 visual PASS не подтверждён (неизменность части разметки не заменяет визуальную проверку); H1–H5 не объявляются закрытыми по зелёному honesty — канонический deep-link `measure_<id>` (оставлен Пакетом 3) после merge требует отдельной проверки, H5 wiring/mapping отдельно не принят; проверка corrupted JSON не доказывает отбрасывание структурно правдоподобных старых fake-certificates — криптографической верификации локального payload нет, provenance и миграция старых записей требуют отдельного review; Python/API/bot tests не запускались; visual/network/MAX-гейты отложены владельцем. Общий проект PASS не заявляется.
+
+**Rollback:** blanket-откат файлов или merge-коммитов запрещён — риск уничтожения baseline и изменений других пакетов; только точечный revert отдельных изменений после отдельного согласования и проверки diff; сейчас ничего не откатывается.
+
 ### Реализация полировки (2026-09-29)
 
 > **Статус фронтенда:** Весь фронтенд приложения, кроме Личного кабинета (ЛК), теперь полностью отполирован и приведен к единому золотому дизайн-стандарту Главной страницы.

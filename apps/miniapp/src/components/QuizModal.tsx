@@ -4,14 +4,21 @@
  * Назначение: 5 практических вопросов по налогам и грантам, генерация верифицированного
  * сертификата с печатью, криптографической подписью HMAC-SHA256 и официальным дисклеймером.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import mascotShrug from '../assets/mascot/mascot-shrug.webp'
 import { CheckIcon, Rays, Scribble, StartSticker } from './icons'
 import Sheet from './Sheet'
 import { useApp } from '../store'
 import { apiClient, type QuizSubmitResult } from '../api/client'
-import { triggerHaptic, triggerNotification, triggerSelectionChanged } from '../lib/maxBridge'
+import {
+  disableClosingConfirmation,
+  enableClosingConfirmation,
+  sendDataToChat,
+  triggerHaptic,
+  triggerNotification,
+  triggerSelectionChanged,
+} from '../lib/maxBridge'
 import { saveCertificate } from '../lib/storage'
 
 export type Question = {
@@ -90,6 +97,17 @@ export default function QuizModal() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const error = submitError
 
+  useEffect(() => {
+    if (quizOpen) {
+      enableClosingConfirmation()
+    } else {
+      disableClosingConfirmation()
+    }
+    return () => {
+      disableClosingConfirmation()
+    }
+  }, [quizOpen])
+
   if (!quizOpen) return null
 
   const curQ = QUESTIONS[step]
@@ -142,6 +160,7 @@ export default function QuizModal() {
   }
 
   const handleClose = () => {
+    disableClosingConfirmation()
     setQuizOpen(false)
     setTimeout(() => {
       handleRestart()
@@ -371,11 +390,18 @@ export default function QuizModal() {
                 <button
                   className="btn btn--ghost btn--block"
                   onClick={() => {
-                    triggerHaptic('light')
+                    triggerHaptic('medium')
+                    sendDataToChat({
+                      action: 'certificate',
+                      certificate_id: result.certificate?.certificate_id,
+                      score: result.score,
+                      title: result.certificate?.title,
+                      user_name: userName || 'Предприниматель',
+                    })
                     showToast('Сертификат отправлен в чат MAX')
                   }}
                 >
-                  Отправить в MAX
+                  Отправить в чат MAX
                 </button>
               </div>
             )}

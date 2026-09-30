@@ -59,6 +59,9 @@ export interface WebApp {
   openApp?: (botUsername: string, startParam?: string) => void;
   ready: () => void;
   sendData: (data: string) => void;
+  enableClosingConfirmation?: () => void;
+  disableClosingConfirmation?: () => void;
+  isClosingConfirmationEnabled?: boolean;
 }
 
 declare global {

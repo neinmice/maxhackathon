@@ -51,6 +51,9 @@ const mockWebApp: WebApp = {
   },
   ready: () => console.log('[MAX Bridge] ready() called'),
   sendData: (data) => console.log('[MAX Bridge] sendData():', data),
+  enableClosingConfirmation: () => console.log('[MAX Bridge] enableClosingConfirmation() called'),
+  disableClosingConfirmation: () => console.log('[MAX Bridge] disableClosingConfirmation() called'),
+  isClosingConfirmationEnabled: false,
 };
 
 export function getBridge(): WebApp {
@@ -70,9 +73,48 @@ export function initBridge(): void {
     if (typeof (bridge as any).expand === 'function') {
       (bridge as any).expand();
     }
+    if (typeof bridge.enableClosingConfirmation === 'function') {
+      bridge.enableClosingConfirmation();
+    }
   } catch (err) {
     console.warn('[MAX Bridge] Initialization notice:', err);
   }
+}
+
+export function enableClosingConfirmation(): void {
+  try {
+    const bridge = getBridge();
+    if (typeof bridge.enableClosingConfirmation === 'function') {
+      bridge.enableClosingConfirmation();
+    }
+  } catch (err) {
+    console.warn('[MAX Bridge] enableClosingConfirmation notice:', err);
+  }
+}
+
+export function disableClosingConfirmation(): void {
+  try {
+    const bridge = getBridge();
+    if (typeof bridge.disableClosingConfirmation === 'function') {
+      bridge.disableClosingConfirmation();
+    }
+  } catch (err) {
+    console.warn('[MAX Bridge] disableClosingConfirmation notice:', err);
+  }
+}
+
+export function sendDataToChat(data: unknown): boolean {
+  try {
+    const bridge = getBridge();
+    const payload = typeof data === 'string' ? data : JSON.stringify(data);
+    if (typeof bridge.sendData === 'function') {
+      bridge.sendData(payload);
+      return true;
+    }
+  } catch (err) {
+    console.warn('[MAX Bridge] sendData notice:', err);
+  }
+  return false;
 }
 
 export function getBridgeUser(): WebAppUser {
