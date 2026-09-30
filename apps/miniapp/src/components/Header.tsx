@@ -43,10 +43,7 @@ export default function Header() {
       <header className="header">
         <button className="header__user" onClick={() => nav('/profile')} aria-label="Личный кабинет">
           <Avatar size={34} />
-          <span
-            className="header__name"
-            style={userName.length > 10 ? { fontSize: userName.length > 14 ? '0.74rem' : '0.82rem' } : undefined}
-          >
+          <span className="header__name">
             <Scribble className="header__scribble" />
             <span>{userName}</span>
           </span>

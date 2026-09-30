@@ -304,33 +304,23 @@ p {
   position: relative;
   font-family: var(--display);
   font-weight: 800;
-  font-size: clamp(0.78rem, 3.2vw, 0.97rem);
+  font-size: 0.97rem;
   letter-spacing: 0.01em;
-  padding: 0 0.15rem;
+  padding: 0 0.1rem;
   line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  min-width: 0;
-  max-width: 100%;
 }
 
 .header__name > span {
   position: relative;
-  z-index: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 40vw;
 }
 
 .header__scribble {
   position: absolute;
-  left: -6%;
+  left: 4%;
   top: -0.55rem;
-  width: 112%;
+  width: 7.4rem;
   height: 2.1rem;
   pointer-events: none;
-  z-index: 0;
 }
 
 .header__right {
@@ -2770,33 +2760,22 @@ p {
   position: relative;
   font-family: var(--display);
   font-weight: 800;
-  font-size: clamp(1.05rem, 5vw, 1.45rem);
-  margin-top: 0.5rem;
-  margin-bottom: 0.2rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 1.9rem;
-  max-width: 90vw;
+  font-size: 1.4rem;
+  margin-top: 0.4rem;
 }
 
 .profile__name span {
   position: relative;
-  z-index: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 82vw;
 }
 
 .profile__scribble {
   position: absolute;
-  left: -8%;
-  top: -0.85rem;
-  width: 116%;
+  left: 50%;
+  transform: translateX(-50%);
+  top: -0.7rem;
+  width: 10.5rem;
   height: 3rem;
   pointer-events: none;
-  z-index: 0;
 }
 
 .stats {

@@ -117,9 +117,10 @@ for (const [name, response, expectCode] of failureModes) {
 }
 
 // 3. Unknown ID и mismatched body id не подменяются первой карточкой
+// HTTP 404 → measure_not_found (см. блок 2); 200 с чужим id → invalid_response (тело не удовлетворяет запрос)
 installFetch(() => jsonResponse(200, { ...canonical[0], id: 'demo-moscow-agro-001' }));
 await assert.rejects(client.getMeasure('demo-kazan-agro-001'), (err) => {
-  assert.equal(err.code, 'measure_not_found');
+  assert.equal(err.code, 'invalid_response');
   return true;
 }, 'mismatched body id must not satisfy the requested card');
 

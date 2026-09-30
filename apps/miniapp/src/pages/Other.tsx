@@ -652,10 +652,7 @@ export function Profile() {
       </div>
       <div className="profile">
         <Avatar size={88} className="profile__ava" />
-        <div
-          className="profile__name"
-          style={userName.length > 12 ? { fontSize: userName.length > 16 ? '1.05rem' : '1.2rem' } : undefined}
-        >
+        <div className="profile__name">
           <Scribble className="profile__scribble" />
           <span>{userName}</span>
         </div>
