@@ -805,3 +805,95 @@ def test_webhook_handles_checklist_send_data() -> None:
     buttons = msg["attachments"][0]["payload"]["buttons"]
     assert buttons[0][0]["payload"] == "measure_demo-kazan-agro-001"
 
+
+def test_send_checklist_api_endpoint() -> None:
+    max_client = FakeMaxClient()
+    app = create_app(
+        settings=settings(),
+        store=InMemoryStore(),
+        max_client=max_client,
+    )
+    client = TestClient(app)
+    init_data = make_init_data(user_id="772026")
+    response = client.post(
+        "/api/v1/bot/send-checklist",
+        json={
+            "measure_id": "demo-kazan-agro-001",
+            "title": "Агростартап в Республике Татарстан",
+            "operator": "Минсельхозпрод РТ",
+            "amount": "до 5 млн ₽",
+            "deadline": "до 1 ноября",
+            "items": [
+                {"key": "0", "title": "Паспорт гражданина РФ", "completed": True},
+            ],
+        },
+        headers={"X-Max-Init-Data": init_data},
+    )
+    assert response.status_code == 200
+    assert len(max_client.messages) == 1
+    msg = max_client.messages[0]
+    assert msg["user_id"] == "772026"
+    assert "Чеклист документов" in msg["text"]
+    assert "✅ 1. Паспорт гражданина РФ" in msg["text"]
+
+
+def test_send_event_reminder_api_endpoint() -> None:
+    max_client = FakeMaxClient()
+    app = create_app(
+        settings=settings(),
+        store=InMemoryStore(),
+        max_client=max_client,
+    )
+    client = TestClient(app)
+    init_data = make_init_data(user_id="772026")
+    response = client.post(
+        "/api/v1/bot/send-event-reminder",
+        json={
+            "event_id": "evt-1",
+            "title": "Как получить грант до 5 млн",
+            "date_time": "Завтра в 14:00",
+            "kind": "Вебинар",
+            "location": "Онлайн-эфир",
+        },
+        headers={"X-Max-Init-Data": init_data},
+    )
+    assert response.status_code == 200
+    assert len(max_client.messages) == 1
+    msg = max_client.messages[0]
+    assert msg["user_id"] == "772026"
+    assert "🔔 Напоминание установлено!" in msg["text"]
+    assert "Как получить грант до 5 млн" in msg["text"]
+
+
+def test_bot_start_concise_description_and_compact_button() -> None:
+    max_client = FakeMaxClient()
+    app = create_app(
+        settings=settings(),
+        store=InMemoryStore(),
+        max_client=max_client,
+    )
+    client = TestClient(app)
+    update = {
+        "update_type": "message_created",
+        "message_created": {
+            "message": {
+                "sender": {"user_id": "772026"},
+                "body": {"text": "/start"},
+            }
+        },
+    }
+    response = client.post(
+        "/webhooks/max",
+        json=update,
+        headers={"X-Max-Bot-Api-Secret": "webhook-secret"},
+    )
+    assert response.status_code == 200
+    assert len(max_client.messages) == 1
+    msg = max_client.messages[0]
+    assert "Бизнес-Навигатор ZVERY" in msg["text"]
+    buttons = msg["attachments"][0]["payload"]["buttons"]
+    assert len(buttons) == 1  # Compact single-row button
+    assert buttons[0][0]["text"] == "Открыть"
+    assert buttons[0][0]["payload"] == "home"
+
+

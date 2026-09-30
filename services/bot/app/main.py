@@ -43,6 +43,23 @@ class ChecklistItemRequest(BaseModel):
     completed: bool
 
 
+class SendChecklistRequest(BaseModel):
+    measure_id: str = ""
+    title: str = ""
+    operator: str = ""
+    amount: str = ""
+    deadline: str = ""
+    items: list[Any] = []
+
+
+class SendReminderRequest(BaseModel):
+    event_id: str = ""
+    title: str = ""
+    date_time: str = ""
+    kind: str = ""
+    location: str = ""
+
+
 class ApiError(Exception):
     def __init__(self, status_code: int, code: str, message: str) -> None:
         self.status_code = status_code
@@ -379,6 +396,32 @@ def create_app(
             "item_key": payload.item_key,
             "completed": completed,
         }
+
+    @app.post("/api/v1/bot/send-checklist")
+    async def send_checklist_to_chat(
+        payload: SendChecklistRequest,
+        request: Request,
+        identity: LaunchIdentity = Depends(identity_dependency),
+    ) -> dict[str, Any]:
+        data = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
+        await request.app.state.handlers._handle_checklist(
+            identity.user_id,
+            data,
+        )
+        return {"ok": True}
+
+    @app.post("/api/v1/bot/send-event-reminder")
+    async def send_event_reminder_to_chat(
+        payload: SendReminderRequest,
+        request: Request,
+        identity: LaunchIdentity = Depends(identity_dependency),
+    ) -> dict[str, Any]:
+        data = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
+        await request.app.state.handlers._handle_event_reminder(
+            identity.user_id,
+            data,
+        )
+        return {"ok": True}
 
 
     @app.get("/api/v1/notifications/opt-in")

@@ -145,12 +145,29 @@ def _open_app_button(
     }
 
 
-def main_menu(settings: Settings, start_payload: str | None = None) -> list[dict[str, Any]]:
+def main_menu(
+    settings: Settings,
+    start_payload: str | None = None,
+    *,
+    compact: bool = False,
+) -> list[dict[str, Any]]:
     username = _bot_username(settings)
     if not username:
         return []
     open_payload = start_payload if start_payload and start_payload.startswith("measure_") else "home"
-    open_text = "Открыть меру" if open_payload != "home" else "Открыть ZVERY"
+    open_text = "Открыть меру" if open_payload != "home" else "Открыть"
+    if compact:
+        buttons = [
+            [
+                _open_app_button(
+                    username=username,
+                    text=open_text,
+                    payload=open_payload,
+                )
+            ]
+        ]
+        return [{"type": "inline_keyboard", "payload": {"buttons": buttons}}]
+
     buttons = [
         [
             _open_app_button(
@@ -216,17 +233,17 @@ class BotHandlers:
         if event_type == "bot_started" and user_id:
             payload = start_app_payload(_start_payload(body))
             text = (
-                "Добро пожаловать в ZVERY — навигатор по мерам поддержки бизнеса. "
-                "Выберите действие ниже."
+                "Бизнес-Навигатор ZVERY — господдержка, гранты и субсидии для вашего бизнеса в одном месте.\n\n"
+                "Персональный подбор программ под регион, чек-листы документов и AI-помощник без очередей."
             )
             if payload and payload.startswith("measure_"):
-                text = "Откройте карточку меры в Mini App. Квиз и вход не пропускаются."
+                text = "Откройте карточку меры в приложении ZVERY."
             elif payload is None and _start_payload(body):
-                text = "Ссылка запуска не распознана. Откройте Mini App из меню."
+                text = "Ссылка запуска не распознана. Откройте приложение ниже."
             await self.max_client.send_message(
                 user_id=user_id,
                 text=text,
-                attachments=main_menu(self.settings, payload),
+                attachments=main_menu(self.settings, payload, compact=True),
             )
             return
 
@@ -239,8 +256,11 @@ class BotHandlers:
             if text in {"/start", "старт", "меню"}:
                 await self.max_client.send_message(
                     user_id=user_id,
-                    text="Главное меню ZVERY.",
-                    attachments=main_menu(self.settings),
+                    text=(
+                        "Бизнес-Навигатор ZVERY — господдержка, гранты и субсидии для вашего бизнеса в одном месте.\n\n"
+                        "Персональный подбор программ под регион, чек-листы документов и AI-помощник без очередей."
+                    ),
+                    attachments=main_menu(self.settings, compact=True),
                 )
             elif text in {"квиз", "пройти квиз"}:
                 await self._handle_action(user_id, "quiz")
@@ -395,6 +415,39 @@ class BotHandlers:
                     username=username,
                     text="Мои сохранённые",
                     payload="saved",
+                )
+            ])
+        attachments = [{"type": "inline_keyboard", "payload": {"buttons": buttons}}] if buttons else None
+
+        await self.max_client.send_message(
+            user_id=user_id,
+            text=text,
+            attachments=attachments,
+        )
+
+    async def _handle_event_reminder(self, user_id: str, data: dict[str, Any]) -> None:
+        title = str(data.get("title") or "Мероприятие для бизнеса").strip()
+        date_time = str(data.get("date_time") or data.get("date") or "Указано в расписании").strip()
+        kind = str(data.get("kind") or "Встреча").strip()
+        location = str(data.get("location") or "Онлайн-эфир").strip()
+
+        text = (
+            f"🔔 Напоминание установлено!\n\n"
+            f"📌 Событие: {title}\n"
+            f"🏷 Формат: {kind}\n"
+            f"⏰ Время: {date_time}\n"
+            f"📍 Место / Ссылка: {location}\n\n"
+            f"Мы пришлём вам уведомление и ссылку на подключение перед началом события."
+        )
+
+        username = _bot_username(self.settings)
+        buttons = []
+        if username:
+            buttons.append([
+                _open_app_button(
+                    username=username,
+                    text="Открыть в ZVERY",
+                    payload="home",
                 )
             ])
         attachments = [{"type": "inline_keyboard", "payload": {"buttons": buttons}}] if buttons else None

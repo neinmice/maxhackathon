@@ -5,6 +5,7 @@ import { CheckIcon, ClockIcon, Rays } from '../../components/icons'
 import Sheet from '../../components/Sheet'
 import { triggerHaptic } from '../../lib/maxBridge'
 import { useApp } from '../../store'
+import { apiClient } from '../../api/client'
 
 interface RegItem {
   id: string
@@ -113,9 +114,21 @@ export default function RegistrationService() {
         // no-op
       }
     }
+    apiClient.sendChecklistToChat({
+      measure_id: item.id,
+      title: item.title,
+      operator: 'ФНС России',
+      amount: 'Без госпошлины онлайн',
+      deadline: item.duration,
+      items: item.docs.map((doc, idx) => ({
+        key: String(idx),
+        title: doc,
+        completed: checkedDocs.has(idx),
+      })),
+    }).catch(() => {})
     const text = `${item.title}\n\nНеобходимые документы:\n${item.docs.map((d) => `• ${d}`).join('\n')}\n\n${item.deadline}`
     navigator.clipboard?.writeText(text).catch(() => {})
-    showToast('Чеклист отправлен в МАКС!')
+    showToast('Чеклист отправлен в чат MAX!')
   }
 
   return (

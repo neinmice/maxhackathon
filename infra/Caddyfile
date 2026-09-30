@@ -36,6 +36,10 @@
         reverse_proxy bot:8001
     }
 
+    handle /api/v1/bot/* {
+        reverse_proxy bot:8001
+    }
+
     handle /api/* {
         reverse_proxy api:8000
     }

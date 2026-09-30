@@ -5,6 +5,7 @@ import { CheckIcon, ClockIcon, Rays } from '../../components/icons'
 import Sheet from '../../components/Sheet'
 import { triggerHaptic } from '../../lib/maxBridge'
 import { useApp } from '../../store'
+import { apiClient } from '../../api/client'
 
 interface OnlineEvent {
   id: string
@@ -96,6 +97,16 @@ export default function OnlineEventsPage() {
         showToast('Напоминание отменено')
       } else {
         next.add(id)
+        const evt = ONLINE_EVENTS.find((e) => e.id === id)
+        if (evt) {
+          apiClient.sendEventReminderToChat({
+            event_id: evt.id,
+            title: evt.title,
+            date_time: evt.time,
+            kind: evt.kind,
+            location: evt.platform,
+          }).catch(() => {})
+        }
         showToast('Напоминание об эфире добавлено в МАКС!')
       }
       return next

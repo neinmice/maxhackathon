@@ -356,6 +356,43 @@ export class ApiClient {
     const data = await this.parseResponseJson(res);
     return Boolean(data.enabled);
   }
+
+  async sendChecklistToChat(payload: {
+    measure_id: string;
+    title?: string;
+    operator?: string;
+    amount?: string;
+    deadline?: string;
+    items?: Array<{ key: string; title: string; completed: boolean }>;
+  }): Promise<void> {
+    try {
+      await fetch(`${this.baseUrl}/api/v1/bot/send-checklist`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      // non-fatal fallback
+    }
+  }
+
+  async sendEventReminderToChat(payload: {
+    event_id: string;
+    title: string;
+    date_time: string;
+    kind?: string;
+    location?: string;
+  }): Promise<void> {
+    try {
+      await fetch(`${this.baseUrl}/api/v1/bot/send-event-reminder`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      // non-fatal fallback
+    }
+  }
 }
 
 export const apiClient = new ApiClient();

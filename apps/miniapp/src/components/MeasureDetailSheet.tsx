@@ -166,7 +166,7 @@ export default function MeasureDetailSheet() {
             }}
             onClick={() => {
               triggerHaptic('medium')
-              sendDataToChat({
+              const checklistData = {
                 action: 'checklist',
                 measure_id: measureDetail.id,
                 title,
@@ -178,7 +178,9 @@ export default function MeasureDetailSheet() {
                   title: doc,
                   completed: checkedDocs.has(idx),
                 })),
-              })
+              }
+              sendDataToChat(checklistData)
+              apiClient.sendChecklistToChat(checklistData).catch(() => {})
               showToast('Чеклист отправлен в чат MAX')
             }}
           >

@@ -6,6 +6,7 @@ import Sheet from '../../components/Sheet'
 import { triggerHaptic } from '../../lib/maxBridge'
 import { cityIn, useApp } from '../../store'
 import { CITIES } from '../../data'
+import { apiClient } from '../../api/client'
 
 interface CityEvent {
   id: string
@@ -100,6 +101,16 @@ export default function CityEventsPage() {
         showToast('Напоминание отменено')
       } else {
         next.add(id)
+        const evt = CITY_EVENTS.find((e) => e.id === id)
+        if (evt) {
+          apiClient.sendEventReminderToChat({
+            event_id: evt.id,
+            title: evt.title,
+            date_time: evt.time,
+            kind: evt.kind,
+            location: `${address}, ${evt.place}`,
+          }).catch(() => {})
+        }
         showToast('Напоминание о встрече добавлено в МАКС!')
       }
       return next
